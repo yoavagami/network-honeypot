@@ -7,7 +7,10 @@ import { LiveStreamPage } from "./pages/LiveStreamPage.js";
 import { ActorsPage } from "./pages/ActorsPage.js";
 import { ActorProfilePage } from "./pages/ActorProfilePage.js";
 import { DetectionsPage } from "./pages/DetectionsPage.js";
+import { AlertsPage } from "./pages/AlertsPage.js";
 import { CanariesPage } from "./pages/CanariesPage.js";
+import { GeographyPage } from "./pages/GeographyPage.js";
+import { FirstContactPage } from "./pages/FirstContactPage.js";
 import { SearchPage } from "./pages/SearchPage.js";
 import { EventDetailPage } from "./pages/EventDetailPage.js";
 
@@ -36,7 +39,10 @@ export function App() {
           <Route path="actors" element={<ActorsPage />} />
           <Route path="actors/:id" element={<ActorProfilePage />} />
           <Route path="detections" element={<DetectionsPage />} />
+          <Route path="alerts" element={<AlertsPage />} />
           <Route path="canaries" element={<CanariesPage />} />
+          <Route path="geography" element={<GeographyPage />} />
+          <Route path="first-contact" element={<FirstContactPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
         </Route>

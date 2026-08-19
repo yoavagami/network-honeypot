@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api, type ActorProfile, type TimelineEntry } from "../api.js";
 import { SeverityBadge } from "../components/SeverityBadge.js";
 import { StatCard } from "../components/StatCard.js";
+import { AttackPath } from "../components/AttackPath.js";
 
 export function ActorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,13 @@ export function ActorProfilePage() {
       <h1>
         Actor <span className="mono">{profile.actorId}</span>
       </h1>
+
+      {(profile.country || profile.organization) && (
+        <p className="muted" style={{ marginTop: "-.5rem" }}>
+          {[profile.city, profile.region, profile.country].filter(Boolean).join(", ")}
+          {profile.organization ? ` · ${profile.organization}${profile.asn ? ` (${profile.asn})` : ""}` : ""}
+        </p>
+      )}
 
       <div className="stat-grid">
         <StatCard label="Risk score" value={profile.riskScore} />
@@ -92,6 +100,11 @@ export function ActorProfilePage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="panel">
+        <h2>Attack path</h2>
+        <AttackPath timeline={timeline} />
       </div>
 
       <div className="panel">

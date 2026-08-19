@@ -20,4 +20,28 @@ export const config = {
   queueFlushBatchSize: Number(process.env.INGESTION_FLUSH_BATCH_SIZE ?? 200),
   correlationIntervalMs: Number(process.env.CORRELATION_INTERVAL_MS ?? 5000),
   canaryRefreshIntervalMs: Number(process.env.CANARY_REFRESH_INTERVAL_MS ?? 30000),
+
+  // --- Alerting (docs/ROADMAP.md Phase 2, brief §36) — all delivery targets optional; alerts
+  // are always recorded as ALERT_TRIGGERED events regardless of whether any delivery target is
+  // configured. Thresholds are configurable per the brief's "allow administrators to configure
+  // thresholds" requirement.
+  alertWebhookUrl: process.env.ALERT_WEBHOOK_URL || null,
+  alertSlackWebhookUrl: process.env.ALERT_SLACK_WEBHOOK_URL || null,
+  alertEmail:
+    process.env.ALERT_EMAIL_TO && process.env.SMTP_HOST
+      ? {
+          to: process.env.ALERT_EMAIL_TO,
+          from: process.env.ALERT_EMAIL_FROM || process.env.ALERT_EMAIL_TO,
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT ?? 587),
+          user: process.env.SMTP_USER || undefined,
+          password: process.env.SMTP_PASSWORD || undefined,
+        }
+      : null,
+  alertCooldownMs: Number(process.env.ALERT_COOLDOWN_MS ?? 15 * 60_000),
+  alertThresholds: {
+    highRequestRatePerMinute: Number(process.env.ALERT_HIGH_REQUEST_RATE_THRESHOLD ?? 100),
+    authFailureBurst: Number(process.env.ALERT_AUTH_FAILURE_THRESHOLD ?? 20),
+    largeScaleEnumeration: Number(process.env.ALERT_ENUMERATION_THRESHOLD ?? 50),
+  },
 } as const;

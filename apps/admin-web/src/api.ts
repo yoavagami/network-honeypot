@@ -74,6 +74,9 @@ export const api = {
   traffic: (range: string) => request<{ data: Array<{ bucket: string; count: number; uniqueActors: number }> }>(`/api/analytics/traffic?range=${range}`),
   attacks: (range: string) => request<{ byDetectionType: Array<{ detectionType: string; count: number }>; riskDistribution: Array<{ bucket: string; count: number }> }>(`/api/analytics/attacks?range=${range}`),
   bots: (range: string) => request<{ data: Array<{ uaFingerprint: string | null; count: number; uniqueActors: number }> }>(`/api/analytics/bots?range=${range}`),
+  geography: (range: string) => request<GeographyResponse>(`/api/analytics/geography?range=${range}`),
+  firstContact: () => request<{ data: FirstContactRow[] }>("/api/analytics/first-contact"),
+  discoveryFunnel: (range: string) => request<DiscoveryFunnelResponse>(`/api/analytics/discovery-funnel?range=${range}`),
 
   search: (q: string) => request<{ data: RequestRow[]; query: string }>(`/api/search?q=${encodeURIComponent(q)}`),
 
@@ -128,6 +131,11 @@ export interface ActorRow {
   uniquePaths: number;
   label: string | null;
   notes: string | null;
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  asn: string | null;
+  organization: string | null;
 }
 
 export interface ActorProfile extends ActorRow {
@@ -176,6 +184,29 @@ export interface CanaryRow {
   createdAt: string;
   active: boolean;
   triggerCount: number;
+}
+
+export interface GeographyResponse {
+  byCountry: Array<{ country: string; actorCount: number; requestCount: number; avgRisk: number; maxRisk: number }>;
+  byAsn: Array<{ asn: string; organization: string | null; actorCount: number; requestCount: number; avgRisk: number; maxRisk: number }>;
+  enrichmentActive: boolean;
+}
+
+export interface FirstContactRow {
+  actorId: string;
+  firstSeenAt: string;
+  firstSuspiciousAt: string | null;
+  firstEnumerationAt: string | null;
+  firstAuthAttemptAt: string | null;
+  firstApiProbeAt: string | null;
+  firstCanaryTriggerAt: string | null;
+  lastSeenAt: string;
+  secondsToFirstSuspicious: number | null;
+  secondsToFirstCanary: number | null;
+}
+
+export interface DiscoveryFunnelResponse {
+  stages: Array<{ stage: string; label: string; actorCount: number }>;
 }
 
 export interface OverviewResponse {

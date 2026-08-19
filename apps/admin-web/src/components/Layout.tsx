@@ -6,7 +6,10 @@ const NAV = [
   { to: "/live", label: "Live Stream" },
   { to: "/actors", label: "Actors" },
   { to: "/detections", label: "Detections" },
+  { to: "/alerts", label: "Alerts" },
   { to: "/canaries", label: "Canaries" },
+  { to: "/geography", label: "Geography" },
+  { to: "/first-contact", label: "First Contact" },
   { to: "/search", label: "Search" },
 ];
 

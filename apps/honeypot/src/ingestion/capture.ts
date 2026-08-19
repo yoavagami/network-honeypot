@@ -6,9 +6,11 @@ import type { EventType } from "@honeypot/types";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { resolveActor, resolveSession } from "./correlation.js";
-import { getActiveCanaryValues, findCanaryIdByValue } from "./canaries.js";
+import { getActiveCanaryValues, findCanaryByValue } from "./canaries.js";
+import { fireCanaryAlert } from "./alerts.js";
 import { recentBuffer } from "./recentBuffer.js";
 import { metrics } from "./metrics.js";
+import { enrichActorIfNeeded } from "./enrichment.js";
 import type { IngestionQueue } from "./queue.js";
 import "../context.js";
 
@@ -79,6 +81,12 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
 
     const { actorId } = await resolveActor({ visitorId, ipHash, uaFingerprint });
     request.hp.actorId = actorId;
+
+    // Deliberately not awaited — enrichment is an external HTTP call and must never sit on the
+    // request path (see docs/ARCHITECTURE.md §5 / packages/detection/src/enrichment.ts). A slow
+    // or failing provider only delays when the actor's country/ASN appear in the dashboard,
+    // never the visitor's response.
+    void enrichActorIfNeeded(ip, actorId);
 
     const sessionCookie = request.cookies[SESSION_COOKIE];
     const sessionId = await resolveSession(actorId, sessionCookie, visitorId, ipHash, userAgentRaw, uaFingerprint);
@@ -187,16 +195,17 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
 
   if (inline.canaryMatches.length > 0) {
     for (const value of inline.canaryMatches) {
-      const canaryId = await findCanaryIdByValue(value);
-      if (!canaryId) continue;
+      const canary = await findCanaryByValue(value);
+      if (!canary) continue;
       await db.insert(schema.canaryEvents).values({
         canaryEventId: randomUUID(),
-        canaryId,
+        canaryId: canary.id,
         actorId,
         requestId,
         createdAt: new Date(),
         usageContext: `${request.method} ${path}`,
       });
+      void fireCanaryAlert(actorId, canary.canaryType, canary.plantedLocation, value, queue, request.log);
     }
   }
 

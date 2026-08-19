@@ -46,8 +46,11 @@ render.yaml     # Render Blueprint — alternative deployment path, see docs/DEP
 
 ## Status
 
-Phase 1 (foundation + deception + detection + dashboard) — see
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for exactly what's implemented vs. designed-and-stubbed.
+Phase 1 (foundation + deception + detection + dashboard) and Phase 2 (GeoIP/ASN enrichment,
+discovery funnel, attack-path visualization, alert delivery, first-contact analytics) are done —
+see [`docs/ROADMAP.md`](docs/ROADMAP.md) for exactly what's implemented vs. designed-and-stubbed,
+and for Phase 4's deployment status (built and locally verified, not yet run against a real
+VPS/Render account).
 
 ## Quickstart
 

@@ -33,7 +33,17 @@ export async function getCanaryValueForLocation(location: string): Promise<strin
   return row?.value ?? null;
 }
 
-export async function findCanaryIdByValue(value: string): Promise<string | null> {
-  const [row] = await db.select({ id: schema.canaryObjects.canaryId }).from(schema.canaryObjects).where(eq(schema.canaryObjects.value, value)).limit(1);
-  return row?.id ?? null;
+export interface CanaryRecord {
+  id: string;
+  canaryType: string;
+  plantedLocation: string;
+}
+
+export async function findCanaryByValue(value: string): Promise<CanaryRecord | null> {
+  const [row] = await db
+    .select({ id: schema.canaryObjects.canaryId, canaryType: schema.canaryObjects.canaryType, plantedLocation: schema.canaryObjects.plantedLocation })
+    .from(schema.canaryObjects)
+    .where(eq(schema.canaryObjects.value, value))
+    .limit(1);
+  return row ?? null;
 }

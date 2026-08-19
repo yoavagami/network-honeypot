@@ -28,6 +28,12 @@ export const actors = pgTable("actors", {
   uniquePaths: integer("unique_paths").notNull(),
   label: text("label"),
   notes: text("notes"),
+  country: text("country"),
+  region: text("region"),
+  city: text("city"),
+  asn: text("asn"),
+  organization: text("organization"),
+  enrichmentUpdatedAt: timestamptz("enrichment_updated_at"),
 });
 
 export const actorSignals = pgTable("actor_signals", {

@@ -50,6 +50,22 @@ services:
         value: "0.0.0.0"
       - key: LOG_LEVEL
         value: info
+      # Optional Phase 2 features — all off/empty by default, set these in the dashboard's
+      # Environment tab if you want them (each needs its own external account/token — see
+      # docs/ROADMAP.md Phase 2). sync: false means Render won't overwrite your value on
+      # subsequent blueprint syncs once you've set it.
+      - key: GEOLOCATION_ENABLED
+        value: "false"
+      - key: IPINFO_TOKEN
+        sync: false
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+      - key: ALERT_SLACK_WEBHOOK_URL
+        sync: false
+      - key: ALERT_EMAIL_TO
+        sync: false
+      - key: SMTP_HOST
+        sync: false
 
   # Also public — protected by the app's own auth (Argon2id password, session cookie, CSRF,
   # rate-limited login), not by network isolation. See docs/DEPLOY_RENDER.md for the tradeoff

@@ -57,7 +57,7 @@ async function main() {
   await refreshCanaries();
   startCanaryRefresh();
   queue.start();
-  startCorrelationWorker(queue);
+  startCorrelationWorker(queue, logger);
 
   await app.listen({ port: config.port, host: config.host });
   logger.info({ msg: "honeypot app listening", port: config.port });

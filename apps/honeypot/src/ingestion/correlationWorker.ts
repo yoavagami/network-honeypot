@@ -13,9 +13,11 @@ import {
   type DetectionResult,
 } from "@honeypot/detection";
 import type { EventType } from "@honeypot/types";
+import type { Logger } from "@honeypot/logging";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { recentBuffer } from "./recentBuffer.js";
+import { evaluateWindowedAlerts } from "./alerts.js";
 import type { IngestionQueue } from "./queue.js";
 
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
@@ -72,13 +74,13 @@ async function upsertDetection(actorId: string, result: DetectionResult) {
   return true;
 }
 
-export function startCorrelationWorker(queue: IngestionQueue) {
-  const timer = setInterval(() => void runCorrelationTick(queue), config.correlationIntervalMs);
+export function startCorrelationWorker(queue: IngestionQueue, logger: Logger) {
+  const timer = setInterval(() => void runCorrelationTick(queue, logger), config.correlationIntervalMs);
   timer.unref();
   return timer;
 }
 
-export async function runCorrelationTick(queue: IngestionQueue) {
+export async function runCorrelationTick(queue: IngestionQueue, logger: Logger) {
   const now = Date.now();
   recentBuffer.sweep(now);
 
@@ -126,5 +128,8 @@ export async function runCorrelationTick(queue: IngestionQueue) {
     // cheap and sufficient for the dashboard; an all-time count would need a DB aggregate query.
     const uniquePaths = new Set(window.map((w) => w.path)).size;
     await db.update(schema.actors).set({ riskScore, uniquePaths }).where(eq(schema.actors.actorId, actorId));
+
+    const authFailures = window.filter((w) => w.authEventType === "LOGIN_FAILURE").map((w) => ({ atMs: w.atMs, username: w.username }));
+    await evaluateWindowedAlerts(actorId, window, authFailures, now, queue, logger);
   }
 }

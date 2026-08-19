@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { api, type IngestionHealth, type OverviewResponse } from "../api.js";
+import { api, type DiscoveryFunnelResponse, type IngestionHealth, type OverviewResponse } from "../api.js";
 import { StatCard } from "../components/StatCard.js";
 import { BarList } from "../components/BarList.js";
+import { Funnel } from "../components/Funnel.js";
 
 const RANGES = ["5m", "1h", "24h", "7d"];
 
 export function OverviewPage() {
   const [range, setRange] = useState("24h");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [funnel, setFunnel] = useState<DiscoveryFunnelResponse | null>(null);
   const [ingestion, setIngestion] = useState<IngestionHealth | null>(null);
   const [ingestionError, setIngestionError] = useState(false);
 
   useEffect(() => {
     api.overview(range).then(setOverview).catch(console.error);
+    api.discoveryFunnel(range).then(setFunnel).catch(console.error);
   }, [range]);
 
   useEffect(() => {
@@ -84,6 +87,16 @@ export function OverviewPage() {
             <h2>HTTP methods</h2>
             <BarList items={overview.methodBreakdown.map((m) => ({ label: m.method, count: m.count }))} />
           </div>
+
+          {funnel && (
+            <div className="panel">
+              <h2>Discovery funnel</h2>
+              <Funnel stages={funnel.stages} />
+              <p className="muted" style={{ marginTop: ".5rem" }}>
+                Each stage counts actors who reached it at least once — not a strict required sequence.
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

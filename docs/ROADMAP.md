@@ -76,12 +76,44 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
 `requests`/`events` do not.
 
 ## Phase 2 — Intelligence & Analytics
-- [ ] Real GeoIP/ASN enrichment (MaxMind GeoLite2 or ipinfo.io), async + cached.
-- [ ] Discovery funnel analytics (homepage → robots → API → auth → canary).
-- [ ] Attack-path visualization (per-actor directed graph of endpoints touched, in order).
-- [ ] Bot/agent classification model v1 (rule-weighted, documented confidence, not "AI-detected" as fact).
-- [ ] Alert delivery adapters: webhook, Slack, email; per-rule threshold configuration UI.
-- [ ] "First contact" analytics (time-to-first-* metrics) surfaced in the dashboard.
+- [x] Real GeoIP/ASN enrichment: ipinfo.io provider (`packages/detection/src/providers/ipinfo.ts`,
+      unit tested against mocked responses — ASN/org parsing, non-ok/network-failure handling).
+      Wired into the honeypot's request path as fire-and-forget (never awaited before the
+      response), cached at actor granularity (enriched once per actor per process lifetime, not
+      per request) to respect the free tier's rate limit. New `/api/analytics/geography` +
+      dashboard page (requests by country/ASN, with per-group avg/max risk). Off by default
+      (`GEOLOCATION_ENABLED=false`); requires the operator's own free ipinfo.io token — verified
+      the disabled-by-default path end-to-end (migration applied, full stack rebuilt/redeployed,
+      confirmed `enrichmentActive: false` and nothing else broke), **not** verified against a
+      real ipinfo.io account/token since that requires signing up for one.
+- [x] Discovery funnel analytics: `/api/analytics/discovery-funnel` + Overview dashboard panel.
+      Deliberately stage-*membership*, not a strict enforced sequence (an actor counts for
+      "explored the API" whether or not they hit the homepage first) — documented in the UI
+      itself so a >100%-of-previous-stage number isn't mistaken for a bug. Verified live against
+      real simulator data.
+- [x] Attack-path visualization: per-actor condensed step sequence (`AttackPath.tsx`), derived
+      client-side from the existing timeline data — collapses consecutive-duplicate steps,
+      surfaces only high-signal event types (canary triggers, admin access, scanner/fuzzing
+      detections) so it doesn't just repeat the raw timeline underneath it. Verified live: a
+      scanner's probe sweep and a canary-hunter's discovery→reuse sequence both rendered
+      correctly against real data.
+- [x] Bot/agent classification model v1 — this was actually delivered in Phase 1
+      (`packages/detection/src/botClassification.ts`, confidence-scored, never asserts certainty)
+      and mislabeled as outstanding here; correcting the record rather than re-doing the work.
+- [x] Alert delivery: webhook, Slack, and email (nodemailer) adapters
+      (`packages/detection/src/alertDelivery.ts`), five rules — high request rate, sustained auth
+      failures, large-scale enumeration, sensitive-path access, and canary triggered (brief §36) —
+      with configurable thresholds and a per-(actor,rule) cooldown so an ongoing pattern doesn't
+      spam delivery. **Verified end-to-end for real, not just unit-tested**: stood up a local
+      webhook receiver, triggered a canary and a request-rate burst against the live stack, and
+      confirmed both the correct JSON payload arrived at the webhook *and* the `ALERT_TRIGGERED`
+      event persisted correctly — Slack/email adapters share the same delivery path and are
+      exercised by the same code, but weren't individually re-verified since they need a Slack
+      webhook / SMTP account this author doesn't have. New Alerts dashboard page.
+- [x] "First contact" analytics: `/api/analytics/first-contact`, computed via a single SQL query
+      (CTEs over events/detections/canary_events, not re-derived per-request) + dashboard page.
+      Verified live — correctly showed 3 seconds from an actor's first request to their canary
+      trigger against real simulator data.
 
 ## Phase 3 — Network-Level Visibility & Hardening
 - [ ] JA3/JA4 TLS fingerprinting via Nginx stream module or a TLS-terminating sidecar that exposes
