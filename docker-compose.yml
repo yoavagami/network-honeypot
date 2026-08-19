@@ -29,6 +29,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # The official image's entrypoint starts as root and internally drops to the `postgres` OS
+    # user itself (verified: `docker compose exec postgres ps aux` shows the server process
+    # running as postgres, not root) — but needs a few specific capabilities to do that switch
+    # and fix ownership on first run. Tested empirically (not guessed) against a fresh volume:
+    # cap_drop ALL alone breaks initdb ("failed switching to 'postgres': operation not
+    # permitted"); this minimal add-back set is what initdb + normal startup actually need.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
     mem_limit: 1g
     cpus: 1
 

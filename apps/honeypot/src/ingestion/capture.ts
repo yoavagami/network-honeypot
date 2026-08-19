@@ -162,9 +162,12 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
       acceptEncoding: request.headers["accept-encoding"] ?? null,
       contentType: request.headers["content-type"] ?? null,
       forwardedForClientSupplied: (request.headers["x-forwarded-for"] as string) ?? null,
-      tlsVersion: null,
-      tlsCipher: null,
-      alpn: null,
+      // Set by Nginx from its own view of the TLS handshake (honeypot-tls.conf), never trusted
+      // from the client — same trust boundary as X-Real-IP, see docs/ARCHITECTURE.md §9. Empty
+      // string (not absent) on a plain-HTTP connection, hence the explicit blank check.
+      tlsVersion: nonEmptyHeader(request.headers["x-tls-version"]),
+      tlsCipher: nonEmptyHeader(request.headers["x-tls-cipher"]),
+      alpn: nonEmptyHeader(request.headers["x-alpn-protocol"]),
       endpoint: request.hp.endpoint,
       applicationComponent: request.hp.applicationComponent,
       riskScore,
@@ -224,6 +227,11 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
     authEventType: request.hp.authEvent?.type,
     riskScore,
   });
+}
+
+function nonEmptyHeader(value: string | string[] | undefined): string | null {
+  const s = Array.isArray(value) ? value[0] : value;
+  return s && s.length > 0 ? s : null;
 }
 
 function severityFor(eventType: EventType, riskScore: number): "info" | "low" | "medium" | "high" | "critical" {

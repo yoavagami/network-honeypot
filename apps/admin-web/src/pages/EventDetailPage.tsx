@@ -64,6 +64,8 @@ export function EventDetailPage() {
               <dd>{request.applicationComponent}</dd>
               <dt>IP hash</dt>
               <dd>{request.ipHash}</dd>
+              <dt>TLS</dt>
+              <dd>{request.tlsVersion ? `${request.tlsVersion} · ${request.tlsCipher} · ALPN ${request.alpn ?? "—"}` : "— (plain HTTP)"}</dd>
             </dl>
           </div>
         )}

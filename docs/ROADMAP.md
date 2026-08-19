@@ -116,14 +116,38 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
       trigger against real simulator data.
 
 ## Phase 3 — Network-Level Visibility & Hardening
-- [ ] JA3/JA4 TLS fingerprinting via Nginx stream module or a TLS-terminating sidecar that exposes
-      the handshake metadata to the app.
+- [x] TLS observability: Nginx passes `$ssl_protocol`/`$ssl_cipher`/`$ssl_alpn_protocol` through as
+      `X-TLS-Version`/`X-TLS-Cipher`/`X-ALPN-Protocol` headers (`proxy_params_honeypot.conf`),
+      captured into `requests.tls_version/tls_cipher/alpn` and shown on the event detail page.
+      Verified live against a real self-signed cert. **This is not JA3/JA4 fingerprinting** — it's
+      the negotiated protocol/cipher/ALPN as Nginx sees them, not a hash of the raw ClientHello.
+      True JA3/JA4 still needs a stream-module or TLS-terminating-sidecar approach and remains
+      unimplemented; ARCHITECTURE.md §8 was corrected to stop overclaiming this.
 - [ ] Optional eBPF/Zeek-based connection telemetry, evaluated as an opt-in extra (see
-      ARCHITECTURE.md §Network-Level Visibility trade-offs) — not required for core value.
-- [ ] Container hardening pass: read-only root filesystems everywhere, seccomp profile, capability
-      drop audit, admin network fully isolated behind a VPN/IAP entry point.
-- [ ] Rate limiting and connection limits tuned from real observed traffic.
-- [ ] Backup/restore drill executed end-to-end (not just documented).
+      ARCHITECTURE.md §Network-Level Visibility trade-offs) — not required for core value. Deferred:
+      meaningfully raises operational complexity (kernel privileges or a second capture process)
+      for a honeypot at this traffic volume; revisit if/when a deployment needs raw packet-level
+      visibility beyond what Nginx + app-level capture already provide.
+- [x] Container hardening pass: read-only root filesystems on every service, `cap_drop: [ALL]`
+      with minimal empirically-tested add-backs per service (Postgres needs
+      CHOWN/SETUID/SETGID/DAC_OVERRIDE/FOWNER for initdb+startup; Nginx/admin-web need only
+      NET_BIND_SERVICE or nothing, running as the image's non-root user directly), `no-new-
+      privileges`, tmpfs mounts sized/permissioned per what each read-only container actually
+      needs to write. Postgres role/network isolation (honeypot_role vs admin_api_role, separate
+      Docker networks) re-verified via live `SET ROLE` tests. Docker's default seccomp profile
+      kept deliberately rather than a custom one — see docs/SECURITY.md §3 for the reasoning.
+      Admin network isolation behind VPN/SSH-tunnel/same-origin-proxy was already built in Phase 4
+      (see below) rather than redone here.
+- [ ] Rate limiting and connection limits tuned from real observed traffic. Blocked: this needs
+      actual production/live-exposure traffic patterns to tune against, which don't exist yet
+      pre-deployment — current limits (Nginx `hp_general` zone, `rate=20r/s burst=40 nodelay`) are
+      reasoned defaults, not data-driven. Revisit after a real deployment accumulates traffic.
+- [x] Backup/restore drill executed end-to-end (not just documented): `scripts/backup.sh` +
+      `scripts/restore.sh`. Real drill run 2026-08-19 — backed up the live dev DB, restored into
+      an isolated fresh Postgres container (not the live DB), found and fixed a real bug along the
+      way (`--clean` fails against partitioned-table primary keys; switched to `--data-only` +
+      truncating `_migrations` first). Final run: exit 0, zero errors, all 9 tables' row counts
+      matched the pre-backup baseline exactly. Full account in docs/DEPLOYMENT.md §8.
 
 ## Phase 4 — Public Deployment
 - [x] Deployment made portable across a self-hosted VPS and a managed-Postgres PaaS (Render):

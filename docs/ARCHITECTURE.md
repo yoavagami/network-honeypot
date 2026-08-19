@@ -182,13 +182,21 @@ We deliberately do **not** treat `IP = actor`. `actor_id` is a probabilistic clu
 
 ## 8. TLS / HTTP fingerprinting
 
-Phase 1 records what Nginx can see without extra modules: negotiated TLS version/cipher (via
-`$ssl_protocol`/`$ssl_cipher`), ALPN, and HTTP version — all logged as **observed facts**. JA3/JA4
-(which requires seeing the raw ClientHello) needs either Nginx's stream-layer SSL preread or a
-dedicated TLS-fingerprinting proxy in front of Nginx; that's Phase 3 and documented as a distinct
-network-layer addition, not silently implied by "we do TLS fingerprinting." Anything derived from
-these facts (e.g. "looks like a Python TLS stack") is always labeled `inference`, never `fact`, in
-both the data model and the UI.
+Records what Nginx can see without extra modules: negotiated TLS version/cipher (via
+`$ssl_protocol`/`$ssl_cipher`), ALPN, and HTTP version — all logged as **observed facts**, passed
+from Nginx to the app as headers (`X-TLS-Version`/`X-TLS-Cipher`/`X-ALPN-Protocol`, set only by
+Nginx, trusted the same way `X-Real-IP` is — see §9) and stored on `requests.tls_version` /
+`tls_cipher` / `alpn`. Verified end-to-end against a real (self-signed, for local testing) TLS
+connection in Phase 3 — the schema columns existed since Phase 1 but were unpopulated
+(`null` hardcoded in capture.ts) until this was actually wired up.
+
+JA3/JA4 (which requires seeing the raw ClientHello) is a materially bigger lift than the above —
+it needs either Nginx's stream-layer SSL preread plus a JA3-computing component (Nginx itself
+doesn't compute the fingerprint hash, `ssl_preread` only exposes SNI/ALPN/protocol) or a dedicated
+TLS-fingerprinting proxy in front of Nginx. Deferred, not attempted partially: still not
+implemented, and nothing in the data model or UI claims otherwise. Anything derived from the
+facts that *are* captured (e.g. "looks like a Python TLS stack") is always labeled `inference`,
+never `fact`.
 
 ## 9. Trust boundaries — headers
 

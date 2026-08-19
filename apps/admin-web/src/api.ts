@@ -116,6 +116,9 @@ export interface RequestRow {
   userAgentRaw: string | null;
   userAgentFingerprint: string | null;
   referer: string | null;
+  tlsVersion: string | null;
+  tlsCipher: string | null;
+  alpn: string | null;
   endpoint: string;
   applicationComponent: string;
   riskScore: number;

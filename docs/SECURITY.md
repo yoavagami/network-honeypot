@@ -44,19 +44,56 @@ Set-Cookie: csrf_token=...; Secure; SameSite=Strict; Path=/        (readable by 
 
 ## 3. Isolation checklist (containers)
 
-Applied to `honeypot` and `admin-api` Dockerfiles/compose service definitions:
-- [ ] Runs as a dedicated non-root UID/GID (no `root` anywhere in the running container).
-- [ ] `read_only: true` root filesystem; writable tmpfs only where genuinely needed (e.g. `/tmp`).
-- [ ] `cap_drop: [ALL]`, no added capabilities.
-- [ ] `security_opt: [no-new-privileges:true]`.
-- [ ] No Docker socket mount, no host filesystem bind mounts (Postgres uses a named volume only).
-- [ ] No cloud IAM credentials or instance-metadata reachability from the honeypot's identity.
-- [ ] No SSH keys, no production secrets baked into images or env beyond what each service
-      strictly needs (honeypot app never has the admin DB role or admin session-signing key).
-- [ ] Each service has its own dedicated, least-privilege Postgres role (see DATA_MODEL.md +
-      ARCHITECTURE.md §3).
-- [ ] Outbound network egress from the honeypot app container is not required for any route
-      handler and is not exercised by any code path — no HTTP client is wired into public routes.
+Applied to every service's compose definition, verified against the *running* containers via
+`docker inspect` (not just read back from the compose file) as of the Phase 3 hardening pass:
+- [x] Runs as a dedicated non-root UID/GID: honeypot `10001:10001`, admin-api `10002:10002`,
+      nginx/admin-web `101:101` (the images' own `nginx` user). Postgres is the one exception,
+      and it's a deliberate, tested one — see below.
+- [x] `read_only: true` root filesystem on honeypot/admin-api/admin-web/nginx, with writable
+      tmpfs only where genuinely needed (verified needed the hard way: nginx and admin-web both
+      failed to start under `read_only` until specific tmpfs mounts got explicit `mode: 0777`,
+      since default tmpfs ownership didn't let the non-root user write into it).
+- [x] `cap_drop: [ALL]` on every service including Postgres now (see below), no added
+      capabilities except nginx's `NET_BIND_SERVICE` (needed to bind port 80/443 as non-root)
+      and Postgres's minimal add-back set.
+- [x] `security_opt: [no-new-privileges:true]` on every service.
+- [x] No Docker socket mount, no host filesystem bind mounts of anything sensitive (only config
+      files, mounted read-only; Postgres uses a named volume, not a host path).
+- [x] No cloud IAM credentials or instance-metadata reachability from the honeypot's identity —
+      confirmed by inspecting the honeypot container's actual environment (`docker compose exec
+      honeypot printenv`), see §5 item 6.
+- [x] No SSH keys, no production secrets baked into images or env beyond what each service
+      strictly needs (honeypot app never has the admin DB role or admin session-signing key) —
+      same inspection as above.
+- [x] Each service has its own dedicated, least-privilege Postgres role — verified live: neither
+      `admin_api_role` can write `requests`/`events` nor `honeypot_role` can read `admin_users`
+      (§5 item 10 and THREAT_MODEL.md item 16).
+- [x] Outbound network egress from the honeypot app container is not required for any route
+      handler and is not exercised by any code path — no HTTP client is wired into public routes
+      (confirmed by `grep` across `apps/honeypot/src/routes/`, §5 item 9). The one intentional
+      exception, added in Phase 2, is enrichment's outbound call to ipinfo.io — off by default
+      and, notably, fire-and-forget so a slow/unreachable target can't be used to hang requests.
+
+**Postgres — `cap_drop: [ALL]` with a tested, minimal add-back, not full defaults.** The official
+image's entrypoint starts as root and internally drops to a `postgres` OS user itself (confirmed:
+`docker compose exec postgres ps aux` shows the actual server process running as `postgres`, not
+root) — but needs specific capabilities to perform that switch and fix data-directory ownership on
+first run. This was tested empirically, not assumed: `cap_drop: [ALL]` alone breaks `initdb`
+outright (`failed switching to 'postgres': operation not permitted`, tested against a fresh
+volume); adding back exactly `CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER` (and nothing else)
+succeeds, both for a fresh `initdb` and for restarting an existing data volume with real seeded +
+simulated-attacker data already in it — verified data survived (`select count(*) from actors`
+before/after matched).
+
+**Seccomp — Docker's default profile, not a hand-rolled one, and that's a deliberate choice.**
+Docker applies its default seccomp profile (blocks ~44 dangerous syscalls: `ptrace`, kernel
+module loading, etc.) automatically to every container here; nothing disables it. A custom,
+narrower profile listing only the exact syscalls Node/nginx/Postgres use would add a further
+layer, but the risk of getting it subtly wrong (breaking a code path only exercised under specific
+conditions, discovered in production) outweighs the marginal benefit on top of everything else
+already in place (non-root, capability drops down to a handful of specific caps, read-only
+filesystems, network segmentation, scoped DB roles). Revisit if a specific gap is ever identified
+that the current layers don't cover — not preemptively.
 
 ## 4. Adversarial review checklist (run against the running Phase 1 stack before calling it done)
 

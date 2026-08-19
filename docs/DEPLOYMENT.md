@@ -216,9 +216,31 @@ which is the number that matters, not the aspiration.
 - **Rotate a secret**: update `.env` on the host, `docker compose up -d <service>` to recreate
   just that container; DB-role passwords are rotated via a migration-adjacent SQL script plus the
   corresponding `.env` update, applied together.
-- **Backup**: `docker compose exec postgres pg_dump ... | gpg --encrypt ... > backup.sql.gpg`
-  (exact invocation in `scripts/backup.sh`, Phase 3).
-- **Restore**: provision a fresh Postgres volume, replay migrations, `pg_restore`/`psql < dump`,
-  verify `admin_users` and `canary_objects` came back before pointing traffic at it again.
+- **Backup**: `scripts/backup.sh [output-dir]` — runs `pg_dump --format=custom` inside the running
+  `postgres` container (no host Postgres client tools required), optionally GPG-encrypting the
+  result if `BACKUP_GPG_RECIPIENT` is set. Move the output off-host for real production use.
+- **Restore**: `scripts/restore.sh <dump-file>`, after `docker compose up -d postgres` (fresh
+  volume) and `pnpm migrate` (recreates schema + `honeypot_role`/`admin_api_role`). The script
+  runs `pg_restore --data-only --disable-triggers --no-owner`, truncating `_migrations` first —
+  see the comments in `scripts/restore.sh` for why `--clean` doesn't work against partitioned
+  tables. Verify row counts (`actors`, `admin_users`, `canary_objects`, `requests`, `events`,
+  `detections`, ...) against a known baseline before pointing traffic at it again.
+  - **Drilled for real (2026-08-19)**: backed up the live dev stack (144 requests, 378 events, 10
+    actors, 10 detections, 1 admin user, 3 canary objects, 2 canary events, 14 synthetic objects),
+    restored into an isolated fresh Postgres container (not the live DB) simulating a
+    disaster-recovery box. First attempt used `--clean --if-exists`, which failed with 8 errors —
+    `pg_restore` generates `ALTER TABLE ONLY <partition> DROP CONSTRAINT ... _pkey` per monthly
+    partition, but Postgres refuses to drop a partition's *inherited* primary key that way; it has
+    to go through the parent partitioned table. The restore actually completed anyway (Postgres
+    ran the DROPs it could and pg_restore reported "errors ignored on restore: 8"), and row counts
+    matched the baseline exactly — but treating 8 swallowed errors as "fine" isn't something to
+    ship. Root cause: `--clean` is pointless here in the first place, since the documented
+    sequence already runs `pnpm migrate` to build a correct empty schema before restoring — so the
+    fix was to drop `--clean` and use `--data-only` instead. That surfaced one more real conflict
+    (`_migrations` primary-key collision, since `pnpm migrate` already recorded its own rows there
+    with the same keys the dump has) — fixed by truncating `_migrations` immediately before the
+    data-only restore. Re-ran end-to-end against a clean drill instance: exit code 0, zero errors,
+    all 9 tables (including `_migrations`) matched baseline exactly. Drill container/volume torn
+    down afterward; live dev stack was never touched by any of this.
 - **Investigate an actor**: admin dashboard → Actors → search/filter → profile → timeline; or
   `GET /api/actors/:id/timeline` directly for scripting.
