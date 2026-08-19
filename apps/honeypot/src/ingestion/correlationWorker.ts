@@ -75,7 +75,16 @@ async function upsertDetection(actorId: string, result: DetectionResult) {
 }
 
 export function startCorrelationWorker(queue: IngestionQueue, logger: Logger) {
-  const timer = setInterval(() => void runCorrelationTick(queue, logger), config.correlationIntervalMs);
+  // A transient DB error mid-tick (e.g. Postgres briefly unreachable) must never crash the
+  // whole process — Node terminates on an unhandled rejection by default, and `void fn()` here
+  // would otherwise leave this tick's rejection uncaught. Found live: stopping Postgres crashed
+  // the honeypot app entirely rather than degrading, discovered while drilling the ingestion
+  // health monitor (see docs/ROADMAP.md Phase 4).
+  const timer = setInterval(() => {
+    runCorrelationTick(queue, logger).catch((err) => {
+      logger.error({ msg: "correlation tick failed", err: err instanceof Error ? err.message : String(err) });
+    });
+  }, config.correlationIntervalMs);
   timer.unref();
   return timer;
 }
@@ -85,51 +94,63 @@ export async function runCorrelationTick(queue: IngestionQueue, logger: Logger) 
   recentBuffer.sweep(now);
 
   for (const actorId of recentBuffer.activeActorIds()) {
-    const window = recentBuffer.get(actorId);
-    if (window.length === 0) continue;
-
-    const results = [
-      detectReconnaissance(window, now),
-      detectIdEnumeration(window, now),
-      detectParameterEnumeration(window, now),
-      detectFuzzing(window, now),
-      detectApiProbing(window, now),
-      classifyScanner(window, now),
-      detectAuthProbing(
-        window.filter((w) => w.authEventType).map((w) => ({ atMs: w.atMs, eventType: w.authEventType!, username: w.username })),
-        now
-      ),
-    ].filter((r): r is DetectionResult => r !== null);
-
-    for (const result of results) {
-      const isNew = await upsertDetection(actorId, result);
-      if (isNew) {
-        queue.enqueue({
-          kind: "event",
-          priority: result.detectionType === "scanner" || result.detectionType === "auth_probing" ? "high" : "low",
-          row: {
-            eventId: randomUUID(),
-            createdAt: new Date(),
-            requestId: null,
-            actorId,
-            sessionId: null,
-            eventType: DETECTION_EVENT_TYPE[result.detectionType],
-            severity: result.confidence >= 0.7 ? "high" : "medium",
-            riskScore: Math.round(result.confidence * 100),
-            source: "correlation_worker",
-            metadata: result.evidence,
-          },
-        });
-      }
+    try {
+      await processActorTick(actorId, now, queue, logger);
+    } catch (err) {
+      // One actor's data or a transient per-query failure must not abort the tick for every
+      // other actor sharing it — see docs/ROADMAP.md Phase 4 for the incident (a malformed
+      // actorId, "", got into recentBuffer during a DB outage and broke detection/alerting for
+      // every legitimate actor for the rest of that 15-minute window).
+      logger.error({ msg: "correlation tick failed for actor", actorId, err: err instanceof Error ? err.message : String(err) });
     }
-
-    const riskScore = computeActorRiskScore(window.map((w) => ({ riskScore: w.riskScore, ageMs: now - w.atMs })));
-    // Approximated from the in-memory correlation window (last ~15min), not a lifetime count —
-    // cheap and sufficient for the dashboard; an all-time count would need a DB aggregate query.
-    const uniquePaths = new Set(window.map((w) => w.path)).size;
-    await db.update(schema.actors).set({ riskScore, uniquePaths }).where(eq(schema.actors.actorId, actorId));
-
-    const authFailures = window.filter((w) => w.authEventType === "LOGIN_FAILURE").map((w) => ({ atMs: w.atMs, username: w.username }));
-    await evaluateWindowedAlerts(actorId, window, authFailures, now, queue, logger);
   }
+}
+
+async function processActorTick(actorId: string, now: number, queue: IngestionQueue, logger: Logger) {
+  const window = recentBuffer.get(actorId);
+  if (window.length === 0) return;
+
+  const results = [
+    detectReconnaissance(window, now),
+    detectIdEnumeration(window, now),
+    detectParameterEnumeration(window, now),
+    detectFuzzing(window, now),
+    detectApiProbing(window, now),
+    classifyScanner(window, now),
+    detectAuthProbing(
+      window.filter((w) => w.authEventType).map((w) => ({ atMs: w.atMs, eventType: w.authEventType!, username: w.username })),
+      now
+    ),
+  ].filter((r): r is DetectionResult => r !== null);
+
+  for (const result of results) {
+    const isNew = await upsertDetection(actorId, result);
+    if (isNew) {
+      queue.enqueue({
+        kind: "event",
+        priority: result.detectionType === "scanner" || result.detectionType === "auth_probing" ? "high" : "low",
+        row: {
+          eventId: randomUUID(),
+          createdAt: new Date(),
+          requestId: null,
+          actorId,
+          sessionId: null,
+          eventType: DETECTION_EVENT_TYPE[result.detectionType],
+          severity: result.confidence >= 0.7 ? "high" : "medium",
+          riskScore: Math.round(result.confidence * 100),
+          source: "correlation_worker",
+          metadata: result.evidence,
+        },
+      });
+    }
+  }
+
+  const riskScore = computeActorRiskScore(window.map((w) => ({ riskScore: w.riskScore, ageMs: now - w.atMs })));
+  // Approximated from the in-memory correlation window (last ~15min), not a lifetime count —
+  // cheap and sufficient for the dashboard; an all-time count would need a DB aggregate query.
+  const uniquePaths = new Set(window.map((w) => w.path)).size;
+  await db.update(schema.actors).set({ riskScore, uniquePaths }).where(eq(schema.actors.actorId, actorId));
+
+  const authFailures = window.filter((w) => w.authEventType === "LOGIN_FAILURE").map((w) => ({ atMs: w.atMs, username: w.username }));
+  await evaluateWindowedAlerts(actorId, window, authFailures, now, queue, logger);
 }

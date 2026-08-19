@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { schema } from "@honeypot/db";
+import type { Logger } from "@honeypot/logging";
 import { db } from "../db.js";
 import { config } from "../config.js";
 
@@ -15,8 +16,13 @@ export function getActiveCanaryValues(): string[] {
   return activeCanaryValues;
 }
 
-export function startCanaryRefresh() {
-  timer = setInterval(() => void refreshCanaries(), config.canaryRefreshIntervalMs);
+export function startCanaryRefresh(logger: Logger) {
+  // See correlationWorker.ts's startCorrelationWorker for why this can't be a bare `void`.
+  timer = setInterval(() => {
+    refreshCanaries().catch((err) => {
+      logger.error({ msg: "canary refresh failed", err: err instanceof Error ? err.message : String(err) });
+    });
+  }, config.canaryRefreshIntervalMs);
   timer.unref();
 }
 

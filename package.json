@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "migrate": "pnpm --filter @honeypot/db run migrate",
+    "retention": "pnpm --filter @honeypot/db run retention",
     "seed": "pnpm --filter @honeypot/scripts run seed",
     "simulate": "pnpm --filter @honeypot/scripts run simulate"
   },

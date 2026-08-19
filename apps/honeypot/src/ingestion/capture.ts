@@ -111,6 +111,19 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
   metrics.requestsTotal += 1;
   const durationMs = Date.now() - request.hp.startedAtMs;
   const { actorId, sessionId, ipHash, uaFingerprint } = request.hp;
+
+  if (!actorId) {
+    // onRequest's resolveActor() never completed (e.g. Postgres was briefly unreachable), so
+    // request.hp.actorId is still its unset "" placeholder. Recording telemetry under that would
+    // fail every DB insert (actor_id is a NOT NULL FK) *and* poison recentBuffer with an entry
+    // no correlation query can resolve — found live: this aborted the correlation tick for every
+    // other actor too, not just this request, for up to recentBuffer's 15-minute window. Dropping
+    // here is the same trade-off already accepted for Nginx-level rejections (docs/ROADMAP.md) —
+    // an unrecorded request during an outage, not corrupted shared state afterward.
+    metrics.eventsDroppedTotal += 1;
+    request.log.warn({ msg: "dropping telemetry: actor resolution did not complete for this request" });
+    return;
+  }
   const userAgentRaw = request.headers["user-agent"] ?? null;
 
   const inline = evaluateInline({

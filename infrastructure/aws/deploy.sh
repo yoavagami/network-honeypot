@@ -74,10 +74,19 @@ $SSH "cd $REMOTE_DIR && docker compose up -d postgres"
 $SSH "cd $REMOTE_DIR && for i in \$(seq 1 30); do docker compose exec -T postgres pg_isready -U honeypot_owner -d honeypot >/dev/null 2>&1 && break; sleep 2; done"
 
 echo "==> Running migrations + seed"
+# CI=true: without it, pnpm interactively prompts to confirm purging node_modules if the
+# bind-mounted repo dir already has one from a prior run — which a non-interactive SSH command
+# can never answer. Found by actually running the equivalent retention-cron.sh command locally,
+# not just reading it — see infrastructure/vps/retention-cron.sh.
 $SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
   docker run --rm --network container:\$(docker compose ps -q postgres) \
     --env-file .env -e DATABASE_URL=\"postgres://\${POSTGRES_SUPERUSER}:\${POSTGRES_SUPERUSER_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
+    -e CI=true \
     -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed'"
+
+echo "==> Installing daily retention cron job (redacts old raw IPs, manages monthly partitions)"
+$SSH "chmod +x $REMOTE_DIR/infrastructure/vps/retention-cron.sh"
+$SSH "(crontab -l 2>/dev/null | grep -v 'retention-cron.sh'; echo \"0 3 * * * \\\$HOME/$REMOTE_DIR/infrastructure/vps/retention-cron.sh \\\$HOME/$REMOTE_DIR >> \\\$HOME/$REMOTE_DIR/retention.log 2>&1\") | crontab -"
 
 echo "==> Building and starting the full stack"
 $SSH "cd $REMOTE_DIR && docker compose up -d --build"

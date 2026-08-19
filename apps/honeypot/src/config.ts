@@ -20,6 +20,11 @@ export const config = {
   queueFlushBatchSize: Number(process.env.INGESTION_FLUSH_BATCH_SIZE ?? 200),
   correlationIntervalMs: Number(process.env.CORRELATION_INTERVAL_MS ?? 5000),
   canaryRefreshIntervalMs: Number(process.env.CANARY_REFRESH_INTERVAL_MS ?? 30000),
+  healthCheckIntervalMs: Number(process.env.HEALTH_CHECK_INTERVAL_MS ?? 60_000),
+  // "Ingestion stalled" means the queue has backed-up work but hasn't successfully flushed to
+  // the DB in this long — e.g. Postgres unreachable. Deliberately not "no traffic received",
+  // since organic honeypot traffic is naturally bursty/idle and that alone isn't a failure.
+  ingestionStallThresholdMs: Number(process.env.INGESTION_STALL_THRESHOLD_MS ?? 5 * 60_000),
 
   // --- Alerting (docs/ROADMAP.md Phase 2, brief §36) — all delivery targets optional; alerts
   // are always recorded as ALERT_TRIGGERED events regardless of whether any delivery target is

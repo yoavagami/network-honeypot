@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { IngestionQueue } from "./ingestion/queue.js";
 import { registerIngestion } from "./ingestion/capture.js";
 import { startCorrelationWorker } from "./ingestion/correlationWorker.js";
+import { startHealthMonitor } from "./ingestion/healthMonitor.js";
 import { refreshCanaries, startCanaryRefresh } from "./ingestion/canaries.js";
 import { snapshotMetrics } from "./ingestion/metrics.js";
 import { registerPageRoutes } from "./routes/pages.js";
@@ -55,9 +56,10 @@ async function main() {
   });
 
   await refreshCanaries();
-  startCanaryRefresh();
+  startCanaryRefresh(logger);
   queue.start();
   startCorrelationWorker(queue, logger);
+  startHealthMonitor(queue, logger);
 
   await app.listen({ port: config.port, host: config.host });
   logger.info({ msg: "honeypot app listening", port: config.port });

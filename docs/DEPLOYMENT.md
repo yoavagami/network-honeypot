@@ -242,5 +242,55 @@ which is the number that matters, not the aspiration.
     data-only restore. Re-ran end-to-end against a clean drill instance: exit code 0, zero errors,
     all 9 tables (including `_migrations`) matched baseline exactly. Drill container/volume torn
     down afterward; live dev stack was never touched by any of this.
+- **Retention**: `pnpm retention` (`packages/db/src/retention.ts`) — NULLs `requests.ip_raw` past
+  `RAW_IP_RETENTION_DAYS`, creates the next few months' partitions, and drops `requests`/`events`
+  partitions entirely past `EVENT_RETENTION_DAYS`. Runs as the Postgres superuser (same connection
+  as `pnpm migrate`), never as `honeypot_role` — see the file header for why. `deploy.sh` installs
+  it as a daily 3am cron job via `infrastructure/vps/retention-cron.sh`; a non-AWS VPS can install
+  the same crontab line by hand.
+  - **Drilled for real (2026-08-19)**: verified all three behaviors against an isolated Postgres
+    instance with synthetic old/new rows, not just read the code. Found and fixed a real bug along
+    the way: the first version interpolated a SQL `date`-typed value into a raw DDL string, and
+    postgres.js parses `date` columns into JS `Date` objects — `${start_date}`'s `toString()`
+    produced a locale-formatted string like `"Tue Oct 01 2026 GMT+0200 (...)"`, which Postgres
+    rejected as an invalid timestamp literal. Fixed by selecting the dates as pre-formatted text
+    (`to_char(...)`) instead of the `date` type. After the fix: an old row's `ip_raw` was redacted
+    while a same-day row was left alone; a deleted future partition was correctly recreated; and,
+    with `EVENT_RETENTION_DAYS` set low for the test, exactly the one expired partition pair was
+    dropped and nothing else. Also found the same `pnpm install --frozen-lockfile` interactive-
+    purge-prompt issue as the retention-cron wrapper script hit (see below) — both now pass
+    `CI=true`.
+- **Ingestion health / dead-man's-switch**: the honeypot app runs an in-process health monitor
+  (`apps/honeypot/src/ingestion/healthMonitor.ts`) that fires a critical alert (through the same
+  webhook/Slack/email adapters as the Phase 2 alert rules, plus an always-on error-level log line)
+  if the ingestion queue hasn't successfully flushed to Postgres in `INGESTION_STALL_THRESHOLD_MS`
+  (default 5 minutes) while the app has kept receiving traffic. `/internal/metrics`
+  (nginx-blocked from the public network) exposes the underlying counters for external polling.
+  - **Drilled for real (2026-08-19)**: stopped the live `postgres` container while sending
+    continuous traffic to the honeypot, and found three real bugs this way, not by reading code:
+    1. **The whole honeypot process crashed** and entered a restart loop. `correlationWorker.ts`,
+       `canaries.ts`, and the new health monitor all scheduled their periodic work as
+       `setInterval(() => void asyncFn(), ...)` — a rejected promise inside becomes an unhandled
+       rejection, which Node terminates the process on by default. Fixed by having each interval
+       callback `.catch()` and log instead of leaving the rejection unhandled.
+    2. **A poisoned actor silently broke correlation for every other actor.** A request whose
+       actor resolution failed mid-outage still fell through to `recentBuffer.record("", ...)`
+       with the module's unset `""` placeholder actor ID, and every later correlation tick threw
+       `invalid input syntax for type uuid: ""` trying to query it — aborting that tick for every
+       *other* actor too, for up to `recentBuffer`'s 15-minute window, since there was no
+       per-actor isolation. Fixed two ways: `capture.ts` now drops (rather than records) telemetry
+       for a request whose actor never resolved, and `correlationWorker.ts` now wraps each actor's
+       processing in its own try/catch so one bad actor can't take down the rest of the tick.
+    3. **The dead-man's-switch didn't fire during a *total* outage** — the exact case it exists
+       for. It was originally keyed on `metrics.eventsReceivedTotal`, which only increments once a
+       row reaches `queue.enqueue()`; once bug 2's fix started dropping unresolvable-actor requests
+       *before* that point, a total outage meant nothing ever reached the queue, so that counter
+       never moved and the switch stayed silent. Fixed by keying it on `metrics.requestsTotal`
+       instead, which increments unconditionally at the top of request finalization, before the
+       actor-resolution check.
+    Re-ran the full drill after all three fixes: process stayed up throughout, the alert fired
+    within one check interval and kept firing on cooldown until Postgres came back, and traffic
+    resumed cleanly (200s, no lingering errors) once it did. `pnpm test` (61 tests) and a full
+    `pnpm typecheck` both still pass.
 - **Investigate an actor**: admin dashboard → Actors → search/filter → profile → timeline; or
   `GET /api/actors/:id/timeline` directly for scripting.

@@ -187,11 +187,28 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
       accounts — see docs/DEPLOY_RENDER.md §2 and docs/DEPLOYMENT.md §3.3/§4 for the documented
       manual fallbacks if they don't resolve as expected.
       A real VPN/Tailscale swap for Option A remains optional future hardening, not done.
-- [ ] Monitoring of the monitoring: ingestion-health metrics + dead-man's-switch alert if events
-      stop flowing.
-- [ ] Retention cron jobs running on schedule, verified against `RAW_IP_RETENTION_DAYS` etc.
+- [x] Monitoring of the monitoring: ingestion-health metrics (`/internal/metrics`, nginx-blocked
+      from the public network) + a dead-man's-switch alert if the flush pipeline stalls while
+      traffic keeps arriving (`apps/honeypot/src/ingestion/healthMonitor.ts`). Drilled for real
+      against a live outage (stopped the running Postgres container under continuous traffic),
+      which surfaced and led to fixing three real bugs — a process-crashing unhandled rejection
+      pattern shared by all three periodic workers, a poisoned-actor bug that silently broke
+      correlation for every other actor for up to 15 minutes, and the dead-man's-switch itself
+      failing to fire in exactly the total-outage case it exists for. Full account in
+      docs/DEPLOYMENT.md §8. `pnpm test` (61 tests) and `pnpm typecheck` both pass after the fixes.
+- [x] Retention cron jobs running on schedule, verified against `RAW_IP_RETENTION_DAYS` etc.:
+      `packages/db/src/retention.ts` (`pnpm retention`) redacts old `ip_raw`, creates upcoming
+      monthly partitions, and drops expired ones — run as the Postgres superuser, not
+      `honeypot_role`, matching the least-privilege boundary already established for migrations.
+      `infrastructure/aws/deploy.sh` installs it as a daily cron job via
+      `infrastructure/vps/retention-cron.sh`. Drilled for real against an isolated Postgres
+      instance with synthetic old/new rows — found and fixed a real date-formatting bug along the
+      way (see docs/DEPLOYMENT.md §8 for detail); all three behaviors (redaction, partition
+      creation, partition drop) verified working correctly afterward.
 - [ ] Public deployment security checklist (docs/DEPLOYMENT.md §6) fully checked off against a
-      real running deployment, not just readable as a checklist.
+      real running deployment, not just readable as a checklist. Blocked on an actual AWS/Render
+      deployment existing — see Phase 4's other items below, still unverified against a live
+      account.
 
 ## Phase 5 — Scale & Extensibility
 - [ ] Swap in-process batch queue for Redis Streams (or NATS) if sustained traffic requires
