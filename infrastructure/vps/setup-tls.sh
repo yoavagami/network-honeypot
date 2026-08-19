@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Issues a Let's Encrypt certificate for the given domain and switches Nginx over to the
+# TLS-enabled config. Requires the domain's A (and AAAA, if applicable) record already pointing
+# at this host's public IP — DNS propagation can take a few minutes to a few hours.
+#
+# Usage: infrastructure/vps/setup-tls.sh yourdomain.example you@example.com
+set -euo pipefail
+
+DOMAIN="${1:?Usage: setup-tls.sh <domain> <email>}"
+EMAIL="${2:?Usage: setup-tls.sh <domain> <email>}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+echo "==> Rendering Nginx TLS config for $DOMAIN"
+export DOMAIN
+envsubst '${DOMAIN}' < "$REPO_ROOT/infrastructure/nginx/honeypot-tls.conf" > "$REPO_ROOT/infrastructure/nginx/honeypot-tls.rendered.conf"
+
+echo "==> Stopping Nginx to free port 80 for the ACME HTTP-01 challenge"
+docker compose -f "$REPO_ROOT/docker-compose.yml" stop nginx
+
+echo "==> Requesting certificate from Let's Encrypt (standalone mode)"
+docker run --rm -p 80:80 \
+  -v honeypot_certbot_certs:/etc/letsencrypt \
+  certbot/certbot certonly --standalone \
+  -d "$DOMAIN" --agree-tos -m "$EMAIL" -n --no-eff-email
+
+echo "==> Starting Nginx with TLS enabled"
+docker compose \
+  -f "$REPO_ROOT/docker-compose.yml" \
+  -f "$REPO_ROOT/infrastructure/vps/docker-compose.tls.yml" \
+  up -d nginx
+
+echo
+echo "Done. Verify: curl -I https://$DOMAIN"
+echo
+echo "Certificates expire in 90 days. Set up renewal (crontab -e on the host):"
+echo "  0 3 * * * docker run --rm -v honeypot_certbot_certs:/etc/letsencrypt certbot/certbot renew --quiet && docker compose -f $REPO_ROOT/docker-compose.yml -f $REPO_ROOT/infrastructure/vps/docker-compose.tls.yml restart nginx"

@@ -1,0 +1,25 @@
+# Compose override enabling TLS. Apply on top of the base file once a certificate exists (see
+# setup-tls.sh, which applies this automatically):
+#   docker compose -f docker-compose.yml -f infrastructure/vps/docker-compose.tls.yml up -d
+volumes:
+  certbot_certs:
+    name: honeypot_certbot_certs
+
+services:
+  nginx:
+    volumes:
+      - ./infrastructure/nginx/honeypot-tls.rendered.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/proxy_params_honeypot.conf:/etc/nginx/proxy_params_honeypot.conf:ro
+      - type: tmpfs
+        target: /var/cache/nginx
+        tmpfs:
+          mode: 0777
+      - type: tmpfs
+        target: /var/run
+        tmpfs:
+          mode: 0777
+      - certbot_certs:/etc/letsencrypt:ro
+    ports:
+      - "80:80"
+      - "443:443"

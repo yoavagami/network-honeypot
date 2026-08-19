@@ -8,3 +8,4 @@ coverage/
 pgdata/
 .turbo/
 *.tsbuildinfo
+infrastructure/nginx/honeypot-tls.rendered.conf

@@ -17,7 +17,8 @@ infrastructure fully isolated from anything a compromise of the public surface c
 - [`docs/SECURITY.md`](docs/SECURITY.md) — headers, isolation, admin auth, adversarial review checklist.
 - [`docs/ATTACK_SURFACE.md`](docs/ATTACK_SURFACE.md) — expanded surface/telemetry matrix.
 - [`docs/PRIVACY.md`](docs/PRIVACY.md) — what's collected, why, retention, legal notes.
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS recommendation, checklist, operations.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS/AWS EC2 deployment (recommended path), checklist, operations.
+- [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md) — alternative Render deployment, and how it differs from the VPS path.
 
 ## Repository structure
 
@@ -34,10 +35,12 @@ packages/
 infrastructure/
   nginx/        # reverse proxy config — the primary HTTP observation point
   docker/       # Dockerfiles
+  vps/          # VPS/AWS EC2 bootstrap + TLS setup scripts
 scripts/
-  seed.ts               # synthetic users/orgs/documents/API keys/canaries
+  seed.ts               # synthetic users, documents/invoices, canary objects
   simulate-traffic.ts    # recon/enumeration/auth-probe/fuzzing/canary attacker simulator
 docs/           # design docs (read these first)
+render.yaml     # Render Blueprint — alternative deployment path, see docs/DEPLOY_RENDER.md
 ```
 
 ## Status

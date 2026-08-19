@@ -94,14 +94,32 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
 - [ ] Backup/restore drill executed end-to-end (not just documented).
 
 ## Phase 4 — Public Deployment
-- [ ] Hardened VPS provisioning runbook executed (firewall, SSH hardening, unattended upgrades).
-- [ ] TLS via Let's Encrypt, HSTS, real domain.
-- [ ] Admin dashboard placed behind an access layer (VPN, Tailscale, or IP allowlist) — never on
-      the public vhost.
+- [x] Deployment made portable across a self-hosted VPS and a managed-Postgres PaaS (Render):
+      role provisioning moved from `docker-entrypoint-initdb.d` (VPS-only) into idempotent
+      Node code (`packages/db/src/ensureRoles.ts`) that runs identically against either; app
+      config accepts either a full `DATABASE_URL` or `PGHOST`/`PGPORT`/`PGDATABASE` +
+      role-password parts (`resolveDatabaseUrl.ts`), with TLS support for managed Postgres.
+      Validated locally against a from-scratch vanilla Postgres container (no custom image), not
+      just read from the code.
+- [x] VPS/AWS EC2 runbook written and scripted: `infrastructure/vps/bootstrap.sh` (Docker, ufw,
+      fail2ban, unattended-upgrades) + `infrastructure/vps/setup-tls.sh` (Let's Encrypt via
+      certbot standalone, renewal cron) + `docs/DEPLOYMENT.md` §3 walks the whole sequence.
+      **Not yet executed against a real VPS** — scripted and internally consistent, not
+      field-tested on an actual DigitalOcean/Hetzner/EC2 box.
+- [x] Render path documented as a real alternative: `render.yaml` deploys only the public
+      honeypot + managed Postgres; admin-api/admin-web deliberately run locally against Render's
+      Postgres rather than guessing at unverified Render private-networking behavior — see
+      `docs/DEPLOY_RENDER.md` "how this differs" section. **Not yet executed against a real
+      Render account** — the blueprint's exact field names/plan slugs should be checked against
+      Render's current dashboard before first use.
+- [ ] Admin dashboard placed behind an access layer for the VPS path: SSH tunnel is documented
+      and requires no extra infrastructure (`docs/DEPLOYMENT.md` §4); a real VPN/Tailscale swap
+      is optional hardening, not yet done.
 - [ ] Monitoring of the monitoring: ingestion-health metrics + dead-man's-switch alert if events
       stop flowing.
 - [ ] Retention cron jobs running on schedule, verified against `RAW_IP_RETENTION_DAYS` etc.
-- [ ] Public deployment security checklist (docs/DEPLOYMENT.md) fully checked off.
+- [ ] Public deployment security checklist (docs/DEPLOYMENT.md §6) fully checked off against a
+      real running deployment, not just readable as a checklist.
 
 ## Phase 5 — Scale & Extensibility
 - [ ] Swap in-process batch queue for Redis Streams (or NATS) if sustained traffic requires

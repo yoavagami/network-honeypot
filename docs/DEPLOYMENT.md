@@ -26,8 +26,9 @@ chosen in DATA_MODEL.md.
 cp .env.example .env            # fill in secrets; nothing ships with defaults for anything
                                  # security-sensitive
 docker compose up -d postgres
-pnpm --filter @honeypot/db migrate
-pnpm --filter @honeypot/db seed
+pnpm migrate                    # also provisions honeypot_role/admin_api_role — see
+                                 # packages/db/src/ensureRoles.ts, portable to managed Postgres too
+pnpm seed
 docker compose up -d --build
 ```
 Public honeypot: http://localhost:8080
@@ -35,14 +36,110 @@ Admin dashboard: http://localhost:8081 (kept off the public compose network's pu
 range that maps to Nginx; in Phase 1 local dev this is a convenience port, in Phase 4 production
 this port is not published to the internet at all — see §4).
 
-## 3. Public deployment security checklist
+## 3. Deploy to a VPS (DigitalOcean, Hetzner, Linode, AWS EC2, ...)
+
+This is the deployment path that matches the threat model exactly — a dedicated public IP, your
+own Nginx as the real ingress, full container isolation as designed. `infrastructure/vps/`
+has the scripts; this is the concrete sequence.
+
+### 3.1 Provision the host
+
+Any of these work identically from here on — the only difference is how you click through their
+console to get a running box:
+
+- **DigitalOcean / Hetzner / Linode**: create a droplet/server, Ubuntu 22.04+ or Debian 12+,
+  smallest size that has ≥1GB RAM (Hetzner CX22, DO Basic 1GB, Linode Nanode — all ~$4-6/mo).
+  Add your SSH key at creation time; skip password auth entirely.
+- **AWS EC2**: launch an instance with the Ubuntu Server 22.04/24.04 LTS AMI, a `t3.micro` or
+  `t4g.micro` (cheaper, ARM — our Docker images build fine on arm64) is enough for Phase 1.
+  Create/select a key pair for SSH. **Security group**: inbound rules for TCP 22 (SSH, ideally
+  restricted to your IP), TCP 80, TCP 443 — nothing else. Allocate and associate an Elastic IP so
+  the address doesn't change on stop/start.
+
+Either way you end up with: a public IPv4 address, SSH access via a key, and root/sudo.
+
+### 3.2 Bootstrap and deploy
+
+```bash
+ssh ubuntu@<host-ip>                       # or root@ for some providers — use whatever the
+                                            # provider's default user is
+git clone <your-fork-of-this-repo> network-honeypot
+cd network-honeypot
+bash infrastructure/vps/bootstrap.sh       # installs Docker, ufw, fail2ban, unattended-upgrades
+newgrp docker                              # or log out/in — picks up the docker group membership
+
+cp .env.example .env
+nano .env                                  # fill in every secret with real random values —
+                                            # `openssl rand -base64 32` per secret is fine
+
+docker compose up -d postgres
+# Node isn't required on the host for this — run migrate/seed from a throwaway container using
+# the repo's own tooling image so you don't need to install pnpm on the VPS:
+docker run --rm --network container:$(docker compose ps -q postgres) \
+  --env-file .env -e DATABASE_URL="postgres://$(grep ^POSTGRES_SUPERUSER= .env | cut -d= -f2):$(grep ^POSTGRES_SUPERUSER_PASSWORD= .env | cut -d= -f2)@localhost:5432/$(grep ^POSTGRES_DB= .env | cut -d= -f2)" \
+  -v "$PWD":/app -w /app node:22-bookworm-slim bash -c "corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed"
+
+docker compose up -d --build
+curl -I http://localhost                  # sanity check before opening the firewall further
+```
+
+### 3.3 Put it on a domain with TLS (recommended, optional)
+
+If you have a domain, point an A record at the host's IP, wait for it to resolve
+(`dig +short yourdomain.example`), then:
+
+```bash
+infrastructure/vps/setup-tls.sh yourdomain.example you@example.com
+```
+
+This issues a Let's Encrypt certificate, switches Nginx to the TLS config
+(`infrastructure/nginx/honeypot-tls.conf`), and prints the crontab line for renewal. Without a
+domain, the honeypot still works fine over plain HTTP on the bare IP — a domain mainly buys you
+HSTS/valid-cert realism, which matters for the deception but isn't required to start observing
+scanning traffic.
+
+### 3.4 Verify, then walk away
+
+```bash
+curl -I http://<host-ip>/            # or https://yourdomain.example/
+```
+
+That's the moment the honeypot becomes reachable. From here, don't browse to it yourself again —
+per your own instrumentation, that traffic would show up as an actor in the dashboard just like
+anyone else's. Reach the admin dashboard only via an SSH tunnel (see §4 below), never by
+publishing its port.
+
+## 4. Reaching the admin dashboard on a VPS (never publish it directly)
+
+The admin surface (`admin-api` on 8090, `admin-web` on 8081) is bound to `127.0.0.1` on the VPS
+by design — see `docker-compose.yml`. To reach it from your laptop, tunnel over SSH instead of
+opening a firewall port for it:
+
+```bash
+ssh -N -L 8081:localhost:8081 -L 8090:localhost:8090 ubuntu@<host-ip>
+```
+
+Then browse to `http://localhost:8081` on your own machine exactly as in local dev — the traffic
+never touches the public internet. Close the tunnel (Ctrl-C) when you're done. This is the VPN
+requirement from THREAT_MODEL.md/SECURITY.md satisfied with zero extra infrastructure; a real
+VPN/Tailscale is a Phase 3+ upgrade if multiple people need access.
+
+## 5. Deploying to Render instead
+
+See `docs/DEPLOY_RENDER.md` and `render.yaml` for the equivalent path on Render. The
+architecture differs in a few real ways (no custom Nginx ingress in front — Render's own edge
+terminates TLS; admin isolation via Render private services instead of an SSH tunnel) — read that
+doc's "how this differs from the VPS path" section before assuming behavior is identical.
+
+## 6. Public deployment security checklist
 
 - [ ] **DNS**: A/AAAA records point only at the intended host; no wildcard pointing at the admin
       surface.
-- [ ] **TLS**: Let's Encrypt via a small ACME client on the host (or Nginx's own), auto-renewal
-      verified, HSTS enabled once confirmed working.
-- [ ] **Firewall**: default-deny inbound; only 80/443 open publicly. SSH restricted to an
-      allowlist or moved behind a bastion/VPN.
+- [ ] **TLS**: `infrastructure/vps/setup-tls.sh` run against a domain pointed at the host;
+      renewal cron entry (printed by the script) actually added to the crontab, not just noted.
+- [ ] **Firewall**: default-deny inbound; only 22/80/443 open publicly (`infrastructure/vps/bootstrap.sh`
+      configures this via ufw). SSH restricted to an allowlist or moved behind a bastion/VPN if
+      more than convenience-level protection is needed.
 - [ ] **SSH**: key-only auth, root login disabled, fail2ban or equivalent on the SSH port.
 - [ ] **Docker**: daemon not exposed on a TCP socket; no `--privileged` containers; images pinned
       by digest, not floating `latest`.
@@ -50,10 +147,12 @@ this port is not published to the internet at all — see §4).
       security headers, buffer/timeout hardening); default server block returns a closed
       connection for unmatched Host headers (no accidental info disclosure via SNI/Host
       mismatch).
-- [ ] **Database**: `postgres` service has no published host port at all in the production
-      compose override; only reachable on the `internal` Docker network.
-- [ ] **Admin access**: dashboard is placed behind a VPN/Tailscale/IP-allowlist at the network
-      layer *in addition to* its own auth — never reachable from the open internet directly.
+- [ ] **Database**: `postgres`'s port stays bound to `127.0.0.1` (as shipped) or unpublished
+      entirely — never `0.0.0.0`. Loopback binding is sufficient (unreachable from outside the
+      host by definition) and is what lets `pnpm migrate`/`pnpm seed` run without extra tooling.
+- [ ] **Admin access**: dashboard is reached via SSH tunnel (§4) or a VPN/Tailscale/IP-allowlist
+      *in addition to* its own auth — never reachable from the open internet directly. Confirmed
+      by design: `admin-api`/`admin-web` are also bound to `127.0.0.1` only.
 - [ ] **Backups**: nightly `pg_dump` to encrypted, off-host storage; a restore drill has actually
       been performed (not just scripted) before go-live.
 - [ ] **Monitoring**: `/internal/metrics` scraped or at minimum checked on a schedule; an alert
@@ -69,14 +168,14 @@ this port is not published to the internet at all — see §4).
 - [ ] **Dependency scanning**: `pnpm audit` / `npm audit` (or a Dependabot-equivalent) run as part
       of CI before any image build reaches production.
 
-## 4. Performance — tested capacity
+## 7. Performance — tested capacity
 
 Filled in after the Phase 1 load-test pass (scripts/simulate-traffic.ts in burst mode) against the
 local Compose stack on development hardware; see the results appended after that test runs. The
 design targets are in ARCHITECTURE.md §14 — this section records what was *actually measured*,
 which is the number that matters, not the aspiration.
 
-## 5. Operations quick reference
+## 8. Operations quick reference
 
 - **Rotate a secret**: update `.env` on the host, `docker compose up -d <service>` to recreate
   just that container; DB-role passwords are rotated via a migration-adjacent SQL script plus the

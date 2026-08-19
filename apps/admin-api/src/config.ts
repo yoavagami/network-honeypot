@@ -1,3 +1,5 @@
+import { resolveDatabaseUrl } from "@honeypot/db";
+
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required`);
@@ -7,7 +9,7 @@ function required(name: string): string {
 export const config = {
   port: Number(process.env.PORT ?? 8090),
   host: process.env.HOST ?? "0.0.0.0",
-  databaseUrl: required("DATABASE_URL"),
+  databaseUrl: resolveDatabaseUrl("admin_api_role", "ADMIN_API_DB_PASSWORD"),
   sessionSecret: required("SESSION_SECRET"),
   ipHashSecret: required("IP_HASH_SECRET"),
   adminWebOrigin: process.env.ADMIN_WEB_ORIGIN ?? "http://localhost:8081",

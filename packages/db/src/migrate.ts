@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
+import { ensureRoles } from "./ensureRoles.js";
 
 /**
  * Hand-rolled SQL migrator. We don't use drizzle-kit's generator here because the schema
@@ -19,6 +20,9 @@ async function main() {
 
   const sql = postgres(connectionString, { max: 1 });
   try {
+    // Portable across self-hosted and managed Postgres — see ensureRoles.ts header comment.
+    await ensureRoles(sql);
+
     await sql`CREATE TABLE IF NOT EXISTS _migrations (
       id text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()

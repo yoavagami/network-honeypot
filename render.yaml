@@ -1,0 +1,47 @@
+# Render Blueprint — deploys only the PUBLIC honeypot app to Render, plus its Postgres database.
+# See docs/DEPLOY_RENDER.md for the full picture and why: the admin dashboard is a browser SPA
+# talking to admin-api over plain HTTP fetch calls, which only works if the browser can reach
+# admin-api's address directly. On a VPS that's solved with an SSH tunnel to a loopback-bound
+# port (docs/DEPLOYMENT.md §4). Render doesn't offer an equivalent generalized tunnel for
+# arbitrary private services (only Postgres has a documented `render psql`-style connect path),
+# so admin-api/admin-web are NOT deployed to Render at all — you run them locally
+# (`docker compose up admin-api admin-web`) pointed at this database's external connection
+# string. That keeps the admin surface off the public internet entirely, which is the actual
+# design goal, without depending on a Render feature this author couldn't verify exists.
+#
+# Usage: https://dashboard.render.com/blueprints -> New Blueprint Instance -> point at this repo.
+# A couple of fields below (current Postgres plan tier names) are this author's best
+# understanding of Render's spec at time of writing — check them against Render's dashboard if
+# `render blueprint launch` rejects anything.
+
+databases:
+  - name: honeypot-db
+    plan: starter # verify against Render's current Postgres plan names if this errors
+    postgresMajorVersion: "16"
+
+services:
+  # The only thing exposed to the internet — this is what gets scanned.
+  - type: web
+    name: honeypot
+    runtime: docker
+    dockerfilePath: ./infrastructure/docker/honeypot.Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: PGHOST
+        fromDatabase: { name: honeypot-db, property: host }
+      - key: PGPORT
+        fromDatabase: { name: honeypot-db, property: port }
+      - key: PGDATABASE
+        fromDatabase: { name: honeypot-db, property: database }
+      - key: HONEYPOT_DB_PASSWORD
+        generateValue: true
+      - key: IP_HASH_SECRET
+        generateValue: true
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: HOST
+        value: "0.0.0.0"
+      - key: LOG_LEVEL
+        value: info

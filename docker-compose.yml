@@ -16,11 +16,8 @@ services:
       POSTGRES_USER: ${POSTGRES_SUPERUSER:-honeypot_owner}
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-honeypot}
-      HONEYPOT_DB_PASSWORD: ${HONEYPOT_DB_PASSWORD}
-      ADMIN_API_DB_PASSWORD: ${ADMIN_API_DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./infrastructure/docker/postgres-init:/docker-entrypoint-initdb.d:ro
     networks: [internal]
     # Dev-only convenience port bound to loopback, so `pnpm migrate`/`pnpm seed` can run from the
     # host. Production removes this entirely — Postgres gets no published port at all. See
