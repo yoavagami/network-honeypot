@@ -42,6 +42,12 @@ This is the deployment path that matches the threat model exactly — a dedicate
 own Nginx as the real ingress, full container isolation as designed. `infrastructure/vps/`
 has the scripts; this is the concrete sequence.
 
+**If your VPS is AWS EC2 and you're starting from nothing** (no AWS account, no CLI), skip ahead
+to [`docs/AWS_SETUP.md`](AWS_SETUP.md) instead — it covers the same ground but automates
+everything past the account/IAM setup via `infrastructure/aws/provision.sh` + `deploy.sh`, rather
+than the manual `ssh` + copy-paste sequence below (§3.1–3.2), which is written for any VPS
+provider generically.
+
 ### 3.1 Provision the host
 
 Any of these work identically from here on — the only difference is how you click through their

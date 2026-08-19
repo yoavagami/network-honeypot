@@ -10,3 +10,4 @@ pgdata/
 *.tsbuildinfo
 infrastructure/nginx/honeypot-tls.rendered.conf
 infrastructure/nginx/admin-web-public-tls.rendered.conf
+infrastructure/aws/*.pem

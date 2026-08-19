@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Deploys the honeypot stack onto the instance infrastructure/aws/provision.sh created — this
+# automates docs/DEPLOYMENT.md §3.2 end to end from your laptop instead of you SSHing in and
+# typing each command. Idempotent: safe to re-run any time you've pulled/changed code locally —
+# it syncs the repo, re-runs migrations (skips already-applied ones), reseeds (idempotent —
+# packages/db/src/... uses ON CONFLICT DO NOTHING), and rebuilds/restarts containers.
+#
+# Usage: infrastructure/aws/deploy.sh
+set -euo pipefail
+
+NAME="network-honeypot"
+REGION="${AWS_REGION:-$(aws configure get region 2>/dev/null || echo us-east-1)}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+KEY_FILE="$REPO_ROOT/infrastructure/aws/${NAME}-key.pem"
+REMOTE_DIR="network-honeypot"
+
+PUBLIC_IP=$(aws ec2 describe-addresses --region "$REGION" --filters "Name=tag:Name,Values=$NAME" --query 'Addresses[0].PublicIp' --output text 2>/dev/null || echo "None")
+if [ "$PUBLIC_IP" = "None" ] || [ -z "$PUBLIC_IP" ]; then
+  echo "No provisioned instance found. Run infrastructure/aws/provision.sh first." >&2
+  exit 1
+fi
+SSH="ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new ubuntu@$PUBLIC_IP"
+
+echo "==> Target: $PUBLIC_IP"
+
+echo "==> Bootstrapping the host (Docker, firewall, fail2ban — idempotent)"
+rsync -az --exclude node_modules --exclude .git --exclude dist --exclude pgdata -e "ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new" \
+  "$REPO_ROOT/infrastructure/vps/bootstrap.sh" "ubuntu@$PUBLIC_IP:/tmp/bootstrap.sh"
+$SSH "bash /tmp/bootstrap.sh"
+
+echo "==> Syncing the repo"
+$SSH "mkdir -p $REMOTE_DIR"
+rsync -az --delete \
+  --exclude node_modules --exclude .git --exclude dist --exclude pgdata --exclude '*.pem' \
+  -e "ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new" \
+  "$REPO_ROOT/" "ubuntu@$PUBLIC_IP:$REMOTE_DIR/"
+
+echo "==> Ensuring .env exists on the host (generated once, never overwritten on redeploy)"
+if ! $SSH "test -f $REMOTE_DIR/.env"; then
+  echo "    generating secrets"
+  TMP_ENV=$(mktemp)
+  {
+    echo "POSTGRES_SUPERUSER=honeypot_owner"
+    echo "POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -base64 24)"
+    echo "POSTGRES_DB=honeypot"
+    echo "HONEYPOT_DB_PASSWORD=$(openssl rand -base64 24)"
+    echo "ADMIN_API_DB_PASSWORD=$(openssl rand -base64 24)"
+    echo "IP_HASH_SECRET=$(openssl rand -base64 24)"
+    echo "COOKIE_SECRET=$(openssl rand -base64 24)"
+    echo "SESSION_SECRET=$(openssl rand -base64 24)"
+    echo "ADMIN_WEB_ORIGIN=http://localhost:8081"
+    echo "ADMIN_API_PUBLIC_URL=http://localhost:8090"
+    echo "SEED_ADMIN_USERNAME=admin"
+    SEED_PASSWORD="$(openssl rand -base64 18)"
+    echo "SEED_ADMIN_PASSWORD=${SEED_PASSWORD}"
+    echo "RAW_IP_RETENTION_DAYS=7"
+    echo "EVENT_RETENTION_DAYS=90"
+    echo "GEOLOCATION_ENABLED=false"
+    echo "LOG_LEVEL=info"
+  } > "$TMP_ENV"
+  scp -i "$KEY_FILE" -o StrictHostKeyChecking=accept-new "$TMP_ENV" "ubuntu@$PUBLIC_IP:$REMOTE_DIR/.env"
+  rm -f "$TMP_ENV"
+  echo
+  echo "    Admin dashboard login generated — SAVE THIS, it is not shown again:"
+  echo "      username: admin"
+  echo "      password: ${SEED_PASSWORD}"
+  echo
+else
+  echo "    .env already present, leaving it alone"
+fi
+
+echo "==> Starting Postgres"
+$SSH "cd $REMOTE_DIR && docker compose up -d postgres"
+$SSH "cd $REMOTE_DIR && for i in \$(seq 1 30); do docker compose exec -T postgres pg_isready -U honeypot_owner -d honeypot >/dev/null 2>&1 && break; sleep 2; done"
+
+echo "==> Running migrations + seed"
+$SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
+  docker run --rm --network container:\$(docker compose ps -q postgres) \
+    --env-file .env -e DATABASE_URL=\"postgres://\${POSTGRES_SUPERUSER}:\${POSTGRES_SUPERUSER_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
+    -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed'"
+
+echo "==> Building and starting the full stack"
+$SSH "cd $REMOTE_DIR && docker compose up -d --build"
+
+echo
+echo "==> Verifying"
+$SSH "curl -sS -o /dev/null -w 'honeypot: %{http_code}\n' http://localhost:8080/"
+
+cat <<EOF
+
+Deployed.
+  Public honeypot: http://$PUBLIC_IP/
+  (add a domain + infrastructure/vps/setup-tls.sh for HTTPS — see docs/AWS_SETUP.md)
+
+  Admin dashboard (Option A — SSH tunnel, private by default):
+    ssh -i "$KEY_FILE" -N -L 8081:localhost:8081 -L 8090:localhost:8090 ubuntu@$PUBLIC_IP
+    then browse http://localhost:8081
+
+Don't browse to the public honeypot URL yourself if you want a clean "first external contact"
+signal in the dashboard.
+EOF

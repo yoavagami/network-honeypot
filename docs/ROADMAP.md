@@ -106,6 +106,12 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
       certbot standalone, renewal cron) + `docs/DEPLOYMENT.md` §3 walks the whole sequence.
       **Not yet executed against a real VPS** — scripted and internally consistent, not
       field-tested on an actual DigitalOcean/Hetzner/EC2 box.
+- [x] AWS specifically also gets full provisioning automation, not just a manual runbook:
+      `infrastructure/aws/provision.sh` (idempotent — key pair, security group scoped to the
+      caller's IP for SSH, latest Ubuntu AMI, EC2 instance, Elastic IP) and `deploy.sh` (syncs
+      the repo, bootstraps, generates secrets once, migrates, seeds, brings up the stack) — see
+      `docs/AWS_SETUP.md`. Same "not yet executed against a live account" caveat as above; the
+      AWS CLI syntax was reasoned through carefully, not run against real AWS.
 - [x] Render path documented as a real alternative: `render.yaml` deploys only the public
       honeypot + managed Postgres; admin-api/admin-web deliberately run locally against Render's
       Postgres rather than guessing at unverified Render private-networking behavior — see

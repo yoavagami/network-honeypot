@@ -18,6 +18,7 @@ infrastructure fully isolated from anything a compromise of the public surface c
 - [`docs/ATTACK_SURFACE.md`](docs/ATTACK_SURFACE.md) — expanded surface/telemetry matrix.
 - [`docs/PRIVACY.md`](docs/PRIVACY.md) — what's collected, why, retention, legal notes.
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — VPS/AWS EC2 deployment (recommended path), checklist, operations.
+- [`docs/AWS_SETUP.md`](docs/AWS_SETUP.md) — from-zero AWS guide: account → IAM key (manual, unavoidable) → everything else (`infrastructure/aws/provision.sh` + `deploy.sh`, automated).
 - [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md) — alternative Render deployment, and how it differs from the VPS path.
 
 ## Repository structure
