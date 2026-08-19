@@ -112,9 +112,19 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
       `docs/DEPLOY_RENDER.md` "how this differs" section. **Not yet executed against a real
       Render account** — the blueprint's exact field names/plan slugs should be checked against
       Render's current dashboard before first use.
-- [ ] Admin dashboard placed behind an access layer for the VPS path: SSH tunnel is documented
-      and requires no extra infrastructure (`docs/DEPLOYMENT.md` §4); a real VPN/Tailscale swap
-      is optional hardening, not yet done.
+- [x] Admin dashboard access made an explicit choice, not a default: VPS §4 Option A (SSH
+      tunnel, no extra infrastructure) or Option B (public, same-origin proxy, own login wall —
+      `infrastructure/vps/setup-public-admin.sh`); Render deploys it publicly by default since
+      the tunnel approach has no Render equivalent (`docs/DEPLOY_RENDER.md`). The public options
+      needed real changes, not just config: configurable cookie `SameSite` policy
+      (`ADMIN_SESSION_SAMESITE`), tightened IP+username login rate limiting, and a runtime
+      `config.js` injection mechanism for admin-web so admin-api's URL doesn't need to be known
+      at Docker build time. Same-origin proxy routing validated locally end-to-end (real
+      admin-api container behind the same-origin Nginx proxy); the Render `fromService`
+      cross-service URL wiring and both TLS setup scripts remain unverified against live
+      accounts — see docs/DEPLOY_RENDER.md §2 and docs/DEPLOYMENT.md §3.3/§4 for the documented
+      manual fallbacks if they don't resolve as expected.
+      A real VPN/Tailscale swap for Option A remains optional future hardening, not done.
 - [ ] Monitoring of the monitoring: ingestion-health metrics + dead-man's-switch alert if events
       stop flowing.
 - [ ] Retention cron jobs running on schedule, verified against `RAW_IP_RETENTION_DAYS` etc.

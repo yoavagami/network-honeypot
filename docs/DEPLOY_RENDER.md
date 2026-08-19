@@ -1,105 +1,111 @@
 # Deploying to Render
 
-An alternative to the VPS path in `docs/DEPLOYMENT.md`. Read this whole doc before launching —
-Render's architecture is different enough from the VPS/Docker-Compose design that a few things
-work differently, not just "the same thing, hosted differently."
+An alternative to the VPS path in `docs/DEPLOYMENT.md`. This deploys the **admin dashboard
+publicly**, protected by the app's own login rather than network isolation — a deliberate
+tradeoff for ease of access, made explicitly (not a default anyone should assume). Read "the
+tradeoff" section before launching.
 
-## How this differs from the VPS path (read this first)
+## The tradeoff, stated plainly
+
+`docs/THREAT_MODEL.md`/`docs/SECURITY.md` specify the admin surface should never be reachable
+from the public internet. This deployment path reaches it publicly anyway, because:
+
+- The dashboard's own auth is real, not decorative: Argon2id password hashing, server-side
+  session cookies, CSRF protection, and — as of this doc — rate-limiting keyed by both IP and
+  username (5 attempts/min per IP, 5 attempts/15min per username; see `apps/admin-api/src/middleware.ts`).
+- The blast radius of a break-in is already bounded by database role isolation, independent of
+  network exposure: `admin_api_role` cannot write to `requests`/`events` (verified live in
+  `docs/SECURITY.md` §5), can't reach the honeypot app, can't reach Postgres directly. Worst case
+  is someone reads your telemetry, not that they compromise anything else.
+- This project's data isn't sensitive to begin with — it's synthetic users, fake invoices, and
+  hashed IPs of people scanning a honeypot.
+
+If those tradeoffs don't sit right for your use — e.g. you're worried about the admin login
+itself being probed the same way the honeypot attracts probing — see "keeping it private
+instead" at the bottom, which runs admin-api/admin-web locally against the same Render database
+instead of deploying them there at all.
+
+## How this differs from the VPS path otherwise
 
 | | VPS (docs/DEPLOYMENT.md) | Render |
 |---|---|---|
-| Public ingress | Our own Nginx (`infrastructure/nginx/`) — full control over rate limits, security headers, TLS config, and it's the thing that gives Nginx access/error logs real meaning | Render's own edge/load balancer terminates TLS and proxies to the honeypot container directly. We lose custom Nginx-layer rate limiting and TLS handshake visibility (`$ssl_protocol`/`$ssl_cipher` in requests) — the app's own security headers and detection logic are unaffected, this only affects the Nginx-layer telemetry described in ARCHITECTURE.md §10 |
-| Admin dashboard access | SSH tunnel to loopback-bound ports (`docs/DEPLOYMENT.md` §4) — admin-api/admin-web actually run *on* the VPS | admin-api/admin-web are **not deployed to Render at all** — you run them locally, pointed at Render's Postgres over its external connection string. See below for why. |
-| Postgres | Self-hosted in the same Compose stack, never publicly reachable | Render managed Postgres — has a real external connection string by design (that's how you reach it from your laptop); TLS-enforced |
-| Cost shape | One VPS running everything, ~$5–12/mo | `honeypot-db` (Postgres) + `honeypot` (web service), each billed separately |
-
-**Why admin-api/admin-web aren't deployed to Render**: the dashboard is a browser SPA — your
-browser makes `fetch()` calls directly to admin-api's URL. On a VPS, an SSH tunnel makes
-`localhost:8090` on your laptop transparently reach the VPS's loopback-bound admin-api, so the
-browser-side code never needs to know anything special. Render's private services (`pserv`) are
-reachable from other Render services in the same project, but this author could not verify that
-Render offers an equivalent generalized "tunnel any private service to my laptop" mechanism (the
-one Render feature confirmed to work this way is Postgres's own connect flow) — rather than build
-a deployment path on an unverified assumption, admin-api/admin-web simply run wherever you already
-run them today (your laptop, `docker compose`), talking to the same Postgres Render hosts. The
-admin surface still never touches the public internet — it just does so by not being on Render,
-not by a Render access-control feature.
-
-If Render does have a generalized private-service tunnel by the time you read this, deploying
-admin-api/admin-web there too is a reasonable follow-up — just verify it actually prevents public
-reachability before relying on it.
+| Public ingress | Our own Nginx — full control over rate limits, security headers, TLS config, real `$ssl_protocol`/`$ssl_cipher` capture | Render's own edge terminates TLS and proxies directly; we lose that Nginx-layer telemetry (app-level detection is unaffected) |
+| Admin dashboard | Bound to loopback; reach it via SSH tunnel, or the AWS "public option" same-origin proxy (see `docs/DEPLOYMENT.md` §5) | Deployed as its own public Render service, reached directly at its URL — no tunnel |
+| Cookie policy | `SameSite=Strict` works (tunnel and same-origin-proxy cases are same-site) | `SameSite=None` required — admin-web and admin-api are different Render hostnames, so `Strict` would silently drop the session cookie; CORS (locked to one origin) is the actual access boundary |
+| Postgres | Self-hosted, never publicly reachable | Render managed Postgres — has a real external connection string by design; TLS-enforced |
+| Cost shape | ~$5–12/mo, one box | Three services + a database, each billed separately |
 
 ## 1. Launch the blueprint
 
-1. Push this repo to GitHub/GitLab (Render deploys from a git remote).
-2. In the Render dashboard: **Blueprints → New Blueprint Instance**, point it at the repo. Render
-   reads `render.yaml` and provisions `honeypot-db` (Postgres) and `honeypot` (the public web
-   service) — nothing else.
-3. If `render blueprint launch` rejects the `plan: starter` value, open `render.yaml` and pick a
-   currently-valid plan name from your dashboard — Render renames tiers occasionally and this
-   wasn't verified against a live account.
-4. Wait for both resources to finish provisioning. Note the `honeypot` service's public URL
-   (`https://honeypot-xxxx.onrender.com`, or a custom domain if you attach one in Render's
-   dashboard under that service's Settings).
+1. Push this repo to GitHub/GitLab.
+2. Render dashboard → **Blueprints → New Blueprint Instance** → point at the repo. It reads
+   `render.yaml` and provisions `honeypot-db`, `honeypot`, `admin-api`, and `admin-web`.
+3. If `plan: starter` is rejected, open `render.yaml` and pick a currently-valid plan name from
+   your dashboard.
+4. Wait for all four resources to finish provisioning.
 
-## 2. Run migrations + seed
+## 2. Verify the cross-service env vars resolved (the part this author couldn't test live)
 
-`render.yaml` generates `HONEYPOT_DB_PASSWORD` and `IP_HASH_SECRET` automatically, but nothing on
-Render runs the migration/seed step for you — do it from your own machine, which is also how
-you'll get `ADMIN_API_DB_PASSWORD` (never generated on Render at all, since admin-api never runs
-there):
+`render.yaml` uses `fromService: { ..., property: hostport }` so `admin-web` learns admin-api's
+URL, and `admin-api` learns admin-web's URL (for CORS) and honeypot's URL (for the ingestion
+health check on the dashboard's Overview page). This is the author's best understanding of
+Render's Blueprint spec — **verify it actually worked**:
+
+- Open the deployed `admin-web` URL. If the dashboard loads but every request fails, `admin-api`'s
+  URL didn't resolve correctly.
+- Check by hand: `admin-api`'s dashboard → Environment tab → confirm `ADMIN_WEB_ORIGIN` shows
+  admin-web's real `https://admin-web-xxxx.onrender.com` URL, not empty or malformed. Same for
+  `admin-web`'s `ADMIN_API_URL`.
+- **If either is wrong**: set it manually in that service's Environment tab to the correct URL
+  (copy it from the other service's own page) and trigger a restart. Because
+  `ADMIN_API_URL` is read at container *start*, not baked into the build (see
+  `infrastructure/docker/admin-web-entrypoint.sh`), a restart is enough — no rebuild needed.
+
+## 3. Run migrations + seed
+
+Nothing on Render runs this for you — do it from your own machine, using the values Render
+generated:
 
 ```bash
-# From the Render dashboard: honeypot-db -> Connect -> "External Connection String". It looks like
-# postgresql://<user>:<password>@<host>.render.com:5432/<database>?sslmode=require
-export DATABASE_URL="<paste the external connection string here>"
-export HONEYPOT_DB_PASSWORD="<copy from the honeypot service's Environment tab on Render>"
-export ADMIN_API_DB_PASSWORD="$(openssl rand -base64 24)"   # you're choosing this one yourself
+# Render dashboard: honeypot-db -> Connect -> "External Connection String"
+export DATABASE_URL="<paste the external connection string>"
+export HONEYPOT_DB_PASSWORD="<from honeypot service's Environment tab>"
+export ADMIN_API_DB_PASSWORD="<from admin-api service's Environment tab>"
 export SEED_ADMIN_USERNAME=admin
-export SEED_ADMIN_PASSWORD="$(openssl rand -base64 18)"     # save this, it's your dashboard login
+export SEED_ADMIN_PASSWORD="$(openssl rand -base64 18)"   # save this — it's your dashboard login
 
 pnpm install
-pnpm migrate     # provisions honeypot_role + admin_api_role against Render's Postgres, then runs
-                  # migrations — see packages/db/src/ensureRoles.ts
+pnpm migrate
 pnpm seed
 echo "Admin login: $SEED_ADMIN_USERNAME / $SEED_ADMIN_PASSWORD"
 ```
 
-## 3. Run the admin dashboard locally, pointed at Render's database
+## 4. Use it
+
+- Honeypot: the `honeypot` service's Render URL (or a custom domain attached in its Settings).
+  Don't browse to it yourself if you want a clean "first external contact" signal.
+- Dashboard: the `admin-web` service's Render URL. Log in with the credentials from step 3.
+
+## Keeping it private instead
+
+If you'd rather not put the admin surface on the public internet even with a login wall, delete
+the `admin-api` and `admin-web` blocks from `render.yaml` (keep `honeypot-db` and `honeypot`),
+and run the dashboard locally instead, pointed at Render's database over its external connection
+string:
 
 ```bash
 export DATABASE_SSL=true
-export PGHOST="<honeypot-db host, from Render's Connect tab>"
-export PGPORT=5432
-export PGDATABASE="<honeypot-db database name>"
-export ADMIN_API_DB_PASSWORD="<the one you generated in step 2>"
-export IP_HASH_SECRET="<copy from the honeypot service's Environment tab on Render — must match
-                        exactly, or actor/IP correlation between what admin-api shows you and
-                        what the honeypot recorded will silently disagree>"
+export PGHOST="<honeypot-db host>" PGPORT=5432 PGDATABASE="<honeypot-db database>"
+export ADMIN_API_DB_PASSWORD="<the one you generated>"
+export IP_HASH_SECRET="<copy from the honeypot service's Environment tab — must match exactly>"
 export SESSION_SECRET="$(openssl rand -base64 32)"
 export ADMIN_WEB_ORIGIN="http://localhost:5173"
 export HONEYPOT_INTERNAL_URL="https://<your-honeypot-service>.onrender.com"
 unset DATABASE_URL   # so resolveDatabaseUrl() builds the admin_api_role connection from the
-                      # PG*/ADMIN_API_DB_PASSWORD parts above, not the owner URL from step 2
+                      # PG*/ADMIN_API_DB_PASSWORD parts above, not the owner URL
 pnpm --filter @honeypot/app-admin-api run start
 ```
-
-In another terminal:
-
 ```bash
-cd apps/admin-web
-VITE_ADMIN_API_URL=http://localhost:8090 pnpm dev
+cd apps/admin-web && VITE_ADMIN_API_URL=http://localhost:8090 pnpm dev
 ```
-
-Dashboard: `http://localhost:5173`, login with the `SEED_ADMIN_USERNAME`/`SEED_ADMIN_PASSWORD`
-from step 2. This is exactly the local-dev workflow from `docs/DEPLOYMENT.md` §2 — only the
-database is remote.
-
-## 4. Everyday use
-
-- The honeypot is live at its Render URL the moment step 1 finishes provisioning — don't browse
-  to it yourself if you want a clean "first external contact" signal.
-- Re-run the admin-api/admin-web commands in step 3 whenever you want to check the dashboard;
-  nothing needs to stay running between sessions except the two Render resources themselves.
-- Live SSE stream, search, canaries, everything in `docs/API.md` works identically — it's the
-  same code, just pointed at a remote database instead of a local one.
+Dashboard at `http://localhost:5173`, nothing Render-hosted involved beyond the database.

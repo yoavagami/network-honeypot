@@ -6,7 +6,7 @@ import { db } from "../db.js";
 import { config } from "../config.js";
 import { verifyPassword, createSession, destroySession } from "../auth.js";
 import { audit } from "../audit.js";
-import { loginRateLimited } from "../middleware.js";
+import { loginRateLimited, clearLoginAttempts } from "../middleware.js";
 
 const SESSION_COOKIE = "admin_session";
 const CSRF_COOKIE = "csrf_token";
@@ -18,7 +18,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
     const password = String(body.password ?? "");
     const ipHash = hashIp(request.ip, config.ipHashSecret);
 
-    if (loginRateLimited(request.ip)) {
+    if (loginRateLimited(request.ip, username)) {
       reply.status(429).send({ error: { code: "rate_limited", message: "Too many attempts, try again shortly" } });
       return;
     }
@@ -32,12 +32,13 @@ export function registerAuthRoutes(app: FastifyInstance) {
       return;
     }
 
+    clearLoginAttempts(request.ip, username);
     const session = await createSession(user.adminUserId, ipHash);
     await db.update(schema.adminUsers).set({ lastLoginAt: new Date() }).where(eq(schema.adminUsers.adminUserId, user.adminUserId));
     await audit(user.adminUserId, "login", null, ipHash);
 
-    reply.setCookie(SESSION_COOKIE, session.adminSessionId, { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
-    reply.setCookie(CSRF_COOKIE, session.csrfToken, { httpOnly: false, secure: true, sameSite: "strict", path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
+    reply.setCookie(SESSION_COOKIE, session.adminSessionId, { httpOnly: true, secure: true, sameSite: config.sessionCookieSameSite, path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
+    reply.setCookie(CSRF_COOKIE, session.csrfToken, { httpOnly: false, secure: true, sameSite: config.sessionCookieSameSite, path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
     reply.send({ username: session.username });
   });
 

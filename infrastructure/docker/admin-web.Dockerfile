@@ -12,4 +12,7 @@ RUN pnpm install --frozen-lockfile && pnpm --filter @honeypot/app-admin-web run 
 FROM nginx:1.27-alpine AS runtime
 COPY --from=build /app/apps/admin-web/dist /usr/share/nginx/html
 COPY infrastructure/docker/admin-web.nginx.conf /etc/nginx/conf.d/default.conf
+COPY infrastructure/docker/admin-web-entrypoint.sh /admin-web-entrypoint.sh
+RUN chmod +x /admin-web-entrypoint.sh
 EXPOSE 80
+ENTRYPOINT ["/admin-web-entrypoint.sh"]

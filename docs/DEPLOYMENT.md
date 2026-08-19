@@ -109,11 +109,11 @@ per your own instrumentation, that traffic would show up as an actor in the dash
 anyone else's. Reach the admin dashboard only via an SSH tunnel (see §4 below), never by
 publishing its port.
 
-## 4. Reaching the admin dashboard on a VPS (never publish it directly)
+## 4. Reaching the admin dashboard on a VPS — two options
 
-The admin surface (`admin-api` on 8090, `admin-web` on 8081) is bound to `127.0.0.1` on the VPS
-by design — see `docker-compose.yml`. To reach it from your laptop, tunnel over SSH instead of
-opening a firewall port for it:
+**Option A — SSH tunnel (default, recommended).** The admin surface (`admin-api` on 8090,
+`admin-web` on 8081) is bound to `127.0.0.1` on the VPS by design — see `docker-compose.yml`. To
+reach it from your laptop, tunnel over SSH instead of opening a firewall port for it:
 
 ```bash
 ssh -N -L 8081:localhost:8081 -L 8090:localhost:8090 ubuntu@<host-ip>
@@ -121,15 +121,43 @@ ssh -N -L 8081:localhost:8081 -L 8090:localhost:8090 ubuntu@<host-ip>
 
 Then browse to `http://localhost:8081` on your own machine exactly as in local dev — the traffic
 never touches the public internet. Close the tunnel (Ctrl-C) when you're done. This is the VPN
-requirement from THREAT_MODEL.md/SECURITY.md satisfied with zero extra infrastructure; a real
-VPN/Tailscale is a Phase 3+ upgrade if multiple people need access.
+requirement from THREAT_MODEL.md/SECURITY.md satisfied with zero extra infrastructure.
+
+**Option B — public, with a login wall.** If SSH access isn't convenient for how you want to use
+this (e.g. checking the dashboard casually from a phone, or you've decided the tradeoff below is
+fine for your use), you can expose the dashboard directly instead:
+
+```bash
+infrastructure/vps/setup-public-admin.sh yourdomain.example
+```
+
+This makes the dashboard reachable at `https://yourdomain.example:8443` with no tunnel — protected
+by the app's own login (Argon2id password, session cookie, CSRF, rate-limited by both IP and
+username) rather than network isolation. Requires `setup-tls.sh` (§3.3) to have already run for
+the same domain — it reuses that certificate. admin-web's own Nginx terminates TLS and proxies
+`/api/*` straight through to `admin-api` internally, so the dashboard and its API calls stay
+same-origin — no CORS or cookie-policy relaxation needed, unlike the Render public path.
+
+**The tradeoff, same as documented in `docs/DEPLOY_RENDER.md`**: this is a deliberate choice, not
+a default. The login is real and the blast radius of a compromise is already bounded by database
+role isolation (`admin_api_role` can't write telemetry, can't reach Postgres directly, can't reach
+the honeypot app — verified in `docs/SECURITY.md` §5) — but it does mean the admin login itself
+becomes internet-reachable and could be probed. Pick Option A if that doesn't sit right for your
+use. You can switch back at any time:
+
+```bash
+sudo ufw delete allow 8443/tcp
+docker compose -f docker-compose.yml up -d admin-web
+```
 
 ## 5. Deploying to Render instead
 
-See `docs/DEPLOY_RENDER.md` and `render.yaml` for the equivalent path on Render. The
-architecture differs in a few real ways (no custom Nginx ingress in front — Render's own edge
-terminates TLS; admin isolation via Render private services instead of an SSH tunnel) — read that
-doc's "how this differs from the VPS path" section before assuming behavior is identical.
+See `docs/DEPLOY_RENDER.md` and `render.yaml` for the equivalent path on Render. That path
+deploys the dashboard publicly too (Render doesn't offer an equivalent to Option A above — see
+that doc for why), but the architecture differs from Option B in a real way: Render's own edge
+terminates TLS in front of independently-hosted services, so admin-web and admin-api end up on
+different hostnames and *do* need the CORS/cookie-policy relaxation this VPS path avoids. Read
+that doc's comparison table before assuming behavior is identical.
 
 ## 6. Public deployment security checklist
 
@@ -150,9 +178,11 @@ doc's "how this differs from the VPS path" section before assuming behavior is i
 - [ ] **Database**: `postgres`'s port stays bound to `127.0.0.1` (as shipped) or unpublished
       entirely — never `0.0.0.0`. Loopback binding is sufficient (unreachable from outside the
       host by definition) and is what lets `pnpm migrate`/`pnpm seed` run without extra tooling.
-- [ ] **Admin access**: dashboard is reached via SSH tunnel (§4) or a VPN/Tailscale/IP-allowlist
-      *in addition to* its own auth — never reachable from the open internet directly. Confirmed
-      by design: `admin-api`/`admin-web` are also bound to `127.0.0.1` only.
+- [ ] **Admin access**: a deliberate choice has been made between §4's Option A (SSH tunnel —
+      `admin-api`/`admin-web` stay bound to `127.0.0.1`, never reachable from the open internet)
+      and Option B (public with a login wall) — not defaulted into either. If Option B, confirm
+      the login rate limiter is active and the admin password is a real generated one, not a
+      placeholder.
 - [ ] **Backups**: nightly `pg_dump` to encrypted, off-host storage; a restore drill has actually
       been performed (not just scripted) before go-live.
 - [ ] **Monitoring**: `/internal/metrics` scraped or at minimum checked on a schedule; an alert

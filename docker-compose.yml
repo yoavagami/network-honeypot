@@ -98,9 +98,14 @@ services:
     ports:
       - "127.0.0.1:8081:80"
     read_only: true
-    tmpfs:
-      - /tmp
     volumes:
+      # mode: 0777 on all three — default tmpfs mount ownership doesn't let uid 101 write into
+      # it otherwise. /tmp specifically also needs to be writable now for the runtime
+      # config.js the entrypoint renders — see admin-web-entrypoint.sh.
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          mode: 0777
       - type: tmpfs
         target: /var/cache/nginx
         tmpfs:
@@ -111,8 +116,7 @@ services:
           mode: 0777
     # Run as the image's nginx user directly (not root→setuid) — nginx only tries to chown its
     # temp/cache paths when starting as root, which fails under cap_drop: [ALL]. Skipping the
-    # root phase entirely avoids needing CAP_CHOWN back. The tmpfs mode above covers the
-    # remaining case (default tmpfs mount ownership doesn't let uid 101 mkdir into it).
+    # root phase entirely avoids needing CAP_CHOWN back.
     user: "101:101"
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]

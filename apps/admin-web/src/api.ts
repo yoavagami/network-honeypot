@@ -1,4 +1,16 @@
-const BASE = import.meta.env.VITE_ADMIN_API_URL ?? "http://localhost:8090";
+declare global {
+  interface Window {
+    __ADMIN_API_URL__?: string;
+  }
+}
+
+// Runtime config (set by admin-web-entrypoint.sh at container start) wins when explicitly
+// present — including an explicit empty string, meaning "same origin, use relative /api paths"
+// (the AWS same-origin-proxy deployment option). Falls back to the build-time
+// VITE_ADMIN_API_URL when no runtime config was rendered at all (plain local dev, or the
+// default docker-compose setup). See docs/DEPLOY_RENDER.md and docs/DEPLOYMENT.md.
+const runtimeBase = typeof window !== "undefined" ? window.__ADMIN_API_URL__ : undefined;
+const BASE = runtimeBase !== undefined ? runtimeBase : (import.meta.env.VITE_ADMIN_API_URL ?? "http://localhost:8090");
 
 function readCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
