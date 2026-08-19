@@ -90,5 +90,69 @@ of this file once the stack is up (see §5).
 
 ## 5. Adversarial review results (Phase 1 build)
 
-_Populated after the local stack is running and the checklist above is executed — see the final
-summary in this session's work log / commit history rather than duplicating it here prematurely._
+Executed against the running Docker Compose stack (real containers, real network segmentation,
+real scoped DB roles — not a design-only review). Each item from §4's checklist:
+
+1. **Stack traces / framework fingerprints on malformed input** — PASS. Malformed JSON, invalid
+   route params, and thrown errors all render the app's own branded error pages; no Fastify/Node
+   stack trace or framework name ever appeared in a response body.
+2. **SQLi/XSS/path-traversal/command-injection-shaped payloads** — PASS. No SQL injection surface
+   exists at all in the public app (no route builds a query by string-concatenating user input;
+   search/filtering is done via parameterized Drizzle queries or in-memory JS filtering). XSS
+   payloads in the search query are HTML-escaped on render. Path-traversal-shaped object IDs are
+   looked up in Postgres by exact string match, never used as filesystem paths. Command-injection
+   payloads are treated as inert search strings (no shell invocation exists anywhere in the app).
+3. **Reach admin-api/admin-web/Postgres from outside the public network** — PASS. Verified via
+   `docker compose ps`: the honeypot container has **no published host port at all**
+   (`PublishedPort: 0`, reachable only from Nginx over the internal Docker network); Postgres,
+   admin-api, and admin-web are each bound to `127.0.0.1` only (loopback, dev-convenience —
+   removed entirely in the production compose override per DEPLOYMENT.md); only Nginx binds
+   `0.0.0.0`.
+4. **CSRF without a valid token** — PASS. A state-changing admin-api request with cookies but no
+   `X-CSRF-Token` header returns `403 csrf_failed`.
+5. **Flood the ingestion queue** — PASS with a caveat found and documented, not silently accepted:
+   a true-simultaneous 40-request burst was partly rejected by **Nginx's** `limit_req` zone before
+   ever reaching the app (protective behavior working as designed — see docs/ARCHITECTURE.md §14's
+   "never traded away" invariant). The requests that *did* reach the app were fully captured with
+   zero `events_dropped_total`. The gap this surfaced — Nginx-level rejections currently produce no
+   telemetry row at all — is recorded honestly in docs/ROADMAP.md as a Phase 1 known gap rather than
+   glossed over, with a concrete Phase 2/3 fix (ship Nginx's JSON access log into the same pipeline).
+6. **Inspect environment/process for the honeypot container** — PASS. `docker compose exec
+   honeypot printenv` shows only the honeypot's own scoped `DATABASE_URL` (honeypot_role),
+   `COOKIE_SECRET`, and `IP_HASH_SECRET` — no admin credentials, no `SESSION_SECRET`, no cloud
+   credentials, no SSH keys.
+7. **Forge `X-Forwarded-For` to spoof actor identity** — PASS. Two requests with different
+   spoofed `X-Forwarded-For` values from the same real connection resolved to the **same**
+   `ip_hash` in `requests` (derived from Nginx's trusted view via `trustProxy: 1`), while the
+   spoofed values were recorded separately and explicitly in `forwarded_for_client_supplied`,
+   never used for correlation.
+8. **Submit a fake/replayed timestamp** — PASS. Every `createdAt` in the ingestion code is a
+   fresh server-side `new Date()`; no request field ever maps to a stored timestamp.
+9. **Outbound HTTP client in a public route handler** — PASS. `grep` across
+   `apps/honeypot/src/routes/` confirms no `fetch`/`axios`/`http(s).request` call exists in any
+   route handler.
+10. **admin-api's DB role writing to `requests`/`events`** — PASS. Attempting an `INSERT` as
+    `admin_api_role` against `events` fails with `permission denied for table events`, verified
+    directly against the running database, not just read from the migration file.
+
+### Issues found and fixed during this review (not pre-existing design gaps)
+
+- The SSE live-stream route used `reply.hijack()` to write directly to the raw response but never
+  set CORS headers itself — `hijack()` bypasses Fastify's `onSend` hook chain, which is where
+  `@fastify/cors` normally adds them, so the browser silently rejected the stream cross-origin.
+  Fixed by setting `Access-Control-Allow-Origin`/`-Credentials` explicitly in the hijacked
+  response's headers.
+- `admin-api`'s `HONEYPOT_INTERNAL_URL` had no container-network override in `docker-compose.yml`,
+  so it defaulted to `http://localhost:8080` — inside the admin-api container that's its own
+  loopback, not the honeypot container, so `/api/system/ingestion` always failed. Fixed by setting
+  it to `http://honeypot:8080` (Docker service DNS) in compose.
+- `actors.unique_paths` was defined in the schema and shown on the dashboard but nothing ever
+  wrote to it. Fixed in the correlation worker (approximated from the in-memory correlation
+  window, not a lifetime count — documented in code as a scoped approximation).
+- The generic 500 error page hardcoded the text "500" even when the actual response was a 4xx
+  (e.g. malformed JSON body → 400). Fixed to render the real status code.
+- The public and admin-facing Nginx/Nginx-served containers (`nginx`, `admin-web`) failed to
+  start under `cap_drop: [ALL]` + `read_only: true` because the stock image tries to `chown` its
+  temp/cache directories as root before dropping privileges. Fixed by running both containers
+  directly as the image's non-root `nginx` user (`101:101`, skipping the root phase entirely) and
+  giving their tmpfs cache/run mounts an explicit writable mode.

@@ -1,0 +1,22 @@
+{
+  "name": "@honeypot/scripts",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "seed": "tsx seed.ts",
+    "simulate": "tsx simulate-traffic.ts"
+  },
+  "dependencies": {
+    "@honeypot/db": "workspace:*",
+    "@honeypot/types": "workspace:*",
+    "@honeypot/detection": "workspace:*",
+    "argon2": "^0.41.1",
+    "postgres": "^3.4.4",
+    "drizzle-orm": "^0.36.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.1"
+  }
+}

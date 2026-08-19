@@ -35,7 +35,9 @@ Goal: a fully working, locally-runnable system that proves the whole loop —
       surface kept off the public vhost.
 - [x] Docker Compose for local/single-VPS deployment; non-root containers; network segmentation
       (public / internal / admin).
-- [x] Seed script for synthetic users/orgs/API keys/documents.
+- [x] Seed script for synthetic users, documents/invoices, and canary objects (API key, internal
+      URL, admin token). Synthetic organizations are not modeled as a distinct object in Phase 1
+      (each user carries a `role`, not an org membership) — add if a scenario needs it.
 - [x] Attacker-traffic simulator (`scripts/simulate-traffic.ts`) exercising recon, enumeration,
       auth-probing, fuzzing, and canary triggers.
 - [x] Unit tests (detection, redaction, actor correlation) + integration tests (ingestion → DB →
@@ -44,13 +46,34 @@ Goal: a fully working, locally-runnable system that proves the whole loop —
 
 **What Phase 1 deliberately stubs, not fakes:** these are real, typed interfaces with a
 documented contract, wired to a clearly-labeled no-op implementation — not TODO comments.
-- GeoIP/ASN enrichment: `packages/detection/enrichment.ts` interface exists; ships with a
-  local no-op provider. Swapping in MaxMind/ipinfo is a one-file change (Phase 2).
-- Alert delivery: thresholds are computed and an `ALERT_TRIGGERED` event is recorded; delivery
-  (Slack/email/webhook) is a documented adapter interface, not yet wired (Phase 2).
+- GeoIP/ASN enrichment: `packages/detection/src/enrichment.ts` defines the `EnrichmentProvider`
+  interface and ships the `noopEnrichmentProvider` (always returns null, matching
+  `GEOLOCATION_ENABLED=false` default). Nothing calls it yet — wiring it into the request path
+  and swapping in a real provider (MaxMind GeoLite2, ipinfo.io) is Phase 2.
+- Alert delivery: `ALERT_TRIGGERED` exists in the event taxonomy as a reserved slot; **no
+  threshold-evaluation logic exists yet** — this is groundwork, not a working feature. Phase 2
+  implements the actual threshold rules (per docs/ARCHITECTURE.md §36 examples) and delivery
+  adapters (Slack/email/webhook) together, since a threshold with nowhere to deliver isn't useful.
 - JA3/JA4 TLS fingerprinting: requires TLS termination visibility Nginx doesn't expose by default;
   documented in `docs/ARCHITECTURE.md` §TLS Fingerprinting with the `nginx-ssl-passthrough` +
   `ja4` module path for Phase 3.
+- **Known Phase 1 gap, found during load testing**: Nginx's own JSON access/error logs (structured,
+  request-ID-correlated per `infrastructure/nginx/nginx.conf`) are *not yet ingested* into the
+  events pipeline — they're real and inspectable via `docker compose logs nginx`, but a request
+  Nginx rejects before it reaches the honeypot app (e.g. `limit_req` returning 503 under burst
+  load) currently produces **no row in `requests`/`events`**, only a Nginx log line. This means a
+  sufficiently bursty scanner can be *partially* invisible to the dashboard even though Nginx
+  itself handled it safely. Phase 2/3 fix: ship Nginx's JSON access log into the same ingestion
+  path (a small log-tailing sidecar is enough at this volume — no need for a full ELK/Loki stack).
+
+## Phase 1 self-review: reproducing the gap above
+
+Running `pnpm simulate`'s scanner-burst persona (40 concurrent requests) against the local stack
+showed Nginx's `hp_general` zone (`rate=20r/s burst=40 nodelay`) correctly rejecting a portion of
+the burst with 503 — protective behavior working exactly as designed (docs/ARCHITECTURE.md §14's
+"never traded away" invariant held) — but those rejected requests are the ones missing from the
+dashboard per the gap above. Confirmed via `docker compose logs nginx`, which shows the 503s that
+`requests`/`events` do not.
 
 ## Phase 2 — Intelligence & Analytics
 - [ ] Real GeoIP/ASN enrichment (MaxMind GeoLite2 or ipinfo.io), async + cached.
