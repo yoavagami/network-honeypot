@@ -14,7 +14,11 @@ import { schema } from "@honeypot/db";
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required");
 
-const client = postgres(connectionString, { max: 1 });
+// Same TLS detection as migrate.ts / client.ts's createDbClient — managed Postgres reached over
+// the public internet (Render, RDS, ...) requires it; self-hosted Postgres never has, which is
+// why this went unnoticed until seeding against Render's DB actually failed.
+const requiresSsl = process.env.DATABASE_SSL === "true" || connectionString.includes("sslmode=require");
+const client = postgres(connectionString, { max: 1, ssl: requiresSsl ? "require" : undefined });
 const db = drizzle(client, { schema });
 
 const SYNTHETIC_NAMES = [

@@ -18,7 +18,14 @@ async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is required to run migrations");
 
-  const sql = postgres(connectionString, { max: 1 });
+  // Managed Postgres reached over the public internet (Render, RDS, ...) requires TLS — same
+  // detection as createDbClient() in client.ts, duplicated here because migrate.ts intentionally
+  // uses its own raw `postgres` connection rather than going through the app-facing client (this
+  // one runs as the superuser to create roles/apply schema, never as a scoped app role). Found
+  // live: this was missing entirely, so migrate against Render's DB failed with "SSL/TLS
+  // required" — self-hosted Postgres never needed it, so it went unnoticed until now.
+  const requiresSsl = process.env.DATABASE_SSL === "true" || connectionString.includes("sslmode=require");
+  const sql = postgres(connectionString, { max: 1, ssl: requiresSsl ? "require" : undefined });
   try {
     // Portable across self-hosted and managed Postgres — see ensureRoles.ts header comment.
     await ensureRoles(sql);
