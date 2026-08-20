@@ -1,18 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, type RequestLogRow } from "../api.js";
 import { SeverityBadge, riskToSeverity } from "../components/SeverityBadge.js";
+
+interface Filters {
+  path: string;
+  method: string;
+  ip: string;
+  statusCode: string;
+  userAgent: string;
+  excludeUserAgent: string;
+}
+
+const EMPTY_FILTERS: Filters = { path: "", method: "", ip: "", statusCode: "", userAgent: "", excludeUserAgent: "" };
+
+function toParams(filters: Filters): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (filters.path) params.path = filters.path;
+  if (filters.method) params.method = filters.method;
+  if (filters.ip) params.ip = filters.ip;
+  if (filters.statusCode) params.status_code = filters.statusCode;
+  if (filters.userAgent) params.user_agent = filters.userAgent;
+  if (filters.excludeUserAgent) params.exclude_user_agent = filters.excludeUserAgent;
+  return params;
+}
 
 export function RequestsPage() {
   const [rows, setRows] = useState<RequestLogRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
   const navigate = useNavigate();
 
-  function load(before?: string | null) {
+  function load(activeFilters: Filters, before?: string | null) {
     setLoading(true);
+    const params = { ...toParams(activeFilters), limit: "50", ...(before ? { cursor: before } : {}) };
     api
-      .requests(before ? { cursor: before, limit: "50" } : { limit: "50" })
+      .requests(params)
       .then((r) => {
         setRows((prev) => (before ? [...prev, ...r.data] : r.data));
         setCursor(r.nextCursor);
@@ -20,7 +45,21 @@ export function RequestsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }
-  useEffect(() => load(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(EMPTY_FILTERS), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function applyFilters(e: FormEvent) {
+    e.preventDefault();
+    setAppliedFilters(filters);
+    load(filters);
+  }
+
+  function clearFilters() {
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    load(EMPTY_FILTERS);
+  }
+
+  const hasActiveFilters = Object.values(appliedFilters).some(Boolean);
 
   return (
     <div>
@@ -28,6 +67,29 @@ export function RequestsPage() {
       <p className="muted" style={{ marginTop: "-.5rem" }}>
         Every request the honeypot has recorded — timestamp, origin, and what it touched.
       </p>
+
+      <form onSubmit={applyFilters} className="toolbar" style={{ flexWrap: "wrap", gap: ".5rem" }}>
+        <input placeholder="Path contains…" value={filters.path} onChange={(e) => setFilters({ ...filters, path: e.target.value })} style={{ width: "12rem" }} />
+        <input placeholder="Method (GET, POST…)" value={filters.method} onChange={(e) => setFilters({ ...filters, method: e.target.value.toUpperCase() })} style={{ width: "9rem" }} />
+        <input placeholder="IP contains…" value={filters.ip} onChange={(e) => setFilters({ ...filters, ip: e.target.value })} style={{ width: "10rem" }} />
+        <input placeholder="Status code" value={filters.statusCode} onChange={(e) => setFilters({ ...filters, statusCode: e.target.value })} style={{ width: "7rem" }} />
+        <input placeholder="User-Agent contains…" value={filters.userAgent} onChange={(e) => setFilters({ ...filters, userAgent: e.target.value })} style={{ width: "12rem" }} />
+        <input
+          placeholder="User-Agent excludes… e.g. Render/1.0"
+          value={filters.excludeUserAgent}
+          onChange={(e) => setFilters({ ...filters, excludeUserAgent: e.target.value })}
+          style={{ width: "14rem" }}
+        />
+        <button className="primary" type="submit">
+          Filter
+        </button>
+        {hasActiveFilters && (
+          <button type="button" className="ghost" onClick={clearFilters}>
+            Clear
+          </button>
+        )}
+      </form>
+
       <div className="panel">
         <table>
           <thead>
@@ -66,14 +128,14 @@ export function RequestsPage() {
             {rows.length === 0 && !loading && (
               <tr>
                 <td colSpan={8} className="muted">
-                  No requests recorded yet.
+                  {hasActiveFilters ? "No requests match these filters." : "No requests recorded yet."}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
         {cursor && (
-          <button className="ghost" disabled={loading} onClick={() => load(cursor)} style={{ margin: "1rem" }}>
+          <button className="ghost" disabled={loading} onClick={() => load(appliedFilters, cursor)} style={{ margin: "1rem" }}>
             {loading ? "Loading…" : "Load more"}
           </button>
         )}

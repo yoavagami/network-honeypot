@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { and, desc, eq, gte, lte, lt, like } from "drizzle-orm";
+import { and, desc, eq, gte, lte, lt, ilike, notIlike, sql } from "drizzle-orm";
 import { schema } from "@honeypot/db";
 import { db } from "../db.js";
 import { audit } from "../audit.js";
@@ -17,6 +17,13 @@ interface RequestsQuery {
   actor_id?: string;
   method?: string;
   path?: string;
+  ip?: string;
+  status_code?: string;
+  user_agent?: string;
+  /** Excludes rows whose user-agent contains this — the noisy-platform-pinger case (e.g.
+   * Render's own health-check UA drowning out real traffic), not a general boolean query
+   * language. Combine with user_agent if you need both an include and an exclude at once. */
+  exclude_user_agent?: string;
   cursor?: string;
   limit?: string;
 }
@@ -30,7 +37,14 @@ export function registerRequestRoutes(app: FastifyInstance) {
     if (q.to) conditions.push(lte(schema.requests.createdAt, new Date(q.to)));
     if (q.actor_id) conditions.push(eq(schema.requests.actorId, q.actor_id));
     if (q.method) conditions.push(eq(schema.requests.method, q.method));
-    if (q.path) conditions.push(like(schema.requests.path, `%${q.path}%`));
+    if (q.path) conditions.push(ilike(schema.requests.path, `%${q.path}%`));
+    // ip_raw is a Postgres `inet` column — ILIKE needs a text operand, so cast via host().
+    // Confirmed live: querying it as ilike(ipRaw, ...) directly errors with "operator does not
+    // exist: inet ~~* unknown".
+    if (q.ip) conditions.push(ilike(sql`host(${schema.requests.ipRaw})`, `%${q.ip}%`));
+    if (q.status_code) conditions.push(eq(schema.requests.statusCode, Number(q.status_code)));
+    if (q.user_agent) conditions.push(ilike(schema.requests.userAgentRaw, `%${q.user_agent}%`));
+    if (q.exclude_user_agent) conditions.push(notIlike(schema.requests.userAgentRaw, `%${q.exclude_user_agent}%`));
     if (q.cursor) conditions.push(lt(schema.requests.createdAt, new Date(q.cursor)));
 
     const rows = await db
