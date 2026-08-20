@@ -11,7 +11,7 @@ describe("createIpinfoProvider", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ country: "US", region: "California", city: "Mountain View", org: "AS15169 Google LLC" }),
+        json: async () => ({ country: "US", region: "California", city: "Mountain View", org: "AS15169 Google LLC", loc: "37.4056,-122.0775" }),
       })
     );
 
@@ -25,7 +25,28 @@ describe("createIpinfoProvider", () => {
       asn: "AS15169",
       organization: "Google LLC",
       isHostingProvider: null,
+      lat: 37.4056,
+      lng: -122.0775,
     });
+  });
+
+  it("parses lat/lng out of ipinfo's combined 'loc' field", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ country: "DE", loc: "52.5244,13.4105" }) })
+    );
+    const provider = createIpinfoProvider("test-token");
+    const result = await provider.lookup("1.2.3.4");
+    expect(result?.lat).toBe(52.5244);
+    expect(result?.lng).toBe(13.4105);
+  });
+
+  it("leaves lat/lng null when 'loc' is missing or malformed", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ country: "DE" }) }));
+    const provider = createIpinfoProvider("test-token");
+    const result = await provider.lookup("1.2.3.4");
+    expect(result?.lat).toBeNull();
+    expect(result?.lng).toBeNull();
   });
 
   it("falls back gracefully when org doesn't match the expected AS-number format", async () => {

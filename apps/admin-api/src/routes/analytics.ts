@@ -209,6 +209,33 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
     reply.send({ data: rows });
   });
 
+  // Powers the Geography page's heat map — see apps/admin-web/src/components/WorldHeatmap.tsx.
+  // One point per distinct actor location (lat/lng comes from GeoIP enrichment, city-level
+  // precision, opt-in — see docs/PRIVACY.md), weighted by how many requests from there fell in
+  // the selected range. Empty until GEOLOCATION_ENABLED is turned on and actors get enriched.
+  app.get("/api/analytics/heatmap", async (request, reply) => {
+    const q = request.query as { range?: string; from?: string };
+    const since = rangeStart(q.range, q.from);
+
+    const rows = await db
+      .select({
+        lat: schema.actors.lat,
+        lng: schema.actors.lng,
+        country: schema.actors.country,
+        city: schema.actors.city,
+        requestCount: sql<number>`count(${schema.requests.requestId})::int`,
+        maxRisk: sql<number>`max(${schema.requests.riskScore})::int`,
+      })
+      .from(schema.actors)
+      .innerJoin(schema.requests, eq(schema.requests.actorId, schema.actors.actorId))
+      .where(and(gte(schema.requests.createdAt, since), sql`${schema.actors.lat} is not null`, sql`${schema.actors.lng} is not null`))
+      .groupBy(schema.actors.lat, schema.actors.lng, schema.actors.country, schema.actors.city)
+      .orderBy(sql`count(${schema.requests.requestId}) desc`)
+      .limit(500);
+
+    reply.send({ data: rows });
+  });
+
   app.get("/api/analytics/discovery-funnel", async (request, reply) => {
     // Stage membership, not a strict enforced sequence — an actor counts for "explored the API"
     // whether or not they viewed the homepage first. That matches how actual discovery behaves

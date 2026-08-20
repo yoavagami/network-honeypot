@@ -12,6 +12,10 @@ export interface IpEnrichment {
   asn: string | null;
   organization: string | null;
   isHostingProvider: boolean | null;
+  /** City-level precision from the provider, not a precise device location — see
+   * docs/PRIVACY.md. Powers the Geography page's heat map. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface EnrichmentProvider {
@@ -35,6 +39,8 @@ const EMPTY_ENRICHMENT: IpEnrichment = {
   asn: null,
   organization: null,
   isHostingProvider: null,
+  lat: null,
+  lng: null,
 };
 
 export function emptyEnrichment(): IpEnrichment {

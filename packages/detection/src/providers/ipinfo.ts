@@ -35,6 +35,12 @@ export function createIpinfoProvider(token: string): EnrichmentProvider {
       const org = typeof body.org === "string" ? body.org : null;
       const orgMatch = org?.match(/^AS(\d+)\s+(.*)$/);
 
+      // "loc" is "lat,lng" as a single string, e.g. "37.4056,-122.0775" — city-level precision,
+      // not a precise device location. Free with every lookup this project already makes.
+      const loc = typeof body.loc === "string" ? body.loc.split(",") : null;
+      const lat = loc && loc.length === 2 ? Number(loc[0]) : NaN;
+      const lng = loc && loc.length === 2 ? Number(loc[1]) : NaN;
+
       return {
         country: typeof body.country === "string" ? body.country : null,
         region: typeof body.region === "string" ? body.region : null,
@@ -46,6 +52,8 @@ export function createIpinfoProvider(token: string): EnrichmentProvider {
         // distinguishing observed fact from inference; leaving this null is more honest than
         // guessing from the org name.
         isHostingProvider: null,
+        lat: Number.isFinite(lat) ? lat : null,
+        lng: Number.isFinite(lng) ? lng : null,
       };
     },
   };

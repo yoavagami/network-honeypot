@@ -26,6 +26,8 @@ export async function enrichActorIfNeeded(rawIp: string, actorId: string): Promi
       city: enrichment.city,
       asn: enrichment.asn,
       organization: enrichment.organization,
+      lat: enrichment.lat,
+      lng: enrichment.lng,
       enrichmentUpdatedAt: new Date(),
     })
     .where(eq(schema.actors.actorId, actorId));

@@ -13,6 +13,12 @@
   --high: #e0672c;
   --critical: #e0392c;
   --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --heatmap-ocean: #0d111a;
+  --heatmap-land: #1c2333;
+  --heatmap-border: #2c3548;
+  --heat-core: #ff8a3d;
+  --heat-mid: #e0392c;
+  --heat-edge: #e0392c;
 }
 
 * { box-sizing: border-box; }
@@ -27,6 +33,7 @@ body {
 a { color: var(--accent); text-decoration: none; }
 code, .mono { font-family: var(--mono); }
 .truncate { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.heatmap-svg { width: 100%; height: auto; display: block; border-radius: 6px; }
 
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar {

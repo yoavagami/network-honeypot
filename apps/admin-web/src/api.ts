@@ -77,6 +77,7 @@ export const api = {
   attacks: (range: string) => request<{ byDetectionType: Array<{ detectionType: string; count: number }>; riskDistribution: Array<{ bucket: string; count: number }> }>(`/api/analytics/attacks?range=${range}`),
   bots: (range: string) => request<{ data: Array<{ uaFingerprint: string | null; count: number; uniqueActors: number }> }>(`/api/analytics/bots?range=${range}`),
   geography: (range: string) => request<GeographyResponse>(`/api/analytics/geography?range=${range}`),
+  heatmap: (range: string) => request<{ data: HeatmapPointRow[] }>(`/api/analytics/heatmap?range=${range}`),
   uniqueIps: (range: string) => request<{ data: IpBreakdownRow[] }>(`/api/analytics/ips?range=${range}`),
   uniqueUserAgents: (range: string) => request<{ data: UserAgentBreakdownRow[] }>(`/api/analytics/user-agents?range=${range}`),
   firstContact: () => request<{ data: FirstContactRow[] }>("/api/analytics/first-contact"),
@@ -238,6 +239,15 @@ export interface GeographyResponse {
   byCountry: Array<{ country: string; actorCount: number; requestCount: number; avgRisk: number; maxRisk: number }>;
   byAsn: Array<{ asn: string; organization: string | null; actorCount: number; requestCount: number; avgRisk: number; maxRisk: number }>;
   enrichmentActive: boolean;
+}
+
+export interface HeatmapPointRow {
+  lat: number;
+  lng: number;
+  country: string | null;
+  city: string | null;
+  requestCount: number;
+  maxRisk: number;
 }
 
 export interface FirstContactRow {

@@ -10,6 +10,7 @@ import {
   numeric,
   inet,
   bigserial,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true });
@@ -34,6 +35,8 @@ export const actors = pgTable("actors", {
   asn: text("asn"),
   organization: text("organization"),
   enrichmentUpdatedAt: timestamptz("enrichment_updated_at"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
 });
 
 export const actorSignals = pgTable("actor_signals", {
