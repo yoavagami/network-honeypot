@@ -152,4 +152,18 @@ the `release-address` step above is what stops that meter, not just terminating 
 `t3.micro` + 20GB gp3 + one Elastic IP, on a new account within the 12-month free tier: **~$0/mo**.
 Past free tier, or on an existing account: **~$8-10/mo** (`t3.micro` ≈ $7.50/mo, storage ≈ $1.60/mo,
 Elastic IP is free while attached to a running instance). Nothing else in this project incurs AWS
-cost — Postgres, Nginx, the app itself all run inside the one instance.
+cost — Postgres, Nginx, the app itself all run inside the one instance. **Self-hosted Postgres by
+design, not RDS** — the DB is just another container in `docker-compose.yml`, same as local dev;
+provisioning it separately as a managed RDS instance was deliberately not built, since it's a
+second billable service this project doesn't need.
+
+`t3.micro` has 1GB RAM for all 5 containers combined. Checked against real measured usage (not
+just the `mem_limit` caps, which are per-container ceilings, not reservations): the full stack
+under light traffic uses **~220MiB total** — Postgres ~22MiB, honeypot ~90MiB, admin-api ~87MiB,
+nginx ~13MiB, admin-web ~8MiB — leaving real headroom for OS/Docker overhead and traffic spikes.
+Sustained scanner traffic on a live deployment will use more than this idle baseline (Postgres
+cache growth, Node heap under load), which hasn't been measured yet since nothing's deployed —
+but the margin here is wide enough that `t3.micro` is a reasonable default, not a stretch. If a
+deployment ever does get memory-constrained, each service's `mem_limit` means Docker's OOM killer
+takes down that one container (which `restart: unless-stopped` brings back) rather than locking
+up the whole host.
