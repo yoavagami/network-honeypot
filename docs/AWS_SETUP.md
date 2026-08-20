@@ -128,7 +128,23 @@ yourdomain.example`), then:
 infrastructure/vps/setup-tls.sh yourdomain.example you@example.com
 ```
 
-### Tear it all down (stop paying)
+### Pause it (near-$0, keeps your data)
+Not going to look at it for a while but don't want to lose the collected telemetry or redo
+setup? Stop the instance and release its Elastic IP — the disk (Postgres data included) stays
+put, only compute and the IP stop billing:
+```
+infrastructure/aws/down.sh
+```
+Bring it back later — this allocates a **new** Elastic IP (the old one was released, so the
+public IP will be different — update DNS if you'd pointed a domain at it) and verifies the app
+actually comes back up, not just the instance:
+```
+infrastructure/aws/up.sh
+```
+Remaining cost while paused: just the 20GB gp3 disk, ~$1.60/mo — see `down.sh`'s header comment
+for why that's the honest floor, not literal $0, as long as you're keeping the data.
+
+### Tear it all down (destroy everything, including the data)
 ```bash
 NAME=network-honeypot
 REGION=us-east-1   # or whatever you configured
@@ -144,8 +160,13 @@ aws ec2 delete-security-group --region $REGION --group-id "$SG_ID"
 aws ec2 delete-key-pair --region $REGION --key-name "$NAME"
 rm -f infrastructure/aws/network-honeypot-key.pem
 ```
-An Elastic IP costs a small hourly fee *while allocated but not attached to a running instance* —
-the `release-address` step above is what stops that meter, not just terminating the instance.
+The EBS volume is created with `DeleteOnTermination: true` (see `provision.sh`), so terminating
+the instance deletes the disk — and everything on it, including all collected telemetry — too.
+Use the pause option above instead if you want to keep that.
+
+Note: as of Feb 2024, AWS bills a small hourly fee for an Elastic IP address regardless of
+whether it's attached to a running instance — `release-address` above (and inside `down.sh`) is
+what stops that meter, not just stopping or terminating the instance.
 
 ## Cost estimate
 

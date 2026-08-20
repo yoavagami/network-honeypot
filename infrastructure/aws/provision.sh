@@ -126,7 +126,10 @@ else
 fi
 
 # ----------------------------------------------------------------------------
-# Elastic IP — stable address across stop/start.
+# Elastic IP — stable address across stop/start. Note: since Feb 2024 AWS bills this hourly
+# regardless of attachment state, so keeping it allocated has a small ongoing cost even while
+# the instance is stopped. For a real pause (not just "restarting mid-session"), use
+# infrastructure/aws/down.sh instead — it releases the EIP too; up.sh allocates a fresh one.
 # ----------------------------------------------------------------------------
 echo "==> Elastic IP"
 ALLOC_ID=$(aws ec2 describe-addresses --region "$REGION" --filters "Name=tag:Name,Values=$NAME" --query 'Addresses[0].AllocationId' --output text 2>/dev/null || echo "None")
