@@ -77,6 +77,8 @@ export const api = {
   attacks: (range: string) => request<{ byDetectionType: Array<{ detectionType: string; count: number }>; riskDistribution: Array<{ bucket: string; count: number }> }>(`/api/analytics/attacks?range=${range}`),
   bots: (range: string) => request<{ data: Array<{ uaFingerprint: string | null; count: number; uniqueActors: number }> }>(`/api/analytics/bots?range=${range}`),
   geography: (range: string) => request<GeographyResponse>(`/api/analytics/geography?range=${range}`),
+  uniqueIps: (range: string) => request<{ data: IpBreakdownRow[] }>(`/api/analytics/ips?range=${range}`),
+  uniqueUserAgents: (range: string) => request<{ data: UserAgentBreakdownRow[] }>(`/api/analytics/user-agents?range=${range}`),
   firstContact: () => request<{ data: FirstContactRow[] }>("/api/analytics/first-contact"),
   discoveryFunnel: (range: string) => request<DiscoveryFunnelResponse>(`/api/analytics/discovery-funnel?range=${range}`),
 
@@ -124,6 +126,26 @@ export interface RequestRow {
   endpoint: string;
   applicationComponent: string;
   riskScore: number;
+}
+
+export interface IpBreakdownRow {
+  ipHash: string;
+  /** Only populated if at least one request from this IP is within RAW_IP_RETENTION_DAYS. */
+  latestIpRaw: string | null;
+  requestCount: number;
+  uniqueActors: number;
+  firstSeen: string;
+  lastSeen: string;
+  maxRisk: number;
+}
+
+export interface UserAgentBreakdownRow {
+  userAgent: string | null;
+  requestCount: number;
+  uniqueActors: number;
+  firstSeen: string;
+  lastSeen: string;
+  maxRisk: number;
 }
 
 export interface RequestLogRow {

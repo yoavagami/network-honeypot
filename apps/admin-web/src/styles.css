@@ -76,6 +76,8 @@ button.ghost { background: none; border: 1px solid var(--border); color: var(--t
 
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
 .stat-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.stat-card.clickable { cursor: pointer; transition: border-color .12s ease, transform .12s ease; }
+.stat-card.clickable:hover, .stat-card.clickable:focus-visible { border-color: var(--accent); transform: translateY(-1px); outline: none; }
 .stat-card .label { color: var(--text-muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
 .stat-card .value { font-size: 1.6rem; font-weight: 700; margin-top: .25rem; }
 

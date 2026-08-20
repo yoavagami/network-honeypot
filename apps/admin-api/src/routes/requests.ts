@@ -18,7 +18,15 @@ interface RequestsQuery {
   method?: string;
   path?: string;
   ip?: string;
+  /** Exact match on the long-term correlation key — used to drill in from the Overview page's
+   * "Unique IPs" breakdown, where older rows may only have this left (ip_raw redacted after
+   * RAW_IP_RETENTION_DAYS). `ip` above is a raw-IP substring match instead, for the Requests
+   * page's own free-text filter. */
+  ip_hash?: string;
   status_code?: string;
+  /** Drill-in target for the Overview page's "Errors (4xx/5xx)" card — status_code above is
+   * exact-match, this is a floor. */
+  min_status?: string;
   user_agent?: string;
   /** Excludes rows whose user-agent contains this — the noisy-platform-pinger case (e.g.
    * Render's own health-check UA drowning out real traffic), not a general boolean query
@@ -42,7 +50,9 @@ export function registerRequestRoutes(app: FastifyInstance) {
     // Confirmed live: querying it as ilike(ipRaw, ...) directly errors with "operator does not
     // exist: inet ~~* unknown".
     if (q.ip) conditions.push(ilike(sql`host(${schema.requests.ipRaw})`, `%${q.ip}%`));
+    if (q.ip_hash) conditions.push(eq(schema.requests.ipHash, q.ip_hash));
     if (q.status_code) conditions.push(eq(schema.requests.statusCode, Number(q.status_code)));
+    if (q.min_status) conditions.push(gte(schema.requests.statusCode, Number(q.min_status)));
     if (q.user_agent) conditions.push(ilike(schema.requests.userAgentRaw, `%${q.user_agent}%`));
     if (q.exclude_user_agent) conditions.push(notIlike(schema.requests.userAgentRaw, `%${q.exclude_user_agent}%`));
     if (q.cursor) conditions.push(lt(schema.requests.createdAt, new Date(q.cursor)));

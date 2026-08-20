@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, type RequestLogRow } from "../api.js";
 import { SeverityBadge, riskToSeverity } from "../components/SeverityBadge.js";
 
@@ -10,9 +10,27 @@ interface Filters {
   statusCode: string;
   userAgent: string;
   excludeUserAgent: string;
+  /** Not a visible text field — arrives pre-set from the Overview page's "Unique IPs"
+   * drill-down, where ip_hash (not raw IP, which may already be redacted) is the exact key. */
+  ipHash: string;
+  /** Same idea, from the "Errors (4xx/5xx)" drill-down. */
+  minStatus: string;
 }
 
-const EMPTY_FILTERS: Filters = { path: "", method: "", ip: "", statusCode: "", userAgent: "", excludeUserAgent: "" };
+const EMPTY_FILTERS: Filters = { path: "", method: "", ip: "", statusCode: "", userAgent: "", excludeUserAgent: "", ipHash: "", minStatus: "" };
+
+function filtersFromSearchParams(params: URLSearchParams): Filters {
+  return {
+    path: params.get("path") ?? "",
+    method: params.get("method") ?? "",
+    ip: params.get("ip") ?? "",
+    statusCode: params.get("status_code") ?? "",
+    userAgent: params.get("user_agent") ?? "",
+    excludeUserAgent: params.get("exclude_user_agent") ?? "",
+    ipHash: params.get("ip_hash") ?? "",
+    minStatus: params.get("min_status") ?? "",
+  };
+}
 
 function toParams(filters: Filters): Record<string, string> {
   const params: Record<string, string> = {};
@@ -22,15 +40,19 @@ function toParams(filters: Filters): Record<string, string> {
   if (filters.statusCode) params.status_code = filters.statusCode;
   if (filters.userAgent) params.user_agent = filters.userAgent;
   if (filters.excludeUserAgent) params.exclude_user_agent = filters.excludeUserAgent;
+  if (filters.ipHash) params.ip_hash = filters.ipHash;
+  if (filters.minStatus) params.min_status = filters.minStatus;
   return params;
 }
 
 export function RequestsPage() {
+  const [searchParams] = useSearchParams();
+  const initialFilters = filtersFromSearchParams(searchParams);
   const [rows, setRows] = useState<RequestLogRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(initialFilters);
   const navigate = useNavigate();
 
   function load(activeFilters: Filters, before?: string | null) {
@@ -45,7 +67,7 @@ export function RequestsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }
-  useEffect(() => load(EMPTY_FILTERS), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(initialFilters), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function applyFilters(e: FormEvent) {
     e.preventDefault();
@@ -67,6 +89,13 @@ export function RequestsPage() {
       <p className="muted" style={{ marginTop: "-.5rem" }}>
         Every request the honeypot has recorded — timestamp, origin, and what it touched.
       </p>
+
+      {(appliedFilters.ipHash || appliedFilters.minStatus) && (
+        <div className="toolbar" style={{ gap: ".5rem" }}>
+          {appliedFilters.ipHash && <span className="badge info">IP hash: {appliedFilters.ipHash.slice(0, 12)}…</span>}
+          {appliedFilters.minStatus && <span className="badge info">Status ≥ {appliedFilters.minStatus}</span>}
+        </div>
+      )}
 
       <form onSubmit={applyFilters} className="toolbar" style={{ flexWrap: "wrap", gap: ".5rem" }}>
         <input placeholder="Path contains…" value={filters.path} onChange={(e) => setFilters({ ...filters, path: e.target.value })} style={{ width: "12rem" }} />

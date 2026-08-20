@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, type DiscoveryFunnelResponse, type IngestionHealth, type OverviewResponse } from "../api.js";
 import { StatCard } from "../components/StatCard.js";
 import { BarList } from "../components/BarList.js";
@@ -8,6 +9,7 @@ const RANGES = ["5m", "1h", "24h", "7d"];
 
 export function OverviewPage() {
   const [range, setRange] = useState("24h");
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [funnel, setFunnel] = useState<DiscoveryFunnelResponse | null>(null);
   const [ingestion, setIngestion] = useState<IngestionHealth | null>(null);
@@ -63,13 +65,13 @@ export function OverviewPage() {
       {overview && (
         <>
           <div className="stat-grid">
-            <StatCard label="Requests" value={overview.totals.totalRequests} />
-            <StatCard label="Unique actors" value={overview.totals.uniqueActors} />
-            <StatCard label="Unique IPs" value={overview.totals.uniqueIps} />
-            <StatCard label="Unique user agents" value={overview.totals.uniqueUserAgents} />
-            <StatCard label="Errors (4xx/5xx)" value={overview.totals.errorCount} />
-            <StatCard label="Detections" value={overview.detectionCount} />
-            <StatCard label="Canary triggers" value={overview.canaryTriggerCount} />
+            <StatCard label="Requests" value={overview.totals.totalRequests} onClick={() => navigate("/requests")} />
+            <StatCard label="Unique actors" value={overview.totals.uniqueActors} onClick={() => navigate("/actors")} />
+            <StatCard label="Unique IPs" value={overview.totals.uniqueIps} onClick={() => navigate(`/overview/ips?range=${range}`)} />
+            <StatCard label="Unique user agents" value={overview.totals.uniqueUserAgents} onClick={() => navigate(`/overview/user-agents?range=${range}`)} />
+            <StatCard label="Errors (4xx/5xx)" value={overview.totals.errorCount} onClick={() => navigate("/requests?min_status=400")} />
+            <StatCard label="Detections" value={overview.detectionCount} onClick={() => navigate("/detections")} />
+            <StatCard label="Canary triggers" value={overview.canaryTriggerCount} onClick={() => navigate("/canaries")} />
           </div>
 
           <div className="grid-2">

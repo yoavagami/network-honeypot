@@ -159,6 +159,56 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
     reply.send({ byCountry, byAsn, enrichmentActive: byCountry.length > 0 || byAsn.length > 0 });
   });
 
+  // Drill-down targets for the Overview page's "Unique IPs" / "Unique user agents" stat cards —
+  // see apps/admin-web/src/pages/OverviewPage.tsx. Raw SQL (not the query builder) because of
+  // the array_agg-pick-latest-non-null trick for ip_raw, which needs to survive the fact that
+  // ip_raw gets NULLed by the retention job after RAW_IP_RETENTION_DAYS while ip_hash (the
+  // group-by key) persists — same reasoning as the first-contact endpoint below.
+  app.get("/api/analytics/ips", async (request, reply) => {
+    const q = request.query as { range?: string; from?: string };
+    const since = rangeStart(q.range, q.from);
+
+    const rows = await db.execute(sql`
+      SELECT
+        ip_hash AS "ipHash",
+        (array_agg(ip_raw ORDER BY created_at DESC) FILTER (WHERE ip_raw IS NOT NULL))[1] AS "latestIpRaw",
+        count(*)::int AS "requestCount",
+        count(DISTINCT actor_id)::int AS "uniqueActors",
+        min(created_at) AS "firstSeen",
+        max(created_at) AS "lastSeen",
+        max(risk_score)::int AS "maxRisk"
+      FROM requests
+      WHERE created_at >= ${since.toISOString()}
+      GROUP BY ip_hash
+      ORDER BY count(*) DESC
+      LIMIT 100
+    `);
+
+    reply.send({ data: rows });
+  });
+
+  app.get("/api/analytics/user-agents", async (request, reply) => {
+    const q = request.query as { range?: string; from?: string };
+    const since = rangeStart(q.range, q.from);
+
+    const rows = await db.execute(sql`
+      SELECT
+        user_agent_raw AS "userAgent",
+        count(*)::int AS "requestCount",
+        count(DISTINCT actor_id)::int AS "uniqueActors",
+        min(created_at) AS "firstSeen",
+        max(created_at) AS "lastSeen",
+        max(risk_score)::int AS "maxRisk"
+      FROM requests
+      WHERE created_at >= ${since.toISOString()}
+      GROUP BY user_agent_raw
+      ORDER BY count(*) DESC
+      LIMIT 100
+    `);
+
+    reply.send({ data: rows });
+  });
+
   app.get("/api/analytics/discovery-funnel", async (request, reply) => {
     // Stage membership, not a strict enforced sequence — an actor counts for "explored the API"
     // whether or not they viewed the homepage first. That matches how actual discovery behaves
