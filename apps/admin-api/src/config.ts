@@ -15,6 +15,16 @@ function sameSiteFromEnv(): SameSite {
   throw new Error(`ADMIN_SESSION_SAMESITE must be one of ${VALID_SAME_SITE.join(", ")}, got "${value}"`);
 }
 
+// Render's Blueprint `fromService: { property: hostport }` (used for HONEYPOT_INTERNAL_URL —
+// see render.yaml) returns a bare "host:port" with no scheme, but this gets used as a fetch()
+// base URL below, which requires an absolute URL. Render's private network is plain HTTP
+// between services (TLS is terminated at their edge, not between internal services), so
+// prepending http:// is correct here — found live: without this, fetch() throws on an invalid
+// URL rather than actually reaching the honeypot's health endpoint.
+function normalizeInternalUrl(value: string): string {
+  return /^https?:\/\//.test(value) ? value : `http://${value}`;
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 8090),
   host: process.env.HOST ?? "0.0.0.0",
@@ -28,7 +38,7 @@ export const config = {
   // need "none" or the browser silently drops the session cookie on every admin-api call — see
   // docs/DEPLOY_RENDER.md. Never "none" without Secure, which we always set.
   sessionCookieSameSite: sameSiteFromEnv(),
-  honeypotInternalUrl: process.env.HONEYPOT_INTERNAL_URL ?? "http://localhost:8080",
+  honeypotInternalUrl: normalizeInternalUrl(process.env.HONEYPOT_INTERNAL_URL ?? "http://localhost:8080"),
   sessionIdleTimeoutMs: Number(process.env.ADMIN_SESSION_IDLE_MS ?? 30 * 60 * 1000),
   sessionAbsoluteTimeoutMs: Number(process.env.ADMIN_SESSION_ABSOLUTE_MS ?? 12 * 60 * 60 * 1000),
 } as const;

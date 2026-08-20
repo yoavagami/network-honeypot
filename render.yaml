@@ -102,11 +102,18 @@ services:
       # access boundary here, not SameSite. See docs/SECURITY.md.
       - key: ADMIN_SESSION_SAMESITE
         value: none
-      # Best-effort — if this doesn't resolve to admin-web's actual public URL on first deploy,
-      # set it manually in this service's Environment tab (Render dashboard) and restart; see
-      # docs/DEPLOY_RENDER.md.
+      # NOT `fromService`, deliberately: this needs the browser-facing public HTTPS URL for CORS
+      # origin-matching, but Render's Blueprint `fromService` only ever exposes a service's
+      # *private-network* address (host/port/hostport) — confirmed against Render's own
+      # Blueprint spec docs, and against a real deploy, where this resolved to an internal
+      # `admin-web-xxxx:80` address the browser can't send as its Origin. There's no Blueprint
+      # property that returns the public URL, so this has to be filled in by hand once you know
+      # admin-web's actual onrender.com URL — see docs/DEPLOY_RENDER.md step 1.
       - key: ADMIN_WEB_ORIGIN
-        fromService: { type: web, name: admin-web, property: hostport }
+        sync: false
+      # This one IS `fromService`, correctly: admin-api reaches the honeypot's health-check
+      # endpoint server-to-server, inside Render's private network — the private hostport is
+      # exactly what that call needs, unlike ADMIN_WEB_ORIGIN above.
       - key: HONEYPOT_INTERNAL_URL
         fromService: { type: web, name: honeypot, property: hostport }
 
