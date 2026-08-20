@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth.js";
 const NAV = [
   { to: "/", label: "Overview", end: true },
   { to: "/live", label: "Live Stream" },
+  { to: "/requests", label: "Requests" },
   { to: "/actors", label: "Actors" },
   { to: "/detections", label: "Detections" },
   { to: "/alerts", label: "Alerts" },

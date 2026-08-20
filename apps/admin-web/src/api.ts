@@ -61,6 +61,8 @@ export const api = {
   events: (params: Record<string, string> = {}) => request<{ data: EventRow[]; nextCursor: string | null }>(`/api/events?${new URLSearchParams(params)}`),
   event: (id: string) => request<{ event: EventRow; request: RequestRow | null; actor: ActorRow | null }>(`/api/events/${id}`),
 
+  requests: (params: Record<string, string> = {}) => request<{ data: RequestLogRow[]; nextCursor: string | null }>(`/api/requests?${new URLSearchParams(params)}`),
+
   actors: (params: Record<string, string> = {}) => request<{ data: ActorRow[] }>(`/api/actors?${new URLSearchParams(params)}`),
   actor: (id: string) => request<ActorProfile>(`/api/actors/${id}`),
   actorTimeline: (id: string) => request<{ data: TimelineEntry[] }>(`/api/actors/${id}/timeline`),
@@ -122,6 +124,27 @@ export interface RequestRow {
   endpoint: string;
   applicationComponent: string;
   riskScore: number;
+}
+
+export interface RequestLogRow {
+  requestId: string;
+  createdAt: string;
+  actorId: string;
+  ipHash: string;
+  /** Only populated within RAW_IP_RETENTION_DAYS of the request — null once redacted. */
+  ipRaw: string | null;
+  method: string;
+  path: string;
+  queryString: string | null;
+  statusCode: number;
+  userAgentRaw: string | null;
+  riskScore: number;
+  endpoint: string;
+  applicationComponent: string;
+  /** From the actor's GeoIP enrichment — null unless GEOLOCATION_ENABLED is on. */
+  country: string | null;
+  region: string | null;
+  city: string | null;
 }
 
 export interface ActorRow {

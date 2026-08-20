@@ -6,6 +6,7 @@ import "./context.js";
 import { registerAuthMiddleware } from "./middleware.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerEventRoutes } from "./routes/events.js";
+import { registerRequestRoutes } from "./routes/requests.js";
 import { registerActorRoutes } from "./routes/actors.js";
 import { registerDetectionRoutes } from "./routes/detections.js";
 import { registerCanaryRoutes } from "./routes/canaries.js";
@@ -35,6 +36,7 @@ async function main() {
 
   registerAuthRoutes(app);
   registerEventRoutes(app);
+  registerRequestRoutes(app);
   registerActorRoutes(app);
   registerDetectionRoutes(app);
   registerCanaryRoutes(app);

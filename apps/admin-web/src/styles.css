@@ -26,6 +26,7 @@ body {
 }
 a { color: var(--accent); text-decoration: none; }
 code, .mono { font-family: var(--mono); }
+.truncate { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar {
