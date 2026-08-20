@@ -40,8 +40,11 @@ instead of deploying them there at all.
 1. Push this repo to GitHub/GitLab.
 2. Render dashboard → **Blueprints → New Blueprint Instance** → point at the repo. It reads
    `render.yaml` and provisions `honeypot-db`, `honeypot`, `admin-api`, and `admin-web`.
-3. If `plan: starter` is rejected, open `render.yaml` and pick a currently-valid plan name from
-   your dashboard.
+3. `honeypot-db` uses the `free` Postgres plan — $0/mo, but **Render deletes the database (and
+   everything in it) 30 days after creation**. That's a deliberate "testing pass" choice, not an
+   oversight — swap it to `basic-256mb` (~$7/mo, no expiry) in `render.yaml` before relaunching
+   the blueprint if this deployment is meant to stick around. The three `web` services still use
+   `plan: starter`, which (unlike the old Postgres plan names) Render hasn't renamed.
 4. Wait for all four resources to finish provisioning.
 
 ## 2. Verify the cross-service env vars resolved (the part this author couldn't test live)

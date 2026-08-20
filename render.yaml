@@ -22,7 +22,11 @@ envVarGroups:
 
 databases:
   - name: honeypot-db
-    plan: starter # verify against Render's current Postgres plan names if this errors
+    # Render retired the legacy "starter" Postgres plan naming; `free` is $0/mo but Render
+    # auto-deletes the database (and everything in it) after 30 days — fine for a throwaway
+    # test pass, not for anything meant to persist. Swap to `basic-256mb` (~$7/mo, no expiry)
+    # if this deployment turns out to be a keeper. See docs/DEPLOY_RENDER.md.
+    plan: free
     postgresMajorVersion: "16"
 
 services:
