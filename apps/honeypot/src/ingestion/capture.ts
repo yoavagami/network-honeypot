@@ -88,8 +88,12 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
     // Deliberately not awaited — enrichment is an external HTTP call and must never sit on the
     // request path (see docs/ARCHITECTURE.md §5 / packages/detection/src/enrichment.ts). A slow
     // or failing provider only delays when the actor's country/ASN appear in the dashboard,
-    // never the visitor's response.
-    void enrichActorIfNeeded(ip, actorId);
+    // never the visitor's response. The .catch() matters even though it only logs — an unhandled
+    // rejection here crashes the whole process (found live for the same pattern in
+    // correlationWorker.ts/canaries.ts — see docs/ROADMAP.md Phase 4).
+    enrichActorIfNeeded(ip, actorId).catch((err) => {
+      request.log.warn({ msg: "actor enrichment failed", err: err instanceof Error ? err.message : String(err) });
+    });
 
     const sessionCookie = request.cookies[SESSION_COOKIE];
     const sessionId = await resolveSession(actorId, sessionCookie, visitorId, ipHash, userAgentRaw, uaFingerprint);

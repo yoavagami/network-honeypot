@@ -17,18 +17,29 @@ export async function enrichActorIfNeeded(rawIp: string, actorId: string): Promi
   if (enrichedActors.has(actorId)) return;
   enrichedActors.add(actorId); // mark first, so concurrent requests for the same actor don't double-fire
 
-  const enrichment = (await provider.lookup(rawIp).catch(() => null)) ?? emptyEnrichment();
-  await db
-    .update(schema.actors)
-    .set({
-      country: enrichment.country,
-      region: enrichment.region,
-      city: enrichment.city,
-      asn: enrichment.asn,
-      organization: enrichment.organization,
-      lat: enrichment.lat,
-      lng: enrichment.lng,
-      enrichmentUpdatedAt: new Date(),
-    })
-    .where(eq(schema.actors.actorId, actorId));
+  try {
+    const enrichment = (await provider.lookup(rawIp).catch(() => null)) ?? emptyEnrichment();
+    await db
+      .update(schema.actors)
+      .set({
+        country: enrichment.country,
+        region: enrichment.region,
+        city: enrichment.city,
+        asn: enrichment.asn,
+        organization: enrichment.organization,
+        lat: enrichment.lat,
+        lng: enrichment.lng,
+        enrichmentUpdatedAt: new Date(),
+      })
+      .where(eq(schema.actors.actorId, actorId));
+  } catch (err) {
+    // Found live: a failed write here (e.g. schema not yet migrated — actors.lat/lng didn't
+    // exist yet on one deployment) previously left this actor permanently marked "enriched" for
+    // the rest of the process's lifetime, since the Set above is set optimistically before the
+    // write. That silently froze stale (or in this case, wrong — a since-fixed IP-resolution bug
+    // had written the wrong city before this) data in place with no way to recover short of a
+    // full restart. Un-marking on failure lets the next request retry instead.
+    enrichedActors.delete(actorId);
+    throw err;
+  }
 }
