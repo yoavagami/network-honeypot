@@ -16,6 +16,9 @@ export interface HoneypotRequestContext {
   visitorId: string;
   actorId: string;
   sessionId: string;
+  /** Resolved via resolveClientIp() — NOT necessarily request.ip; see capture.ts's onRequest
+   * hook and packages/detection/src/fingerprint.ts for why the two can differ on Render. */
+  ip: string;
   ipHash: string;
   uaFingerprint: string;
   isAuthenticated?: boolean;

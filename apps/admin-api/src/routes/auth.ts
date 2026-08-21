@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import { schema } from "@honeypot/db";
-import { hashIp } from "@honeypot/detection";
+import { hashIp, resolveClientIp } from "@honeypot/detection";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { verifyPassword, createSession, destroySession } from "../auth.js";
@@ -16,9 +16,10 @@ export function registerAuthRoutes(app: FastifyInstance) {
     const body = (request.body ?? {}) as { username?: string; password?: string };
     const username = String(body.username ?? "");
     const password = String(body.password ?? "");
-    const ipHash = hashIp(request.ip, config.ipHashSecret);
+    const ip = resolveClientIp(request.ip, request.headers["cf-connecting-ip"], config.trustCfConnectingIp);
+    const ipHash = hashIp(ip, config.ipHashSecret);
 
-    if (loginRateLimited(request.ip, username)) {
+    if (loginRateLimited(ip, username)) {
       reply.status(429).send({ error: { code: "rate_limited", message: "Too many attempts, try again shortly" } });
       return;
     }
@@ -32,7 +33,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
       return;
     }
 
-    clearLoginAttempts(request.ip, username);
+    clearLoginAttempts(ip, username);
     const session = await createSession(user.adminUserId, ipHash);
     await db.update(schema.adminUsers).set({ lastLoginAt: new Date() }).where(eq(schema.adminUsers.adminUserId, user.adminUserId));
     await audit(user.adminUserId, "login", null, ipHash);

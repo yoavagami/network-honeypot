@@ -15,6 +15,9 @@ export const config = {
   rawIpRetentionDays: Number(process.env.RAW_IP_RETENTION_DAYS ?? 7),
   eventRetentionDays: Number(process.env.EVENT_RETENTION_DAYS ?? 90),
   geolocationEnabled: process.env.GEOLOCATION_ENABLED === "true",
+  // See packages/detection/src/fingerprint.ts's resolveClientIp() for why this exists and why
+  // it must stay opt-in — only true on the Render deployment (render.yaml), never a default.
+  trustCfConnectingIp: process.env.TRUST_CF_CONNECTING_IP === "true",
   queueCapacity: Number(process.env.INGESTION_QUEUE_CAPACITY ?? 5000),
   queueFlushIntervalMs: Number(process.env.INGESTION_FLUSH_INTERVAL_MS ?? 500),
   queueFlushBatchSize: Number(process.env.INGESTION_FLUSH_BATCH_SIZE ?? 200),

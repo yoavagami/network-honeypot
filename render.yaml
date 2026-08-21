@@ -54,6 +54,14 @@ services:
         value: "0.0.0.0"
       - key: LOG_LEVEL
         value: info
+      # Render's public edge runs on Cloudflare, which is a real proxy hop in front of Render's
+      # own — trustProxy:1 (correct for the VPS/AWS path's single Nginx hop) isn't enough here.
+      # Found live: without this, every request recorded Cloudflare's own edge IP as the
+      # visitor's, geolocating to wherever that colo physically is, not the real visitor. See
+      # packages/detection/src/fingerprint.ts's resolveClientIp() — safe only because it's
+      # explicitly opt-in, never a default.
+      - key: TRUST_CF_CONNECTING_IP
+        value: "true"
       # Optional Phase 2 features — all off/empty by default, set these in the dashboard's
       # Environment tab if you want them (each needs its own external account/token — see
       # docs/ROADMAP.md Phase 2). sync: false means Render won't overwrite your value on
@@ -97,6 +105,12 @@ services:
         value: "0.0.0.0"
       - key: LOG_LEVEL
         value: info
+      # Same reasoning as the honeypot service above — admin-api's login rate limiter is keyed
+      # by IP, and without this it was keying every visitor behind Cloudflare's edge as the same
+      # handful of colo IPs, undermining the per-IP rate limit this deployment's threat model
+      # relies on (see docs/DEPLOY_RENDER.md).
+      - key: TRUST_CF_CONNECTING_IP
+        value: "true"
       # admin-web and admin-api are on different onrender.com hostnames — "strict" would
       # silently drop the session cookie on every cross-origin call. CORS (below) is the real
       # access boundary here, not SameSite. See docs/SECURITY.md.

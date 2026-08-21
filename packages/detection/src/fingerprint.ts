@@ -12,6 +12,34 @@ export function todayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+const IP_LIKE = /^[0-9a-fA-F.:]+$/;
+
+/**
+ * Resolves the actual visitor IP when there's more than one proxy hop between the client and
+ * the app — found live on Render: `trustProxy: 1` (correct for the VPS/AWS path, which has
+ * exactly one hop — our own Nginx) isn't enough there, because Render's public edge runs on
+ * Cloudflare, and Cloudflare's own edge is functionally a *second* hop in front of Render's own
+ * proxy. With trustProxy stuck at 1, Fastify's `request.ip` resolved to Cloudflare's edge
+ * server address, not the visitor's — every request looked like it came from a handful of
+ * Cloudflare colo IPs, geolocating to wherever that colo physically is (its result showed
+ * Seattle/Amsterdam for real visitors from elsewhere), not the visitor's real location. Adding
+ * more hops to `trustProxy` isn't a real fix either — Render doesn't publish exactly how many
+ * internal hops sit between Cloudflare and the container, and that number could change without
+ * notice. `CF-Connecting-IP` is Cloudflare's own answer to this exact problem: it's set by
+ * Cloudflare's edge itself (overwriting anything the client sent), so it's trustworthy whenever
+ * traffic is actually routed through Cloudflare — but NOT otherwise, since on a deployment with
+ * no Cloudflare in front (VPS/AWS via our own Nginx), a client could set this header to anything
+ * and there'd be nothing stripping it. That's why this only takes effect when
+ * `trustCfConnectingIp` is explicitly true — wired to `TRUST_CF_CONNECTING_IP`, set only on the
+ * Render deployment (see render.yaml), never as a default.
+ */
+export function resolveClientIp(fastifyIp: string, cfConnectingIpHeader: string | string[] | undefined, trustCfConnectingIp: boolean): string {
+  if (!trustCfConnectingIp) return fastifyIp;
+  const header = Array.isArray(cfConnectingIpHeader) ? cfConnectingIpHeader[0] : cfConnectingIpHeader;
+  if (header && IP_LIKE.test(header)) return header;
+  return fastifyIp;
+}
+
 /**
  * Coarse UA fingerprint: family + major version only (not the full raw string), so minor
  * version churn doesn't fragment actor correlation. The raw string is stored separately for

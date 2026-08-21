@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { schema } from "@honeypot/db";
-import { hashIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, type RiskFlag } from "@honeypot/detection";
+import { hashIp, resolveClientIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, type RiskFlag } from "@honeypot/detection";
 import type { EventType } from "@honeypot/types";
 import { db } from "../db.js";
 import { config } from "../config.js";
@@ -41,6 +41,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
         visitorId: "",
         actorId: "",
         sessionId: "",
+        ip: "",
         ipHash: "",
         uaFingerprint: "",
         skipIngestion: true,
@@ -61,6 +62,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
       visitorId: "",
       actorId: "",
       sessionId: "",
+      ip: "",
       ipHash: "",
       uaFingerprint: "",
     };
@@ -72,10 +74,11 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
     }
     request.hp.visitorId = visitorId;
 
-    const ip = request.ip;
+    const ip = resolveClientIp(request.ip, request.headers["cf-connecting-ip"], config.trustCfConnectingIp);
     const ipHash = hashIp(ip, config.ipHashSecret);
     const userAgentRaw = request.headers["user-agent"] ?? null;
     const uaFingerprint = userAgentFingerprint(userAgentRaw);
+    request.hp.ip = ip;
     request.hp.ipHash = ipHash;
     request.hp.uaFingerprint = uaFingerprint;
 
@@ -110,7 +113,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
 async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, queue: IngestionQueue) {
   metrics.requestsTotal += 1;
   const durationMs = Date.now() - request.hp.startedAtMs;
-  const { actorId, sessionId, ipHash, uaFingerprint } = request.hp;
+  const { actorId, sessionId, ip, ipHash, uaFingerprint } = request.hp;
 
   if (!actorId) {
     // onRequest's resolveActor() never completed (e.g. Postgres was briefly unreachable), so
@@ -154,7 +157,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
       actorId,
       sessionId,
       ipHash,
-      ipRaw: request.ip,
+      ipRaw: ip,
       sourcePort: request.socket.remotePort ?? null,
       method: request.method,
       scheme: request.protocol,

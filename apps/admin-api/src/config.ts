@@ -31,6 +31,9 @@ export const config = {
   databaseUrl: resolveDatabaseUrl("admin_api_role", "ADMIN_API_DB_PASSWORD"),
   sessionSecret: required("SESSION_SECRET"),
   ipHashSecret: required("IP_HASH_SECRET"),
+  // See packages/detection/src/fingerprint.ts's resolveClientIp() — only true on Render
+  // (render.yaml), never a default. Same reasoning as apps/honeypot/src/config.ts.
+  trustCfConnectingIp: process.env.TRUST_CF_CONNECTING_IP === "true",
   adminWebOrigin: process.env.ADMIN_WEB_ORIGIN ?? "http://localhost:8081",
   // "strict" is correct and sufficient when admin-web and admin-api share a site (the SSH-tunnel
   // AWS default, where both are reached via localhost, or the AWS same-origin-proxy public
