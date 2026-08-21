@@ -139,7 +139,11 @@ services:
     plan: starter
     envVars:
       # Read at container start, not baked into the build — see
-      # infrastructure/docker/admin-web-entrypoint.sh. Same fallback note as ADMIN_WEB_ORIGIN
-      # above: verify this resolves correctly, set manually + restart if not.
+      # infrastructure/docker/admin-web-entrypoint.sh. NOT `fromService`, for the identical
+      # reason ADMIN_WEB_ORIGIN above isn't: this needs admin-api's *public* HTTPS URL (the
+      # browser calls it directly), but fromService only ever returns the private-network
+      # host:port — confirmed twice now, this is what was still broken after the first fix only
+      # covered ADMIN_WEB_ORIGIN and missed this mirror-image case. Fill in by hand once you know
+      # admin-api's actual onrender.com URL — see docs/DEPLOY_RENDER.md step 1.
       - key: ADMIN_API_URL
-        fromService: { type: web, name: admin-api, property: hostport }
+        sync: false

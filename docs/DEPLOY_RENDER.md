@@ -47,22 +47,30 @@ instead of deploying them there at all.
    `plan: starter`, which (unlike the old Postgres plan names) Render hasn't renamed.
 4. Wait for all four resources to finish provisioning.
 
-## 2. Verify the cross-service env vars resolved (the part this author couldn't test live)
+## 2. Set the two cross-service URLs by hand (required — not optional)
 
-`render.yaml` uses `fromService: { ..., property: hostport }` so `admin-web` learns admin-api's
-URL, and `admin-api` learns admin-web's URL (for CORS) and honeypot's URL (for the ingestion
-health check on the dashboard's Overview page). This is the author's best understanding of
-Render's Blueprint spec — **verify it actually worked**:
+Two env vars need a real value neither service knows until after both exist, and **both are a
+required manual step, not something to just verify**: `render.yaml` originally tried
+`fromService: { ..., property: hostport }` for these, on the theory that Render's Blueprint spec
+would resolve a service's public URL automatically. Confirmed twice now, live, that it doesn't —
+`fromService`'s `host`/`port`/`hostport` properties only ever return the *private-network*
+address (e.g. `admin-api-w2fk:10000`), never the public `https://admin-api-w2fk.onrender.com`
+URL. A browser can't resolve the private address at all, so leaving either on `fromService`
+means the dashboard silently fails outright (blank page or every request erroring), not just
+"format looks off." Both are `sync: false` in `render.yaml` now, meaning they start **empty** and
+must be filled in:
 
-- Open the deployed `admin-web` URL. If the dashboard loads but every request fails, `admin-api`'s
-  URL didn't resolve correctly.
-- Check by hand: `admin-api`'s dashboard → Environment tab → confirm `ADMIN_WEB_ORIGIN` shows
-  admin-web's real `https://admin-web-xxxx.onrender.com` URL, not empty or malformed. Same for
-  `admin-web`'s `ADMIN_API_URL`.
-- **If either is wrong**: set it manually in that service's Environment tab to the correct URL
-  (copy it from the other service's own page) and trigger a restart. Because
-  `ADMIN_API_URL` is read at container *start*, not baked into the build (see
-  `infrastructure/docker/admin-web-entrypoint.sh`), a restart is enough — no rebuild needed.
+- `admin-api`'s dashboard → Environment tab → set `ADMIN_WEB_ORIGIN` to admin-web's real
+  `https://admin-web-xxxx.onrender.com` URL (used for CORS — the actual access boundary here,
+  see docs/SECURITY.md).
+- `admin-web`'s dashboard → Environment tab → set `ADMIN_API_URL` to admin-api's real
+  `https://admin-api-xxxx.onrender.com` URL.
+- Restart both after setting these. Because `ADMIN_API_URL` is read at container *start*, not
+  baked into the build (see `infrastructure/docker/admin-web-entrypoint.sh`), a restart is
+  enough — no rebuild needed.
+- `HONEYPOT_INTERNAL_URL` (on `admin-api`) is the one exception that correctly *does* use
+  `fromService` — admin-api reaches the honeypot's health endpoint server-to-server, inside
+  Render's private network, where the private host:port is exactly right. Leave that one alone.
 
 ## 3. Run migrations + seed
 
