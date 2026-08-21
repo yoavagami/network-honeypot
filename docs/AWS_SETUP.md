@@ -145,28 +145,18 @@ Remaining cost while paused: just the 20GB gp3 disk, ~$1.60/mo — see `down.sh`
 for why that's the honest floor, not literal $0, as long as you're keeping the data.
 
 ### Tear it all down (destroy everything, including the data)
-```bash
-NAME=network-honeypot
-REGION=us-east-1   # or whatever you configured
-
-INSTANCE_ID=$(aws ec2 describe-instances --region $REGION --filters "Name=tag:Name,Values=$NAME" "Name=instance-state-name,Values=running,stopped" --query 'Reservations[0].Instances[0].InstanceId' --output text)
-ALLOC_ID=$(aws ec2 describe-addresses --region $REGION --filters "Name=tag:Name,Values=$NAME" --query 'Addresses[0].AllocationId' --output text)
-SG_ID=$(aws ec2 describe-security-groups --region $REGION --filters "Name=group-name,Values=$NAME" --query 'SecurityGroups[0].GroupId' --output text)
-
-aws ec2 terminate-instances --region $REGION --instance-ids "$INSTANCE_ID"
-aws ec2 wait instance-terminated --region $REGION --instance-ids "$INSTANCE_ID"
-aws ec2 release-address --region $REGION --allocation-id "$ALLOC_ID"
-aws ec2 delete-security-group --region $REGION --group-id "$SG_ID"
-aws ec2 delete-key-pair --region $REGION --key-name "$NAME"
-rm -f infrastructure/aws/network-honeypot-key.pem
 ```
-The EBS volume is created with `DeleteOnTermination: true` (see `provision.sh`), so terminating
-the instance deletes the disk — and everything on it, including all collected telemetry — too.
-Use the pause option above instead if you want to keep that.
+infrastructure/aws/destroy.sh
+```
+Prompts you to type `destroy` to confirm — it's irreversible — or set `CONFIRM=yes` to skip the
+prompt. Terminates the instance (the EBS volume is created with `DeleteOnTermination: true`, so
+the disk — and everything on it, including all collected telemetry — goes with it), releases the
+Elastic IP, deletes the security group and key pair. Use the pause option above instead if you
+want to keep the data.
 
 Note: as of Feb 2024, AWS bills a small hourly fee for an Elastic IP address regardless of
-whether it's attached to a running instance — `release-address` above (and inside `down.sh`) is
-what stops that meter, not just stopping or terminating the instance.
+whether it's attached to a running instance — the release step in both `destroy.sh` and `down.sh`
+is what actually stops that meter, not just stopping or terminating the instance.
 
 ## Cost estimate
 
