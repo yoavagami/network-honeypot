@@ -45,18 +45,23 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
   echo "    generating secrets"
   TMP_ENV=$(mktemp)
   {
+    # -hex, not -base64: base64 output can contain /, +, = which break unescaped inside a
+    # postgres:// URL's userinfo section (confirmed live: a HONEYPOT_DB_PASSWORD containing "/"
+    # crashed the honeypot container with `TypeError: Invalid URL` in postgres.js). Hex is
+    # alphanumeric-only, always URL-safe, and used uniformly here (not just for the DB passwords)
+    # so this class of bug can't resurface if any of these secrets end up in a URL later.
     echo "POSTGRES_SUPERUSER=honeypot_owner"
-    echo "POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -base64 24)"
+    echo "POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)"
     echo "POSTGRES_DB=honeypot"
-    echo "HONEYPOT_DB_PASSWORD=$(openssl rand -base64 24)"
-    echo "ADMIN_API_DB_PASSWORD=$(openssl rand -base64 24)"
-    echo "IP_HASH_SECRET=$(openssl rand -base64 24)"
-    echo "COOKIE_SECRET=$(openssl rand -base64 24)"
-    echo "SESSION_SECRET=$(openssl rand -base64 24)"
+    echo "HONEYPOT_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "ADMIN_API_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "IP_HASH_SECRET=$(openssl rand -hex 24)"
+    echo "COOKIE_SECRET=$(openssl rand -hex 24)"
+    echo "SESSION_SECRET=$(openssl rand -hex 24)"
     echo "ADMIN_WEB_ORIGIN=http://localhost:8081"
     echo "ADMIN_API_PUBLIC_URL=http://localhost:8090"
     echo "SEED_ADMIN_USERNAME=admin"
-    SEED_PASSWORD="$(openssl rand -base64 18)"
+    SEED_PASSWORD="$(openssl rand -hex 18)"
     echo "SEED_ADMIN_PASSWORD=${SEED_PASSWORD}"
     echo "RAW_IP_RETENTION_DAYS=7"
     echo "EVENT_RETENTION_DAYS=90"
