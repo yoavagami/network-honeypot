@@ -100,7 +100,13 @@ async function seedAdmin() {
     console.log("admin user already exists — skipping");
     return;
   }
-  const password = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(12).toString("base64url");
+  // `||`, not `??`: an .env with SEED_ADMIN_PASSWORD= (present but empty — the documented
+  // "unset" convention used throughout this project's .env.example) must fall through to
+  // generating one. `??` only catches null/undefined, so an empty string silently "counted" as
+  // a real configured password — found live: this produced an admin user whose password hash
+  // was of the empty string, with nothing printed for the operator to log in with, since the
+  // print logic below (correctly) also treats empty as "generated" and interpolated the blank.
+  const password = process.env.SEED_ADMIN_PASSWORD || randomBytes(12).toString("base64url");
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
   await db.insert(schema.adminUsers).values({
     adminUserId: randomUUID(),

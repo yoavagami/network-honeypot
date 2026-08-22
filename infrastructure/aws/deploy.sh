@@ -30,8 +30,13 @@ $SSH "bash /tmp/bootstrap.sh"
 
 echo "==> Syncing the repo"
 $SSH "mkdir -p $REMOTE_DIR"
+# --exclude .env matters: without it this ships your LOCAL dev .env (DB passwords, session
+# secrets, whatever local GEOLOCATION_ENABLED/IPINFO_TOKEN you have set) to the remote box
+# instead of letting it generate its own unique ones below — found live, this also silently
+# broke the admin password generation (an empty SEED_ADMIN_PASSWORD= from a local .env reads as
+# "configured" to seed.ts's `??` check, so it skipped generating a random one).
 rsync -az --delete \
-  --exclude node_modules --exclude .git --exclude dist --exclude pgdata --exclude '*.pem' \
+  --exclude node_modules --exclude .git --exclude dist --exclude pgdata --exclude '*.pem' --exclude .env \
   -e "ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new" \
   "$REPO_ROOT/" "ubuntu@$PUBLIC_IP:$REMOTE_DIR/"
 
