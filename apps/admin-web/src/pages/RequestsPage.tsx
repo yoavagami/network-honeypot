@@ -125,6 +125,7 @@ export function RequestsPage() {
             <tr>
               <th>Time</th>
               <th>IP</th>
+              <th>Accessed via</th>
               <th>Country</th>
               <th>User-Agent</th>
               <th>Method</th>
@@ -139,6 +140,17 @@ export function RequestsPage() {
                 <td className="mono">{new Date(r.createdAt).toLocaleString()}</td>
                 <td className="mono" title={r.ipHash}>
                   {r.ipRaw ?? <span className="muted">redacted</span>}
+                </td>
+                <td>
+                  {r.isDirectIp ? (
+                    <span className="badge info" title={`Host header: ${r.host}`}>
+                      IP
+                    </span>
+                  ) : (
+                    <span className="mono truncate" title={r.host}>
+                      {r.host}
+                    </span>
+                  )}
                 </td>
                 <td>{[r.city, r.country].filter(Boolean).join(", ") || <span className="muted">—</span>}</td>
                 <td className="truncate" title={r.userAgentRaw ?? undefined}>
@@ -156,7 +168,7 @@ export function RequestsPage() {
             ))}
             {rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={9} className="muted">
                   {hasActiveFilters ? "No requests match these filters." : "No requests recorded yet."}
                 </td>
               </tr>

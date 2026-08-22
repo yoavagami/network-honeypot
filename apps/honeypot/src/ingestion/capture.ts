@@ -144,6 +144,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
     hasRefererFromSite: Boolean(request.headers.referer?.includes(request.headers.host ?? "")),
     candidateCanaryHaystacks: request.hp.canaryHaystacks,
     activeCanaryValues: getActiveCanaryValues(),
+    host: request.headers.host ?? "",
   });
 
   const riskFlags: RiskFlag[] = [...inline.riskFlags];

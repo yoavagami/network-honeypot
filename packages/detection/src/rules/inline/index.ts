@@ -1,6 +1,7 @@
 import type { EventType } from "@honeypot/types";
 import { matchesReconSignature } from "./reconSignatures.js";
 import { matchesScannerUa } from "./scannerUa.js";
+import { matchesDirectIpAccess } from "./directIpAccess.js";
 import { findCanaryMatches } from "./canary.js";
 import type { RiskFlag } from "../../scoring.js";
 
@@ -15,6 +16,7 @@ export interface InlineEvaluationInput {
   hasRefererFromSite: boolean;
   candidateCanaryHaystacks: Array<string | null | undefined>;
   activeCanaryValues: string[];
+  host: string;
 }
 
 export interface InlineEvaluationResult {
@@ -49,6 +51,12 @@ export function evaluateInline(input: InlineEvaluationInput): InlineEvaluationRe
   if (matchesScannerUa(input.userAgent)) {
     riskFlags.push("scannerOrLibraryUa");
     signals.push("scanner-or-library-user-agent");
+  }
+
+  if (matchesDirectIpAccess(input.host)) {
+    additionalEventTypes.push("DIRECT_IP_ACCESS");
+    riskFlags.push("directIpAccess");
+    signals.push("direct-ip-access");
   }
 
   if (input.isAdminArea) {

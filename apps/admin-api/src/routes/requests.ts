@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { and, desc, eq, gte, lte, lt, ilike, notIlike, sql } from "drizzle-orm";
 import { schema } from "@honeypot/db";
+import { matchesDirectIpAccess } from "@honeypot/detection";
 import { db } from "../db.js";
 import { audit } from "../audit.js";
 
@@ -68,6 +69,7 @@ export function registerRequestRoutes(app: FastifyInstance) {
         // 7 days) before the retention job NULLs it; rows older than that show null here too,
         // same as the underlying column.
         ipRaw: schema.requests.ipRaw,
+        host: schema.requests.host,
         method: schema.requests.method,
         path: schema.requests.path,
         queryString: schema.requests.queryString,
@@ -86,7 +88,12 @@ export function registerRequestRoutes(app: FastifyInstance) {
       .orderBy(desc(schema.requests.createdAt))
       .limit(limit);
 
+    // Reuses the exact same check the honeypot itself runs at capture time (see
+    // packages/detection/src/rules/inline/directIpAccess.ts) rather than re-deriving equivalent
+    // logic in SQL — one implementation, shared by both scoring and display.
+    const data = rows.map((r) => ({ ...r, isDirectIp: matchesDirectIpAccess(r.host) }));
+
     await audit(request.adminSession!.adminUserId, "list_requests", null, null, { count: rows.length });
-    reply.send({ data: rows, nextCursor: rows.length === limit ? rows[rows.length - 1]?.createdAt : null });
+    reply.send({ data, nextCursor: rows.length === limit ? rows[rows.length - 1]?.createdAt : null });
   });
 }

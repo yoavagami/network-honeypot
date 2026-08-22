@@ -156,6 +156,12 @@ export interface RequestLogRow {
   ipHash: string;
   /** Only populated within RAW_IP_RETENTION_DAYS of the request — null once redacted. */
   ipRaw: string | null;
+  /** The literal HTTP Host header — a raw IP if the visitor addressed the box directly, or a
+   * real hostname (e.g. www.mynewshop.io) if they came in through a domain. */
+  host: string;
+  /** True when `host` is a raw IP rather than a hostname — same check the honeypot itself runs
+   * at capture time (DIRECT_IP_ACCESS event, packages/detection's matchesDirectIpAccess). */
+  isDirectIp: boolean;
   method: string;
   path: string;
   queryString: string | null;

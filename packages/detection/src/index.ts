@@ -14,6 +14,7 @@ export * from "./botClassification.js";
 export * from "./rules/inline/index.js";
 export * from "./rules/inline/reconSignatures.js";
 export * from "./rules/inline/scannerUa.js";
+export * from "./rules/inline/directIpAccess.js";
 export * from "./rules/inline/canary.js";
 export * from "./rules/correlation/types.js";
 export * from "./rules/correlation/reconnaissance.js";

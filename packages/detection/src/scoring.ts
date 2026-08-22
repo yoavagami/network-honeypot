@@ -4,6 +4,7 @@
  */
 export const RISK_WEIGHTS = {
   scannerOrLibraryUa: 10,
+  directIpAccess: 10,
   reconSignaturePath: 15,
   invalidRouteOrMethodOrParam: 20,
   enumerationDetected: 25,
