@@ -23,6 +23,15 @@ docker run --rm -p 80:80 \
   certbot/certbot certonly --standalone \
   -d "$DOMAIN" --agree-tos -m "$EMAIL" -n --no-eff-email
 
+# certbot's live/ and archive/ directories are 0700 root-only by default. nginx's container
+# runs as an unprivileged, capability-dropped user (see docker-compose.yml's nginx service) for
+# hardening, so without this it can never read its own certificate — confirmed live: nginx
+# crash-looped with "cannot load certificate ... Permission denied" until this ran. a+X only
+# grants execute on directories (needed to traverse into them), not on the key file itself.
+echo "==> Making certificates readable by the unprivileged Nginx container"
+docker run --rm -v honeypot_certbot_certs:/etc/letsencrypt alpine \
+  chmod -R a+rX /etc/letsencrypt/live /etc/letsencrypt/archive
+
 echo "==> Starting Nginx with TLS enabled"
 docker compose \
   -f "$REPO_ROOT/docker-compose.yml" \
@@ -33,4 +42,4 @@ echo
 echo "Done. Verify: curl -I https://$DOMAIN"
 echo
 echo "Certificates expire in 90 days. Set up renewal (crontab -e on the host):"
-echo "  0 3 * * * docker run --rm -v honeypot_certbot_certs:/etc/letsencrypt certbot/certbot renew --quiet && docker compose -f $REPO_ROOT/docker-compose.yml -f $REPO_ROOT/infrastructure/vps/docker-compose.tls.yml restart nginx"
+echo "  0 3 * * * docker run --rm -v honeypot_certbot_certs:/etc/letsencrypt certbot/certbot renew --quiet && docker run --rm -v honeypot_certbot_certs:/etc/letsencrypt alpine chmod -R a+rX /etc/letsencrypt/live /etc/letsencrypt/archive && docker compose -f $REPO_ROOT/docker-compose.yml -f $REPO_ROOT/infrastructure/vps/docker-compose.tls.yml restart nginx"
