@@ -1,0 +1,10 @@
+# Republishes nginx on host port 80 for the AWS deploy path. The base docker-compose.yml maps
+# nginx to host port 8080 (so local dev doesn't need root/CAP_NET_BIND_SERVICE) but
+# provision.sh's security group only opens 80/443/8443 publicly, and the honeypot's whole point
+# is looking like a real site on the standard web port — so AWS deploys need the host side on 80.
+# Container-side nginx already binds its own port 80 either way; only the host-side publish
+# changes here, so no added privilege requirement.
+services:
+  nginx:
+    ports:
+      - "80:80"

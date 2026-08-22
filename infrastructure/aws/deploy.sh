@@ -99,11 +99,20 @@ $SSH "chmod +x $REMOTE_DIR/infrastructure/vps/retention-cron.sh"
 $SSH "(crontab -l 2>/dev/null | grep -v 'retention-cron.sh'; echo \"0 3 * * * \\\$HOME/$REMOTE_DIR/infrastructure/vps/retention-cron.sh \\\$HOME/$REMOTE_DIR >> \\\$HOME/$REMOTE_DIR/retention.log 2>&1\") | crontab -"
 
 echo "==> Building and starting the full stack"
-$SSH "cd $REMOTE_DIR && docker compose up -d --build"
+# -f ...override.yml republishes nginx on host port 80 (base docker-compose.yml uses 8080, for
+# local dev) — see infrastructure/aws/docker-compose.override.yml for why. Without it nothing
+# listens on the port provision.sh's security group actually opens publicly.
+COMPOSE="docker compose -f docker-compose.yml -f infrastructure/aws/docker-compose.override.yml"
+$SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
 
 echo
 echo "==> Verifying"
-$SSH "curl -sS -o /dev/null -w 'honeypot: %{http_code}\n' http://localhost:8080/"
+for i in $(seq 1 15); do
+  CODE=$($SSH "curl -sS -o /dev/null -w '%{http_code}' http://localhost/" || echo "000")
+  [ "$CODE" != "000" ] && [ "$CODE" != "502" ] && break
+  sleep 2
+done
+echo "honeypot: $CODE"
 
 cat <<EOF
 
