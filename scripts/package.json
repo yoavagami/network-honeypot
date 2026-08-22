@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "seed": "tsx seed.ts",
-    "simulate": "tsx simulate-traffic.ts"
+    "simulate": "tsx simulate-traffic.ts",
+    "backfill-enrichment": "tsx backfill-enrichment.ts"
   },
   "dependencies": {
     "@honeypot/db": "workspace:*",

@@ -12,7 +12,8 @@
     "migrate": "pnpm --filter @honeypot/db run migrate",
     "retention": "pnpm --filter @honeypot/db run retention",
     "seed": "pnpm --filter @honeypot/scripts run seed",
-    "simulate": "pnpm --filter @honeypot/scripts run simulate"
+    "simulate": "pnpm --filter @honeypot/scripts run simulate",
+    "backfill-enrichment": "pnpm --filter @honeypot/scripts run backfill-enrichment"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
