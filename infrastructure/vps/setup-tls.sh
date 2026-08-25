@@ -38,6 +38,12 @@ docker compose \
   -f "$REPO_ROOT/infrastructure/vps/docker-compose.tls.yml" \
   up -d nginx
 
+# Lets deploy.sh detect "TLS is active" on future redeploys — without this, its rsync --delete
+# wipes the rendered TLS config above (never tracked in git, only generated here) and its plain
+# `docker compose up` recreates nginx without the TLS overlay, silently reverting to HTTP-only.
+# Found live: exactly that happened on the first redeploy after this script ran.
+grep -q '^TLS_DOMAIN=' "$REPO_ROOT/.env" && sed -i "s/^TLS_DOMAIN=.*/TLS_DOMAIN=$DOMAIN/" "$REPO_ROOT/.env" || echo "TLS_DOMAIN=$DOMAIN" >> "$REPO_ROOT/.env"
+
 echo
 echo "Done. Verify: curl -I https://$DOMAIN"
 echo

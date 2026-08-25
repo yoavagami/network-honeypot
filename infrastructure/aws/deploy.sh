@@ -100,27 +100,45 @@ echo "==> Installing daily retention cron job (redacts old raw IPs, manages mont
 $SSH "chmod +x $REMOTE_DIR/infrastructure/vps/retention-cron.sh"
 $SSH "(crontab -l 2>/dev/null | grep -v 'retention-cron.sh'; echo \"0 3 * * * \\\$HOME/$REMOTE_DIR/infrastructure/vps/retention-cron.sh \\\$HOME/$REMOTE_DIR >> \\\$HOME/$REMOTE_DIR/retention.log 2>&1\") | crontab -"
 
+# If setup-tls.sh has ever been run, .env carries TLS_DOMAIN and the rsync --delete above just
+# wiped infrastructure/nginx/honeypot-tls.rendered.conf (generated at TLS-setup time, never
+# tracked in git) — regenerate it and use the TLS compose overlay instead of the plain one, or
+# every redeploy silently reverts the site to HTTP-only. Found live: exactly that happened on
+# the first redeploy after TLS was set up.
+TLS_DOMAIN=$($SSH "grep '^TLS_DOMAIN=' $REMOTE_DIR/.env 2>/dev/null | cut -d= -f2" || echo "")
+
 echo "==> Building and starting the full stack"
-# -f ...override.yml republishes nginx on host port 80 (base docker-compose.yml uses 8080, for
-# local dev) — see infrastructure/aws/docker-compose.override.yml for why. Without it nothing
-# listens on the port provision.sh's security group actually opens publicly.
-COMPOSE="docker compose -f docker-compose.yml -f infrastructure/aws/docker-compose.override.yml"
+if [ -n "$TLS_DOMAIN" ]; then
+  echo "    TLS active for $TLS_DOMAIN — regenerating rendered Nginx config"
+  $SSH "cd $REMOTE_DIR && export DOMAIN=$TLS_DOMAIN && envsubst '\${DOMAIN}' < infrastructure/nginx/honeypot-tls.conf > infrastructure/nginx/honeypot-tls.rendered.conf"
+  COMPOSE="docker compose -f docker-compose.yml -f infrastructure/vps/docker-compose.tls.yml"
+else
+  # -f ...override.yml republishes nginx on host port 80 (base docker-compose.yml uses 8080, for
+  # local dev) — see infrastructure/aws/docker-compose.override.yml for why. Without it nothing
+  # listens on the port provision.sh's security group actually opens publicly.
+  COMPOSE="docker compose -f docker-compose.yml -f infrastructure/aws/docker-compose.override.yml"
+fi
 $SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
 
 echo
 echo "==> Verifying"
+VERIFY_URL="http://localhost/"
+[ -n "$TLS_DOMAIN" ] && VERIFY_URL="https://localhost/ -k --resolve $TLS_DOMAIN:443:127.0.0.1"
 for i in $(seq 1 15); do
-  CODE=$($SSH "curl -sS -o /dev/null -w '%{http_code}' http://localhost/" || echo "000")
+  CODE=$($SSH "curl -sS -o /dev/null -w '%{http_code}' $VERIFY_URL" || echo "000")
   [ "$CODE" != "000" ] && [ "$CODE" != "502" ] && break
   sleep 2
 done
 echo "honeypot: $CODE"
 
+PUBLIC_URL="http://$PUBLIC_IP/"
+[ -n "$TLS_DOMAIN" ] && PUBLIC_URL="https://$TLS_DOMAIN/"
+
 cat <<EOF
 
 Deployed.
-  Public honeypot: http://$PUBLIC_IP/
-  (add a domain + infrastructure/vps/setup-tls.sh for HTTPS — see docs/AWS_SETUP.md)
+  Public honeypot: $PUBLIC_URL
+$([ -z "$TLS_DOMAIN" ] && echo "  (add a domain + infrastructure/vps/setup-tls.sh for HTTPS — see docs/AWS_SETUP.md)")
 
   Admin dashboard (Option A — SSH tunnel, private by default):
     ssh -i "$KEY_FILE" -N -L 8081:localhost:8081 -L 8090:localhost:8090 ubuntu@$PUBLIC_IP
