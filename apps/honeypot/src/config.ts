@@ -10,6 +10,12 @@ export const config = {
   port: Number(process.env.PORT ?? 8080),
   host: process.env.HOST ?? "0.0.0.0",
   databaseUrl: resolveDatabaseUrl("honeypot_role", "HONEYPOT_DB_PASSWORD"),
+  // Separate connection for the CRM search feature (docs/VULNERABILITY.md) — deliberately
+  // required as its own literal env var rather than going through resolveDatabaseUrl(), which
+  // always prefers a bare DATABASE_URL if one is set — that would silently hand this feature
+  // the main honeypot_role connection instead of the scoped honeypot_crm_role one.
+  crmDatabaseUrl: required("CRM_DATABASE_URL"),
+  crmSearchVulnerable: process.env.CRM_SEARCH_VULNERABLE === "true",
   ipHashSecret: required("IP_HASH_SECRET"),
   cookieSecret: required("COOKIE_SECRET"),
   rawIpRetentionDays: Number(process.env.RAW_IP_RETENTION_DAYS ?? 7),

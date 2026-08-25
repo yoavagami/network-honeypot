@@ -14,7 +14,7 @@ export function registerMiscRoutes(app: FastifyInstance) {
     request.hp.extraEventTypes.push("SITEMAP_ACCESS");
     reply.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-        ["/", "/login", "/register", "/docs", "/search"].map((p) => `<url><loc>https://meridian.example${p}</loc></url>`).join("") +
+        ["/", "/login", "/register", "/docs", "/search", "/customers"].map((p) => `<url><loc>https://meridian.example${p}</loc></url>`).join("") +
         `</urlset>`
     );
   });

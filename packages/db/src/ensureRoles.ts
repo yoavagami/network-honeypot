@@ -16,9 +16,14 @@ import type postgres from "postgres";
 export async function ensureRoles(sql: postgres.Sql) {
   const honeypotPassword = requireEnv("HONEYPOT_DB_PASSWORD");
   const adminApiPassword = requireEnv("ADMIN_API_DB_PASSWORD");
+  // Scoped to the synthetic CRM tables only (migrations/0005_crm_customers.sql) — the
+  // deliberately vulnerable search endpoint connects as this role instead of honeypot_role, so
+  // even a total failure in that one code path can't reach actors/requests/events/admin_users.
+  const honeypotCrmPassword = requireEnv("HONEYPOT_CRM_DB_PASSWORD");
 
   await ensureRole(sql, "honeypot_role", honeypotPassword);
   await ensureRole(sql, "admin_api_role", adminApiPassword);
+  await ensureRole(sql, "honeypot_crm_role", honeypotCrmPassword);
 }
 
 async function ensureRole(sql: postgres.Sql, role: string, password: string) {

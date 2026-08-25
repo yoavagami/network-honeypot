@@ -50,6 +50,12 @@ export const EVENT_TYPES = [
   "HONEYPOT_TRIGGER",
   "CANARY_TRIGGERED",
   "ALERT_TRIGGERED",
+  // CRM search SQLi telemetry (docs/VULNERABILITY.md) — behavioral, derived from actual query
+  // outcomes (a real Postgres error, or a row count the query's own LIMIT should have made
+  // impossible), never from matching signatures against the input text. See routes/crm.ts.
+  "SQLI_PROBE",
+  "SQLI_CONFIRMED",
+  "DATA_EXTRACTION",
 ] as const;
 
 export const EventTypeSchema = z.enum(EVENT_TYPES);

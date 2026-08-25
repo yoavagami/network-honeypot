@@ -55,6 +55,8 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
     echo "POSTGRES_DB=honeypot"
     echo "HONEYPOT_DB_PASSWORD=$(openssl rand -hex 24)"
     echo "ADMIN_API_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "HONEYPOT_CRM_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "CRM_SEARCH_VULNERABLE=false"
     echo "IP_HASH_SECRET=$(openssl rand -hex 24)"
     echo "COOKIE_SECRET=$(openssl rand -hex 24)"
     echo "SESSION_SECRET=$(openssl rand -hex 24)"

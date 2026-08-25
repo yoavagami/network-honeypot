@@ -48,6 +48,11 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://honeypot_role:${HONEYPOT_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-honeypot}
+      # Separate, tightly-scoped connection for the CRM search feature — see
+      # migrations/0005_crm_customers.sql and docs/VULNERABILITY.md. Never falls back to the
+      # main DATABASE_URL above; the vulnerable code path always uses this role.
+      CRM_DATABASE_URL: postgres://honeypot_crm_role:${HONEYPOT_CRM_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-honeypot}
+      CRM_SEARCH_VULNERABLE: ${CRM_SEARCH_VULNERABLE:-false}
       IP_HASH_SECRET: ${IP_HASH_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
       PORT: 8080

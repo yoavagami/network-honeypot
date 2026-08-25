@@ -37,6 +37,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
         paramValidationFailed: false,
         canaryHaystacks: [],
         extraEventTypes: [],
+        extraRiskFlags: [],
         startedAtMs: Date.now(),
         visitorId: "",
         actorId: "",
@@ -58,6 +59,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
       paramValidationFailed: false,
       canaryHaystacks: [],
       extraEventTypes: [],
+      extraRiskFlags: [],
       startedAtMs: Date.now(),
       visitorId: "",
       actorId: "",
@@ -147,7 +149,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
     host: request.headers.host ?? "",
   });
 
-  const riskFlags: RiskFlag[] = [...inline.riskFlags];
+  const riskFlags: RiskFlag[] = [...inline.riskFlags, ...request.hp.extraRiskFlags];
   const riskScore = computeEventRiskScore(riskFlags);
 
   const requestId = randomUUID();

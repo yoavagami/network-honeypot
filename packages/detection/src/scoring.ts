@@ -12,6 +12,8 @@ export const RISK_WEIGHTS = {
   apiProbingDetected: 30,
   adminPageDirectAccess: 35,
   scannerDetectedHighConfidence: 50,
+  sqliProbe: 35,
+  sqliConfirmed: 85,
   canaryTriggered: 90,
 } as const;
 

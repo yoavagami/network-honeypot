@@ -110,6 +110,38 @@ export function searchPage(opts: { query?: string; results: Array<{ title: strin
   });
 }
 
+export function customersPage(opts: { search?: string; company?: string; rows: Array<Record<string, unknown>>; error: boolean }): string {
+  const rows = opts.rows
+    .map(
+      (r) =>
+        `<tr><td>${esc(String(r.name ?? ""))}</td><td>${esc(String(r.email ?? ""))}</td><td>${esc(String(r.company ?? ""))}</td><td><span class="badge">${esc(String(r.status ?? ""))}</span></td></tr>`
+    )
+    .join("\n");
+  return layout({
+    title: "Customers",
+    activeNav: "/customers",
+    body: `
+      <section class="form-page">
+        <h1>Customers</h1>
+        <form method="get" action="/customers">
+          <input type="text" name="search" value="${esc(opts.search ?? "")}" placeholder="Search by name, email, or company…" />
+          <input type="text" name="company" value="${esc(opts.company ?? "")}" placeholder="Filter by company (exact)…" />
+          <button type="submit">Search</button>
+        </form>
+        ${
+          opts.error
+            ? `<p class="error">Something went wrong loading customers. Please try again.</p>`
+            : opts.search
+              ? `<table class="results-table">
+                   <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th></tr></thead>
+                   <tbody>${rows || `<tr><td colspan="4">No customers found.</td></tr>`}</tbody>
+                 </table>`
+              : ""
+        }
+      </section>`,
+  });
+}
+
 export function docsPage(): string {
   return layout({
     title: "API Documentation",
@@ -124,6 +156,7 @@ export function docsPage(): string {
           <li><code>GET /api/v1/objects</code> — list documents/invoices</li>
           <li><code>GET /api/v1/objects/:id</code> — get an object by ID</li>
           <li><code>GET /api/v1/search?q=</code> — full text search</li>
+          <li><code>GET /api/v1/customers?search=&company=</code> — search customers by name, email, or company</li>
           <li><code>GET /api/v1/config</code> — client-safe runtime configuration</li>
           <li><code>GET /api/v1/health</code> — service health</li>
         </ul>

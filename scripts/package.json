@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "seed": "tsx seed.ts",
+    "seed:crm": "tsx seed-crm.ts",
     "simulate": "tsx simulate-traffic.ts",
+    "simulate:sqli": "tsx simulate-sqli-attack.ts",
     "backfill-enrichment": "tsx backfill-enrichment.ts"
   },
   "dependencies": {

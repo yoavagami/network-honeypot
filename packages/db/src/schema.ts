@@ -178,3 +178,60 @@ export const adminAuditLog = pgTable("admin_audit_log", {
   ipHash: text("ip_hash"),
   metadata: jsonb("metadata"),
 });
+
+// Synthetic CRM dataset backing the deliberately vulnerable search endpoint — see
+// migrations/0005_crm_customers.sql and docs/VULNERABILITY.md. Read through a separate,
+// tightly-scoped connection (honeypot_crm_role), never through the app's main `db` client.
+
+export const crmOrganizations = pgTable("crm_organizations", {
+  orgId: uuid("org_id").primaryKey(),
+  name: text("name").notNull(),
+  industry: text("industry").notNull(),
+  plan: text("plan").notNull(),
+  accountStatus: text("account_status").notNull(),
+  createdAt: timestamptz("created_at").notNull(),
+});
+
+export const crmCustomers = pgTable("crm_customers", {
+  customerId: uuid("customer_id").primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  company: text("company").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamptz("created_at").notNull(),
+});
+
+export const crmUsers = pgTable("crm_users", {
+  userId: uuid("user_id").primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  internalNotes: text("internal_notes"),
+  createdAt: timestamptz("created_at").notNull(),
+});
+
+export const crmOrders = pgTable("crm_orders", {
+  orderId: uuid("order_id").primaryKey(),
+  customerId: uuid("customer_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamptz("created_at").notNull(),
+});
+
+export const crmInvoices = pgTable("crm_invoices", {
+  invoiceId: uuid("invoice_id").primaryKey(),
+  orderId: uuid("order_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamptz("created_at").notNull(),
+});
+
+export const crmApiIntegrations = pgTable("crm_api_integrations", {
+  integrationId: uuid("integration_id").primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  provider: text("provider").notNull(),
+  apiKey: text("api_key").notNull(),
+  webhookUrl: text("webhook_url"),
+  createdAt: timestamptz("created_at").notNull(),
+});

@@ -269,6 +269,55 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
     });
   });
 
+  // Powers the Vulnerabilities page — see docs/VULNERABILITY.md. One row per intentionally
+  // vulnerable component; today that's just the CRM search SQLi, but the shape stays the same
+  // if more are ever added. Derived entirely from events already recorded by
+  // apps/honeypot/src/routes/crm.ts's behavioral detection — no separate tracking needed.
+  app.get("/api/analytics/vulnerabilities", async (request, reply) => {
+    const q = request.query as { range?: string; from?: string };
+    const since = rangeStart(q.range, q.from);
+
+    const [sqli] = await db.execute(sql`
+      SELECT
+        count(*) FILTER (WHERE event_type = 'SQLI_PROBE')::int AS attempts,
+        count(*) FILTER (WHERE event_type = 'SQLI_CONFIRMED')::int AS confirmed,
+        count(*) FILTER (WHERE event_type = 'DATA_EXTRACTION')::int AS "dataExtractionEvents",
+        count(DISTINCT actor_id) FILTER (WHERE event_type IN ('SQLI_PROBE', 'SQLI_CONFIRMED'))::int AS actors,
+        min(created_at) FILTER (WHERE event_type = 'SQLI_PROBE') AS "firstAttemptAt",
+        min(created_at) FILTER (WHERE event_type = 'SQLI_CONFIRMED') AS "firstConfirmedAt"
+      FROM events
+      WHERE created_at >= ${since.toISOString()}
+        AND event_type IN ('SQLI_PROBE', 'SQLI_CONFIRMED', 'DATA_EXTRACTION')
+    `);
+
+    // Canary events specifically tied to secrets this vulnerability planted (crm_api_integrations
+    // rows) — distinct from the site-wide canary count elsewhere, which covers every canary type.
+    const [canary] = await db.execute(sql`
+      SELECT count(*)::int AS n
+      FROM canary_events ce
+      JOIN canary_objects co ON co.canary_id = ce.canary_id
+      WHERE co.planted_location LIKE 'crm_api_integrations%'
+        AND ce.created_at >= ${since.toISOString()}
+    `);
+
+    reply.send({
+      data: [
+        {
+          vulnerability: "SQL Injection",
+          category: "Injection",
+          endpoint: "GET /api/v1/customers",
+          firstAttemptAt: sqli?.firstAttemptAt ?? null,
+          firstConfirmedAt: sqli?.firstConfirmedAt ?? null,
+          actors: sqli?.actors ?? 0,
+          attempts: sqli?.attempts ?? 0,
+          confirmed: sqli?.confirmed ?? 0,
+          dataExtractionEvents: sqli?.dataExtractionEvents ?? 0,
+          canaryEvents: canary?.n ?? 0,
+        },
+      ],
+    });
+  });
+
   app.get("/api/analytics/first-contact", async (request, reply) => {
     // "How quickly after deployment did scanners discover the site?" — see docs/ROADMAP.md
     // Phase 2 / brief §37. Deliberately not bounded by the range selector elsewhere on this

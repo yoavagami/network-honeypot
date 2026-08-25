@@ -12,6 +12,7 @@ import { ActorProfilePage } from "./pages/ActorProfilePage.js";
 import { DetectionsPage } from "./pages/DetectionsPage.js";
 import { AlertsPage } from "./pages/AlertsPage.js";
 import { CanariesPage } from "./pages/CanariesPage.js";
+import { VulnerabilitiesPage } from "./pages/VulnerabilitiesPage.js";
 import { GeographyPage } from "./pages/GeographyPage.js";
 import { FirstContactPage } from "./pages/FirstContactPage.js";
 import { SearchPage } from "./pages/SearchPage.js";
@@ -47,6 +48,7 @@ export function App() {
           <Route path="detections" element={<DetectionsPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="canaries" element={<CanariesPage />} />
+          <Route path="vulnerabilities" element={<VulnerabilitiesPage />} />
           <Route path="geography" element={<GeographyPage />} />
           <Route path="first-contact" element={<FirstContactPage />} />
           <Route path="search" element={<SearchPage />} />

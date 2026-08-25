@@ -11,6 +11,7 @@ export interface LayoutOptions {
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
   { href: "/search", label: "Search" },
+  { href: "/customers", label: "Customers" },
   { href: "/docs", label: "Docs" },
   { href: "/login", label: "Sign in" },
 ];

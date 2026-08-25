@@ -12,7 +12,9 @@
     "migrate": "pnpm --filter @honeypot/db run migrate",
     "retention": "pnpm --filter @honeypot/db run retention",
     "seed": "pnpm --filter @honeypot/scripts run seed",
+    "seed:crm": "pnpm --filter @honeypot/scripts run seed:crm",
     "simulate": "pnpm --filter @honeypot/scripts run simulate",
+    "simulate:sqli": "pnpm --filter @honeypot/scripts run simulate:sqli",
     "backfill-enrichment": "pnpm --filter @honeypot/scripts run backfill-enrichment"
   },
   "devDependencies": {

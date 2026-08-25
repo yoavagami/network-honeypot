@@ -82,6 +82,7 @@ export const api = {
   uniqueUserAgents: (range: string) => request<{ data: UserAgentBreakdownRow[] }>(`/api/analytics/user-agents?range=${range}`),
   firstContact: () => request<{ data: FirstContactRow[] }>("/api/analytics/first-contact"),
   discoveryFunnel: (range: string) => request<DiscoveryFunnelResponse>(`/api/analytics/discovery-funnel?range=${range}`),
+  vulnerabilities: (range: string) => request<{ data: VulnerabilityRow[] }>(`/api/analytics/vulnerabilities?range=${range}`),
 
   search: (q: string) => request<{ data: RequestRow[]; query: string }>(`/api/search?q=${encodeURIComponent(q)}`),
 
@@ -271,6 +272,19 @@ export interface FirstContactRow {
 
 export interface DiscoveryFunnelResponse {
   stages: Array<{ stage: string; label: string; actorCount: number }>;
+}
+
+export interface VulnerabilityRow {
+  vulnerability: string;
+  category: string;
+  endpoint: string;
+  firstAttemptAt: string | null;
+  firstConfirmedAt: string | null;
+  actors: number;
+  attempts: number;
+  confirmed: number;
+  dataExtractionEvents: number;
+  canaryEvents: number;
 }
 
 export interface OverviewResponse {
