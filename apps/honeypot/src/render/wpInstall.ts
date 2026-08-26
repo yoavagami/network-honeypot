@@ -99,6 +99,47 @@ export function wpInstallStep1Page(): string {
   );
 }
 
+export function wpSetupConfigPage(): string {
+  return (
+    head("WordPress &rsaquo; Setup Configuration File") +
+    `<h1 class="screen-reader-text">Set up your database connection</h1>
+<form method="post" action="setup-config.php?step=2">
+	<p>Below you should enter your database connection details. If you are not sure about these, contact your host.</p>
+	<table class="form-table" role="presentation">
+		<tr>
+			<th scope="row"><label for="dbname">Database Name</label></th>
+			<td><input name="dbname" id="dbname" type="text" aria-describedby="dbname-desc" size="25" placeholder="wordpress" />
+			<p id="dbname-desc" class="description">The name of the database you want to use with WordPress.</p></td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="uname">Username</label></th>
+			<td><input name="uname" id="uname" type="text" aria-describedby="uname-desc" size="25" placeholder="username" />
+			<p id="uname-desc" class="description">Your database username.</p></td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="pwd">Password</label></th>
+			<td><input name="pwd" id="pwd" type="password" size="25" placeholder="password" autocomplete="off" spellcheck="false" />
+			<p class="description">Your database password.</p></td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="dbhost">Database Host</label></th>
+			<td><input name="dbhost" id="dbhost" type="text" aria-describedby="dbhost-desc" size="25" value="localhost" />
+			<p id="dbhost-desc" class="description">You should be able to get this info from your web host, if <code>localhost</code> does not work.</p></td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="prefix">Table Prefix</label></th>
+			<td><input name="prefix" id="prefix" type="text" value="wp_" size="25" />
+			<p class="description">If you want to run multiple WordPress installations in a single database, change this.</p></td>
+		</tr>
+	</table>
+	<input type="hidden" name="language" value="" />
+	<p class="step"><input name="submit" type="submit" value="Submit" class="button-primary" /></p>
+</form>
+</body>
+</html>`
+  );
+}
+
 export function wpInstallAlreadyPage(): string {
   return (
     head("WordPress &rsaquo; Installation") +

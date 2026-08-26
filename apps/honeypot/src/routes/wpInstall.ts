@@ -5,7 +5,7 @@ import { schema } from "@honeypot/db";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { hashPassword } from "../auth.js";
-import { wpInstallStep1Page, wpInstallAlreadyPage, wpInstallSuccessPage } from "../render/wpInstall.js";
+import { wpInstallStep1Page, wpInstallAlreadyPage, wpInstallSuccessPage, wpSetupConfigPage } from "../render/wpInstall.js";
 import { loginView, loginSubmit, type SyntheticUserData } from "./pages.js";
 
 /**
@@ -28,6 +28,40 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
   // off" discipline as every other toggle in this app. Otherwise identical to /login.
   app.get("/wp-login.php", loginView);
   app.post("/wp-login.php", loginSubmit);
+
+  // The real step before install.php in a genuinely fresh WordPress setup — confirmed live,
+  // two separate actors hit this exact path today and got a plain 404. Whatever DB credentials
+  // get submitted are accepted unconditionally (a real check would be pointless here) and hand
+  // off straight into the existing install.php bait, same as real WP redirecting to install.php
+  // once it can connect. See docs/VULNERABILITY.md.
+  app.get("/wp-admin/setup-config.php", async (request, reply) => {
+    request.hp.endpoint = "wp-install.setup-config.view";
+    request.hp.applicationComponent = "wp-install";
+    request.hp.routeMatched = true;
+    request.hp.extraEventTypes.push("WP_SETUP_CONFIG_VIEWED");
+    request.hp.extraRiskFlags.push("wpInstallViewed");
+    reply.type("text/html").send(wpSetupConfigPage());
+  });
+
+  app.post("/wp-admin/setup-config.php", async (request, reply) => {
+    request.hp.endpoint = "wp-install.setup-config.submit";
+    request.hp.applicationComponent = "wp-install";
+    request.hp.routeMatched = true;
+
+    const body = (request.body ?? {}) as Record<string, string>;
+    const dbname = String(body.dbname ?? "").trim().slice(0, 120);
+    const uname = String(body.uname ?? "").trim().slice(0, 120);
+    const dbhost = String(body.dbhost ?? "").trim().slice(0, 120);
+    request.hp.canaryHaystacks.push(dbname, uname, dbhost);
+
+    request.hp.extraEventTypes.push("WP_SETUP_CONFIG_SUBMITTED");
+    request.hp.extraRiskFlags.push("wpInstallSubmitted");
+    request.hp.extraEventMetadata.submittedDbName = dbname || null;
+    request.hp.extraEventMetadata.submittedDbUser = uname || null;
+    request.hp.extraEventMetadata.submittedDbHost = dbhost || null;
+
+    reply.redirect("/wp-admin/install.php?step=1");
+  });
 
   app.get("/wp-admin/install.php", async (request, reply) => {
     request.hp.endpoint = "wp-install.view";

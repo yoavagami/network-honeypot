@@ -70,6 +70,10 @@ export const EVENT_TYPES = [
   "WP_INSTALL_VIEWED",
   "WP_INSTALL_SUBMITTED",
   "WP_TAKEOVER_CONFIRMED",
+  // setup-config.php is the real step before install.php in a genuinely fresh WP setup —
+  // confirmed live, real scanners check it too, not just install.php directly.
+  "WP_SETUP_CONFIG_VIEWED",
+  "WP_SETUP_CONFIG_SUBMITTED",
 ] as const;
 
 export const EventTypeSchema = z.enum(EVENT_TYPES);
