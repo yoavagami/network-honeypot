@@ -30,16 +30,25 @@ async function runSearch(search: string, company?: string) {
  *     truncation, UNION). Only meaningful when the vulnerable path is actually active — the safe
  *     path can structurally never trigger either.
  */
-function recordSqliTelemetry(request: FastifyRequest, result: { rows: unknown[]; pgError?: { code: string; message: string } }) {
+const RESPONSE_SAMPLE_SIZE = 10;
+
+function recordSqliTelemetry(request: FastifyRequest, result: { rows: Record<string, unknown>[]; pgError?: { code: string; message: string } }) {
   if (!config.crmSearchVulnerable) return;
   if (result.pgError) {
     request.hp.extraEventTypes.push("SQLI_PROBE");
     request.hp.extraRiskFlags.push("sqliProbe");
+    request.hp.extraEventMetadata.pgError = result.pgError;
     return;
   }
   if (result.rows.length > CRM_SEARCH_RESULT_LIMIT) {
     request.hp.extraEventTypes.push("SQLI_CONFIRMED", "DATA_EXTRACTION");
     request.hp.extraRiskFlags.push("sqliConfirmed");
+    // The actual response content isn't captured anywhere else in the pipeline (requests only
+    // logs response_bytes, a count) — this is the one place "what did they actually walk away
+    // with" becomes answerable from the dashboard. Sampled, not the full dump: a bypassed query
+    // can return thousands of rows, and this lands in jsonb.
+    request.hp.extraEventMetadata.rowCount = result.rows.length;
+    request.hp.extraEventMetadata.responseSample = result.rows.slice(0, RESPONSE_SAMPLE_SIZE);
   }
 }
 

@@ -17,6 +17,10 @@ export interface HoneypotRequestContext {
    * SQLi detection, which needs the actual query outcome) — merged with evaluateInline()'s
    * structural flags before scoring. See ingestion/capture.ts's finalizeRequest. */
   extraRiskFlags: RiskFlag[];
+  /** Extra fields merged into every event this request produces (see finalizeRequest) — e.g. the
+   * CRM search route attaches the actual returned rows / Postgres error here, since request/
+   * response *content* isn't captured anywhere else. Keep small: this lands in jsonb. */
+  extraEventMetadata: Record<string, unknown>;
   startedAtMs: number;
   visitorId: string;
   actorId: string;

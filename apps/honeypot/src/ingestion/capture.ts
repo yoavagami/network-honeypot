@@ -38,6 +38,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
         canaryHaystacks: [],
         extraEventTypes: [],
         extraRiskFlags: [],
+        extraEventMetadata: {},
         startedAtMs: Date.now(),
         visitorId: "",
         actorId: "",
@@ -60,6 +61,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
       canaryHaystacks: [],
       extraEventTypes: [],
       extraRiskFlags: [],
+      extraEventMetadata: {},
       startedAtMs: Date.now(),
       visitorId: "",
       actorId: "",
@@ -214,7 +216,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
         severity: severityFor(eventType, riskScore),
         riskScore,
         source: "inline_rule",
-        metadata: { path, method: request.method },
+        metadata: { path, method: request.method, ...request.hp.extraEventMetadata },
       },
     });
   }
