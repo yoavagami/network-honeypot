@@ -11,6 +11,7 @@ import { snapshotMetrics } from "./ingestion/metrics.js";
 import { registerPageRoutes } from "./routes/pages.js";
 import { registerApiRoutes } from "./routes/api.js";
 import { registerCrmRoutes } from "./routes/crm.js";
+import { registerBackdoorRoutes } from "./routes/backdoor.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerMiscRoutes } from "./routes/misc.js";
 import { registerNotFoundHandler } from "./routes/notFound.js";
@@ -47,6 +48,7 @@ async function main() {
   registerPageRoutes(app);
   registerApiRoutes(app);
   registerCrmRoutes(app);
+  registerBackdoorRoutes(app);
   registerAdminRoutes(app);
   registerMiscRoutes(app);
   registerNotFoundHandler(app);

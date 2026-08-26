@@ -53,6 +53,7 @@ services:
       # main DATABASE_URL above; the vulnerable code path always uses this role.
       CRM_DATABASE_URL: postgres://honeypot_crm_role:${HONEYPOT_CRM_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-honeypot}
       CRM_SEARCH_VULNERABLE: ${CRM_SEARCH_VULNERABLE:-false}
+      BACKDOOR_BAIT_ENABLED: ${BACKDOOR_BAIT_ENABLED:-false}
       IP_HASH_SECRET: ${IP_HASH_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
       PORT: 8080

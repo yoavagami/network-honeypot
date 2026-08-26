@@ -39,7 +39,7 @@ export function VulnerabilitiesPage() {
               <th>Actors</th>
               <th>Attempts</th>
               <th>Confirmed</th>
-              <th>Data access events</th>
+              <th>Data access / iteration events</th>
               <th>Canary events</th>
             </tr>
           </thead>

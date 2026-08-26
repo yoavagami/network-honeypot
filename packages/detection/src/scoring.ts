@@ -14,6 +14,9 @@ export const RISK_WEIGHTS = {
   scannerDetectedHighConfidence: 50,
   sqliProbe: 35,
   sqliConfirmed: 85,
+  backdoorPathHit: 15,
+  backdoorCommandRecognized: 35,
+  backdoorCommandIteration: 85,
   canaryTriggered: 90,
 } as const;
 

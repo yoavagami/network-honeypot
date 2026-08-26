@@ -300,6 +300,23 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
         AND ce.created_at >= ${since.toISOString()}
     `);
 
+    // Backdoor/webshell bait (apps/honeypot/src/routes/backdoor.ts) — attempts/confirmed/
+    // dataExtractionEvents are repurposed here as hit/recognized-command/iteration counts. No
+    // canary linkage for this one (the bait doesn't plant anything reusable elsewhere), so that
+    // column is always 0 for this row.
+    const [backdoor] = await db.execute(sql`
+      SELECT
+        count(*) FILTER (WHERE event_type = 'BACKDOOR_PATH_HIT')::int AS attempts,
+        count(*) FILTER (WHERE event_type = 'BACKDOOR_COMMAND_RECOGNIZED')::int AS confirmed,
+        count(*) FILTER (WHERE event_type = 'BACKDOOR_COMMAND_ITERATION')::int AS iterations,
+        count(DISTINCT actor_id) FILTER (WHERE event_type IN ('BACKDOOR_PATH_HIT', 'BACKDOOR_ENGAGED', 'BACKDOOR_COMMAND_RECOGNIZED', 'BACKDOOR_COMMAND_ITERATION'))::int AS actors,
+        min(created_at) FILTER (WHERE event_type = 'BACKDOOR_PATH_HIT') AS "firstAttemptAt",
+        min(created_at) FILTER (WHERE event_type = 'BACKDOOR_COMMAND_RECOGNIZED') AS "firstConfirmedAt"
+      FROM events
+      WHERE created_at >= ${since.toISOString()}
+        AND event_type IN ('BACKDOOR_PATH_HIT', 'BACKDOOR_ENGAGED', 'BACKDOOR_COMMAND_RECOGNIZED', 'BACKDOOR_COMMAND_ITERATION')
+    `);
+
     reply.send({
       data: [
         {
@@ -313,6 +330,18 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
           confirmed: sqli?.confirmed ?? 0,
           dataExtractionEvents: sqli?.dataExtractionEvents ?? 0,
           canaryEvents: canary?.n ?? 0,
+        },
+        {
+          vulnerability: "Webshell/Backdoor Bait",
+          category: "Fake RCE",
+          endpoint: "Various — see docs/VULNERABILITY.md",
+          firstAttemptAt: backdoor?.firstAttemptAt ?? null,
+          firstConfirmedAt: backdoor?.firstConfirmedAt ?? null,
+          actors: backdoor?.actors ?? 0,
+          attempts: backdoor?.attempts ?? 0,
+          confirmed: backdoor?.confirmed ?? 0,
+          dataExtractionEvents: backdoor?.iterations ?? 0,
+          canaryEvents: 0,
         },
       ],
     });

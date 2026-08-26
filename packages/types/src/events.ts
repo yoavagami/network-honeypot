@@ -56,6 +56,13 @@ export const EVENT_TYPES = [
   "SQLI_PROBE",
   "SQLI_CONFIRMED",
   "DATA_EXTRACTION",
+  // Backdoor/webshell bait telemetry (docs/VULNERABILITY.md) — staged funnel measuring whether
+  // an actor adapts to a fake "success" signal or only ever repeats the same probe. See
+  // apps/honeypot/src/backdoor/.
+  "BACKDOOR_PATH_HIT",
+  "BACKDOOR_ENGAGED",
+  "BACKDOOR_COMMAND_RECOGNIZED",
+  "BACKDOOR_COMMAND_ITERATION",
 ] as const;
 
 export const EventTypeSchema = z.enum(EVENT_TYPES);
