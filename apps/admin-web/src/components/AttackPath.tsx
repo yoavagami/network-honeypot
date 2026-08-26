@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { TimelineEntry } from "../api.js";
 import { SeverityBadge } from "./SeverityBadge.js";
 
@@ -29,6 +30,7 @@ interface Step {
   label: string;
   notable: boolean;
   severity: string | null;
+  eventId: string | null;
 }
 
 /** Condenses the raw request/event timeline into a de-duplicated sequence of distinct steps,
@@ -40,9 +42,9 @@ function buildPath(timeline: TimelineEntry[]): Step[] {
 
   for (const entry of chronological) {
     if (entry.kind === "request") {
-      steps.push({ at: entry.at, label: `${entry.method} ${entry.path} → ${entry.statusCode}`, notable: false, severity: null });
+      steps.push({ at: entry.at, label: `${entry.method} ${entry.path} → ${entry.statusCode}`, notable: false, severity: null, eventId: null });
     } else if (entry.eventType && NOTABLE_EVENT_TYPES.has(entry.eventType)) {
-      steps.push({ at: entry.at, label: entry.eventType, notable: true, severity: entry.severity });
+      steps.push({ at: entry.at, label: entry.eventType, notable: true, severity: entry.severity, eventId: entry.eventId });
     }
   }
 
@@ -68,9 +70,15 @@ export function AttackPath({ timeline }: { timeline: TimelineEntry[] }) {
       {steps.map((step, i) => (
         <div key={i}>
           <div style={{ display: "flex", alignItems: "center", gap: ".5rem", padding: ".3rem 0" }}>
-            <span className="mono" style={{ fontSize: ".78rem" }}>
-              {step.notable ? <SeverityBadge severity={step.severity} /> : null} {step.label}
-            </span>
+            {step.eventId ? (
+              <Link to={`/events/${step.eventId}`} className="mono" style={{ fontSize: ".78rem" }}>
+                {step.notable ? <SeverityBadge severity={step.severity} /> : null} {step.label}
+              </Link>
+            ) : (
+              <span className="mono" style={{ fontSize: ".78rem" }}>
+                {step.notable ? <SeverityBadge severity={step.severity} /> : null} {step.label}
+              </span>
+            )}
           </div>
           {i < steps.length - 1 && <div style={{ marginLeft: "6px", color: "var(--text-muted)", fontSize: ".8rem" }}>↓</div>}
         </div>

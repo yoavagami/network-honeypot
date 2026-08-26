@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { api, type ActorProfile, type TimelineEntry } from "../api.js";
 import { SeverityBadge } from "../components/SeverityBadge.js";
 import { StatCard } from "../components/StatCard.js";
@@ -117,6 +117,10 @@ export function ActorProfilePage() {
                 <span>
                   {entry.method} {entry.path} → {entry.statusCode}
                 </span>
+              ) : entry.eventId ? (
+                <Link to={`/events/${entry.eventId}`}>
+                  <SeverityBadge severity={entry.severity} /> {entry.eventType}
+                </Link>
               ) : (
                 <span>
                   <SeverityBadge severity={entry.severity} /> {entry.eventType}
