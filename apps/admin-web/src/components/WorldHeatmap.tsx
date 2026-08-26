@@ -23,6 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   cloud_gcp: "#34a853",
   cloud_other: "#8e44ad",
   hosting_vps: "#17a2b8",
+  cdn_proxy: "#ffc107",
   known_scanner: "#e91e63",
   residential_mobile: "#6c757d",
   unclassified: "#adb5bd",
@@ -68,13 +69,14 @@ function pointRadius(requestCount: number, maxCount: number): number {
   return minR + t * (maxR - minR);
 }
 
-const CATEGORY_LEGEND_ORDER = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps", "known_scanner", "residential_mobile", "unclassified", "unknown"];
+const CATEGORY_LEGEND_ORDER = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps", "cdn_proxy", "known_scanner", "residential_mobile", "unclassified", "unknown"];
 const CATEGORY_LEGEND_LABELS: Record<string, string> = {
   cloud_aws: "AWS",
   cloud_azure: "Azure",
   cloud_gcp: "GCP",
   cloud_other: "Other cloud",
   hosting_vps: "Hosting / VPS",
+  cdn_proxy: "CDN/proxy (origin hidden)",
   known_scanner: "Known scanner",
   residential_mobile: "Residential / mobile",
   unclassified: "Unclassified",

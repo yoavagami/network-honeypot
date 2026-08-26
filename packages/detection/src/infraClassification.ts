@@ -14,7 +14,7 @@
  * actually landing in "unclassified".
  */
 
-export type InfraCategory = "cloud_aws" | "cloud_azure" | "cloud_gcp" | "cloud_other" | "hosting_vps" | "known_scanner" | "residential_mobile" | "unclassified" | "unknown";
+export type InfraCategory = "cloud_aws" | "cloud_azure" | "cloud_gcp" | "cloud_other" | "hosting_vps" | "cdn_proxy" | "known_scanner" | "residential_mobile" | "unclassified" | "unknown";
 
 export interface InfraClassification {
   category: InfraCategory;
@@ -39,6 +39,12 @@ const ASN_TABLE: Record<string, InfraCategory> = {
   AS63949: "hosting_vps", // Linode/Akamai
   AS20473: "hosting_vps", // Vultr (AS-CHOOPA)
   AS51167: "hosting_vps", // Contabo
+  // CDN / reverse proxy — the IP seen is the edge node, not the real origin. Distinct from
+  // "hosting" because the geolocation and even the traffic pattern itself can be an artifact of
+  // the proxy's own edge network rather than the actual actor — confirmed live: identical
+  // malformed User-Agent strings arriving from Stockholm and Frankfurt simultaneously turned out
+  // to be the same Cloudflare-proxied scanner, not two independent actors.
+  AS13335: "cdn_proxy", // Cloudflare
   // Known scanners / security vendors
   AS398722: "known_scanner", // Censys
 };
@@ -55,6 +61,9 @@ const ORG_SUBSTRING_TABLE: Array<{ pattern: RegExp; category: InfraCategory }> =
   { pattern: /linode/i, category: "hosting_vps" },
   { pattern: /vultr|choopa/i, category: "hosting_vps" },
   { pattern: /contabo/i, category: "hosting_vps" },
+  { pattern: /cloudflare/i, category: "cdn_proxy" },
+  { pattern: /fastly/i, category: "cdn_proxy" },
+  { pattern: /\bakamai\b/i, category: "cdn_proxy" },
   { pattern: /censys/i, category: "known_scanner" },
   { pattern: /shodan/i, category: "known_scanner" },
   { pattern: /rapid7/i, category: "known_scanner" },
@@ -82,6 +91,7 @@ const CATEGORY_LABELS: Record<InfraCategory, string> = {
   cloud_gcp: "Cloud — GCP",
   cloud_other: "Cloud — Other",
   hosting_vps: "Hosting / VPS",
+  cdn_proxy: "CDN / Reverse Proxy (real origin hidden)",
   known_scanner: "Known Scanner / Security Vendor",
   residential_mobile: "Residential / Mobile ISP",
   unclassified: "Unclassified",
