@@ -19,6 +19,7 @@ export const config = {
   // Backdoor/webshell bait (docs/VULNERABILITY.md) — no separate DB role needed, this only ever
   // reads a fixed in-code dictionary and writes normal events through the existing pipeline.
   backdoorBaitEnabled: process.env.BACKDOOR_BAIT_ENABLED === "true",
+  wpInstallBaitEnabled: process.env.WP_INSTALL_BAIT_ENABLED === "true",
   ipHashSecret: required("IP_HASH_SECRET"),
   cookieSecret: required("COOKIE_SECRET"),
   rawIpRetentionDays: Number(process.env.RAW_IP_RETENTION_DAYS ?? 7),

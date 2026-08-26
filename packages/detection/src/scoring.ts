@@ -17,6 +17,9 @@ export const RISK_WEIGHTS = {
   backdoorPathHit: 15,
   backdoorCommandRecognized: 35,
   backdoorCommandIteration: 85,
+  wpInstallViewed: 20,
+  wpInstallSubmitted: 60,
+  wpTakeoverConfirmed: 95,
   canaryTriggered: 90,
 } as const;
 

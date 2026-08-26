@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, RouteHandlerMethod } from "fastify";
 import { eq } from "drizzle-orm";
 import { schema } from "@honeypot/db";
 import { db } from "../db.js";
@@ -6,12 +6,15 @@ import { verifyPassword } from "../auth.js";
 import { homePage, loginPage, registerPage, resetPasswordPage, profilePage, searchPage, docsPage, privacyPage } from "../render/pages.js";
 import { passwordShape } from "@honeypot/logging";
 
-interface SyntheticUserData {
+export interface SyntheticUserData {
   username: string;
   email: string;
   name: string;
   passwordHash: string;
   apiKeyPreview: string;
+  /** Set only on accounts created by the WP install-takeover bait (routes/wpInstall.ts) — lets
+   * a successful login here fire WP_TAKEOVER_CONFIRMED instead of a plain LOGIN_SUCCESS. */
+  wpInstallBait?: boolean;
 }
 
 async function findSyntheticUser(usernameOrEmail: string) {
@@ -24,6 +27,45 @@ async function findSyntheticUser(usernameOrEmail: string) {
     return data.username === usernameOrEmail || data.email === usernameOrEmail;
   });
 }
+
+export const loginView: RouteHandlerMethod = async (request, reply) => {
+  request.hp.endpoint = "auth.login.view";
+  request.hp.applicationComponent = "auth";
+  request.hp.extraEventTypes.push("AUTH_PAGE_VIEW");
+  reply.type("text/html").send(loginPage());
+};
+
+// Also registered as /wp-login.php (routes/wpInstall.ts, gated behind WP_INSTALL_BAIT_ENABLED)
+// — same logic, real WordPress's login URL, needed so the WP install-takeover bait's "Log In"
+// link goes somewhere that actually completes the loop rather than 404ing. See docs/VULNERABILITY.md.
+export const loginSubmit: RouteHandlerMethod = async (request, reply) => {
+  request.hp.endpoint = "auth.login.submit";
+  request.hp.applicationComponent = "auth";
+  const body = (request.body ?? {}) as { username?: string; password?: string };
+  const username = String(body.username ?? "").slice(0, 256);
+  const password = String(body.password ?? "").slice(0, 256);
+  request.hp.canaryHaystacks.push(password);
+
+  const user = await findSyntheticUser(username);
+  const userData = user?.data as SyntheticUserData | undefined;
+  const passwordOk = userData ? await verifyPassword(userData.passwordHash, password) : false;
+
+  if (user && userData && passwordOk) {
+    request.hp.extraEventTypes.push("LOGIN_ATTEMPT", "LOGIN_SUCCESS");
+    if (userData.wpInstallBait) {
+      request.hp.extraEventTypes.push("WP_TAKEOVER_CONFIRMED");
+      request.hp.extraRiskFlags.push("wpTakeoverConfirmed");
+    }
+    await db.update(schema.sessions).set({ authenticatedAs: username }).where(eq(schema.sessions.sessionId, request.hp.sessionId));
+    reply.redirect("/profile");
+    return;
+  }
+
+  request.hp.extraEventTypes.push("LOGIN_ATTEMPT", "LOGIN_FAILURE");
+  request.hp.authEvent = { type: "LOGIN_FAILURE", username };
+  void passwordShape(password); // shape computed for parity with redaction contract; not persisted here
+  reply.type("text/html").status(401).send(loginPage({ error: "Invalid email/username or password." }));
+};
 
 export function registerPageRoutes(app: FastifyInstance) {
   app.get("/", async (request, reply) => {
@@ -45,36 +87,8 @@ export function registerPageRoutes(app: FastifyInstance) {
     reply.type("text/html").send(docsPage());
   });
 
-  app.get("/login", async (request, reply) => {
-    request.hp.endpoint = "auth.login.view";
-    request.hp.applicationComponent = "auth";
-    request.hp.extraEventTypes.push("AUTH_PAGE_VIEW");
-    reply.type("text/html").send(loginPage());
-  });
-
-  app.post("/login", async (request, reply) => {
-    request.hp.endpoint = "auth.login.submit";
-    request.hp.applicationComponent = "auth";
-    const body = (request.body ?? {}) as { username?: string; password?: string };
-    const username = String(body.username ?? "").slice(0, 256);
-    const password = String(body.password ?? "").slice(0, 256);
-    request.hp.canaryHaystacks.push(password);
-
-    const user = await findSyntheticUser(username);
-    const passwordOk = user ? await verifyPassword((user.data as SyntheticUserData).passwordHash, password) : false;
-
-    if (user && passwordOk) {
-      request.hp.extraEventTypes.push("LOGIN_ATTEMPT", "LOGIN_SUCCESS");
-      await db.update(schema.sessions).set({ authenticatedAs: username }).where(eq(schema.sessions.sessionId, request.hp.sessionId));
-      reply.redirect("/profile");
-      return;
-    }
-
-    request.hp.extraEventTypes.push("LOGIN_ATTEMPT", "LOGIN_FAILURE");
-    request.hp.authEvent = { type: "LOGIN_FAILURE", username };
-    void passwordShape(password); // shape computed for parity with redaction contract; not persisted here
-    reply.type("text/html").status(401).send(loginPage({ error: "Invalid email/username or password." }));
-  });
+  app.get("/login", loginView);
+  app.post("/login", loginSubmit);
 
   app.get("/register", async (request, reply) => {
     request.hp.endpoint = "auth.register.view";

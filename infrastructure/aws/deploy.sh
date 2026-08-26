@@ -58,6 +58,7 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
     echo "HONEYPOT_CRM_DB_PASSWORD=$(openssl rand -hex 24)"
     echo "CRM_SEARCH_VULNERABLE=false"
     echo "BACKDOOR_BAIT_ENABLED=false"
+    echo "WP_INSTALL_BAIT_ENABLED=false"
     echo "IP_HASH_SECRET=$(openssl rand -hex 24)"
     echo "COOKIE_SECRET=$(openssl rand -hex 24)"
     echo "SESSION_SECRET=$(openssl rand -hex 24)"

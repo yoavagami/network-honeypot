@@ -63,6 +63,13 @@ export const EVENT_TYPES = [
   "BACKDOOR_ENGAGED",
   "BACKDOOR_COMMAND_RECOGNIZED",
   "BACKDOOR_COMMAND_ITERATION",
+  // Fake WordPress install-takeover bait (docs/VULNERABILITY.md) — WP_TAKEOVER_CONFIRMED fires
+  // in addition to the normal LOGIN_SUCCESS when the account that just logged in was created by
+  // this flow, distinguishing "closed the full takeover loop" from an ordinary weak-password
+  // guess against a seeded user. See routes/wpInstall.ts.
+  "WP_INSTALL_VIEWED",
+  "WP_INSTALL_SUBMITTED",
+  "WP_TAKEOVER_CONFIRMED",
 ] as const;
 
 export const EventTypeSchema = z.enum(EVENT_TYPES);
