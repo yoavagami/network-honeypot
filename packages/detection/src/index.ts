@@ -1,4 +1,5 @@
 export * from "./scoring.js";
+export * from "./infraClassification.js";
 export * from "./fingerprint.js";
 export * from "./enrichment.js";
 export * from "./providers/ipinfo.js";

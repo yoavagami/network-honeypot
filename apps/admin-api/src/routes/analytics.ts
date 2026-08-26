@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { schema } from "@honeypot/db";
+import { classifyOrigin } from "@honeypot/detection";
 import { db } from "../db.js";
 
 const RANGE_MS: Record<string, number> = {
@@ -217,23 +218,61 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
     const q = request.query as { range?: string; from?: string };
     const since = rangeStart(q.range, q.from);
 
+    // asn/organization now in the grouping (not just lat/lng/country/city) so a city with both
+    // AWS-hosted and residential traffic renders as two distinctly classifiable points instead
+    // of one blended one — see the infra-origin toggle in WorldHeatmap.tsx.
     const rows = await db
       .select({
         lat: schema.actors.lat,
         lng: schema.actors.lng,
         country: schema.actors.country,
         city: schema.actors.city,
+        asn: schema.actors.asn,
+        organization: schema.actors.organization,
         requestCount: sql<number>`count(${schema.requests.requestId})::int`,
         maxRisk: sql<number>`max(${schema.requests.riskScore})::int`,
       })
       .from(schema.actors)
       .innerJoin(schema.requests, eq(schema.requests.actorId, schema.actors.actorId))
       .where(and(gte(schema.requests.createdAt, since), sql`${schema.actors.lat} is not null`, sql`${schema.actors.lng} is not null`))
-      .groupBy(schema.actors.lat, schema.actors.lng, schema.actors.country, schema.actors.city)
+      .groupBy(schema.actors.lat, schema.actors.lng, schema.actors.country, schema.actors.city, schema.actors.asn, schema.actors.organization)
       .orderBy(sql`count(${schema.requests.requestId}) desc`)
       .limit(500);
 
-    reply.send({ data: rows });
+    const data = rows.map((r) => ({ ...r, infra: classifyOrigin(r.asn, r.organization) }));
+    reply.send({ data });
+  });
+
+  // Powers the Geography page's infra-origin breakdown panel — aggregate counts per classified
+  // category, independent of the map (every enriched actor counts here, not just those with
+  // lat/lng, since classification only needs asn/organization).
+  app.get("/api/analytics/infra-origin", async (request, reply) => {
+    const q = request.query as { range?: string; from?: string };
+    const since = rangeStart(q.range, q.from);
+
+    const rows = await db
+      .selectDistinct({
+        actorId: schema.actors.actorId,
+        asn: schema.actors.asn,
+        organization: schema.actors.organization,
+      })
+      .from(schema.actors)
+      .innerJoin(schema.requests, eq(schema.requests.actorId, schema.actors.actorId))
+      .where(gte(schema.requests.createdAt, since));
+
+    const counts = new Map<string, { label: string; actorCount: number }>();
+    for (const row of rows) {
+      const infra = classifyOrigin(row.asn, row.organization);
+      const existing = counts.get(infra.category);
+      if (existing) existing.actorCount++;
+      else counts.set(infra.category, { label: infra.label, actorCount: 1 });
+    }
+
+    const data = [...counts.entries()]
+      .map(([category, v]) => ({ category, label: v.label, actorCount: v.actorCount }))
+      .sort((a, b) => b.actorCount - a.actorCount);
+
+    reply.send({ data });
   });
 
   app.get("/api/analytics/discovery-funnel", async (request, reply) => {

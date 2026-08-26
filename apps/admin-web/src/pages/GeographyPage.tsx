@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type GeographyResponse, type HeatmapPointRow } from "../api.js";
+import { api, type GeographyResponse, type HeatmapPointRow, type InfraOriginRow } from "../api.js";
 import { BarList } from "../components/BarList.js";
 import { WorldHeatmap } from "../components/WorldHeatmap.js";
 
@@ -9,10 +9,13 @@ export function GeographyPage() {
   const [range, setRange] = useState("24h");
   const [data, setData] = useState<GeographyResponse | null>(null);
   const [heatmap, setHeatmap] = useState<HeatmapPointRow[] | null>(null);
+  const [infraOrigin, setInfraOrigin] = useState<InfraOriginRow[] | null>(null);
+  const [colorBy, setColorBy] = useState<"risk" | "infra">("risk");
 
   useEffect(() => {
     api.geography(range).then(setData).catch(console.error);
     api.heatmap(range).then((r) => setHeatmap(r.data)).catch(console.error);
+    api.infraOrigin(range).then((r) => setInfraOrigin(r.data)).catch(console.error);
   }, [range]);
 
   return (
@@ -37,9 +40,15 @@ export function GeographyPage() {
 
       {data && data.enrichmentActive && (
         <div className="panel">
-          <h2>Request origins</h2>
+          <div className="toolbar" style={{ marginBottom: ".5rem" }}>
+            <h2 style={{ marginRight: "auto" }}>Request origins</h2>
+            <label style={{ display: "flex", alignItems: "center", gap: ".4rem", fontSize: ".85rem" }}>
+              <input type="checkbox" checked={colorBy === "infra"} onChange={(e) => setColorBy(e.target.checked ? "infra" : "risk")} />
+              Color by infrastructure origin
+            </label>
+          </div>
           {heatmap && heatmap.length > 0 ? (
-            <WorldHeatmap points={heatmap} />
+            <WorldHeatmap points={heatmap} colorBy={colorBy} />
           ) : (
             <p className="muted">No enriched locations in this window yet.</p>
           )}
@@ -56,6 +65,16 @@ export function GeographyPage() {
             <h2>Requests by ASN / organization</h2>
             <BarList items={data.byAsn.map((a) => ({ label: `${a.asn} ${a.organization ?? ""} (avg risk ${a.avgRisk})`, count: a.requestCount }))} />
           </div>
+        </div>
+      )}
+
+      {data && data.enrichmentActive && infraOrigin && infraOrigin.length > 0 && (
+        <div className="panel">
+          <h2>Infrastructure origin</h2>
+          <p className="muted" style={{ marginTop: "-.5rem" }}>
+            Best-effort classification from ASN/organization — "known" matches a curated ASN table, everything else is a name-based guess, not a certainty claim.
+          </p>
+          <BarList items={infraOrigin.map((c) => ({ label: `${c.label} (${c.actorCount} actor${c.actorCount === 1 ? "" : "s"})`, count: c.actorCount }))} />
         </div>
       )}
     </div>

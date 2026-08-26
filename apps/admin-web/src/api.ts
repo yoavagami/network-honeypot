@@ -78,6 +78,7 @@ export const api = {
   bots: (range: string) => request<{ data: Array<{ uaFingerprint: string | null; count: number; uniqueActors: number }> }>(`/api/analytics/bots?range=${range}`),
   geography: (range: string) => request<GeographyResponse>(`/api/analytics/geography?range=${range}`),
   heatmap: (range: string) => request<{ data: HeatmapPointRow[] }>(`/api/analytics/heatmap?range=${range}`),
+  infraOrigin: (range: string) => request<{ data: InfraOriginRow[] }>(`/api/analytics/infra-origin?range=${range}`),
   uniqueIps: (range: string) => request<{ data: IpBreakdownRow[] }>(`/api/analytics/ips?range=${range}`),
   uniqueUserAgents: (range: string) => request<{ data: UserAgentBreakdownRow[] }>(`/api/analytics/user-agents?range=${range}`),
   firstContact: () => request<{ data: FirstContactRow[] }>("/api/analytics/first-contact"),
@@ -255,6 +256,13 @@ export interface HeatmapPointRow {
   city: string | null;
   requestCount: number;
   maxRisk: number;
+  infra: { category: string; confidence: "known" | "heuristic" | "none"; label: string };
+}
+
+export interface InfraOriginRow {
+  category: string;
+  label: string;
+  actorCount: number;
 }
 
 export interface FirstContactRow {
