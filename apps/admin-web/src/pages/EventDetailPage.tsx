@@ -54,6 +54,14 @@ export function EventDetailPage() {
               <dd>{request.statusCode}</dd>
               <dt>Query</dt>
               <dd>{request.queryString ?? "—"}</dd>
+              {request.requestBody && (
+                <>
+                  <dt>Body</dt>
+                  <dd>
+                    <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify(request.requestBody, null, 2)}</pre>
+                  </dd>
+                </>
+              )}
               <dt>Duration</dt>
               <dd>{request.durationMs} ms</dd>
               <dt>User-Agent</dt>

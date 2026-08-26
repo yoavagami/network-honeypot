@@ -11,6 +11,7 @@ import { fireCanaryAlert } from "./alerts.js";
 import { recentBuffer } from "./recentBuffer.js";
 import { metrics } from "./metrics.js";
 import { enrichActorIfNeeded } from "./enrichment.js";
+import { prepareRequestBody } from "../bodyRedaction.js";
 import type { IngestionQueue } from "./queue.js";
 import "../context.js";
 
@@ -177,6 +178,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
       statusCode: reply.statusCode,
       requestBytes: Number(request.headers["content-length"] ?? 0),
       responseBytes: Number(reply.getHeader("content-length") ?? 0),
+      requestBody: prepareRequestBody(path, request.body),
       durationMs: String(durationMs),
       userAgentRaw,
       userAgentFingerprint: uaFingerprint,

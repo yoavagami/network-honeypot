@@ -119,6 +119,9 @@ export interface RequestRow {
   statusCode: number;
   requestBytes: number;
   responseBytes: number;
+  /** Redacted, size-bounded body — null for GET requests, credential-bearing routes
+   * (login/register/reset-password/admin-login), or if there was simply no body. */
+  requestBody: Record<string, unknown> | null;
   durationMs: string;
   userAgentRaw: string | null;
   userAgentFingerprint: string | null;

@@ -78,6 +78,7 @@ export const requests = pgTable("requests", {
   statusCode: integer("status_code").notNull(),
   requestBytes: integer("request_bytes").notNull(),
   responseBytes: integer("response_bytes").notNull(),
+  requestBody: jsonb("request_body"),
   durationMs: numeric("duration_ms"),
   userAgentRaw: text("user_agent_raw"),
   userAgentFingerprint: text("user_agent_fingerprint"),
