@@ -53,10 +53,28 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export type AdminRole = "admin" | "superadmin";
+export interface AuthUser {
+  username: string;
+  role: AdminRole;
+}
+
+export interface AccessLogResponse {
+  available: boolean;
+  range: string;
+  viewerIp: string;
+  totals: { requests: number; uniqueIps: number; loginsOk: number; loginsFailed: number };
+  visitors: Array<{ ip: string; hits: number; loginsOk: number; loginsFailed: number; firstSeen: string; lastSeen: string; userAgent: string }>;
+  logins: Array<{ time: string; ip: string; result: "success" | "wrong_password" | "rate_limited" | "other"; userAgent: string }>;
+  recent: Array<{ time: string; ip: string; method: string; uri: string; status: number; userAgent: string }>;
+}
+
 export const api = {
-  login: (username: string, password: string) => request<{ username: string }>("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  login: (username: string, password: string) => request<AuthUser>("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   logout: () => request<{ ok: true }>("/api/auth/logout", { method: "POST" }),
-  me: () => request<{ username: string }>("/api/auth/me"),
+  me: () => request<AuthUser>("/api/auth/me"),
+  /** Superadmin only — the API answers 404 for anyone else (see admin-api routes/accessLog.ts). */
+  accessLog: (range: string) => request<AccessLogResponse>(`/api/access-log?${new URLSearchParams({ range })}`),
 
   events: (params: Record<string, string> = {}) => request<{ data: EventRow[]; nextCursor: string | null }>(`/api/events?${new URLSearchParams(params)}`),
   event: (id: string) => request<{ event: EventRow; request: RequestRow | null; actor: ActorRow | null }>(`/api/events/${id}`),

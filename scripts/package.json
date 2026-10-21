@@ -8,7 +8,8 @@
     "seed:crm": "tsx seed-crm.ts",
     "simulate": "tsx simulate-traffic.ts",
     "simulate:sqli": "tsx simulate-sqli-attack.ts",
-    "backfill-enrichment": "tsx backfill-enrichment.ts"
+    "backfill-enrichment": "tsx backfill-enrichment.ts",
+    "create-superadmin": "tsx create-superadmin.ts"
   },
   "dependencies": {
     "@honeypot/db": "workspace:*",

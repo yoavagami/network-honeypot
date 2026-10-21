@@ -15,7 +15,8 @@
     "seed:crm": "pnpm --filter @honeypot/scripts run seed:crm",
     "simulate": "pnpm --filter @honeypot/scripts run simulate",
     "simulate:sqli": "pnpm --filter @honeypot/scripts run simulate:sqli",
-    "backfill-enrichment": "pnpm --filter @honeypot/scripts run backfill-enrichment"
+    "backfill-enrichment": "pnpm --filter @honeypot/scripts run backfill-enrichment",
+    "create-superadmin": "pnpm --filter @honeypot/scripts run create-superadmin"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

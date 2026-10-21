@@ -3,6 +3,7 @@ import { loadSession } from "./auth.js";
 import { SESSION_COOKIE, CSRF_COOKIE } from "./routes/auth.js";
 
 const PUBLIC_PATHS = new Set(["/api/auth/login", "/api/system/health"]);
+const SUPERADMIN_PATH_PREFIXES = ["/api/access-log"];
 
 export function registerAuthMiddleware(app: FastifyInstance) {
   app.addHook("onRequest", async (request, reply) => {
@@ -15,6 +16,13 @@ export function registerAuthMiddleware(app: FastifyInstance) {
 
     if (!request.adminSession) {
       reply.status(401).send({ error: { code: "unauthenticated", message: "Sign in required" } });
+      return reply;
+    }
+
+    // Superadmin-only endpoints answer anyone else with Fastify's own 404 — byte-for-byte what a
+    // route that doesn't exist returns — so a regular admin can't even confirm they're there.
+    if (SUPERADMIN_PATH_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`)) && request.adminSession.role !== "superadmin") {
+      reply.callNotFound();
       return reply;
     }
 

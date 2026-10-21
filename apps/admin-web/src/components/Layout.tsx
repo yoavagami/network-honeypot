@@ -15,14 +15,18 @@ const NAV = [
   { to: "/search", label: "Search" },
 ];
 
+// Only rendered for superadmins. Hiding the link is convenience; the real gate is the API's 404.
+const SUPERADMIN_NAV = [{ to: "/access-log", label: "Access Log", end: false }];
+
 export function Layout() {
-  const { username, logout } = useAuth();
+  const { username, role, logout } = useAuth();
+  const nav = role === "superadmin" ? [...NAV, ...SUPERADMIN_NAV] : NAV;
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">Honeypot SOC</div>
         <nav>
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => (isActive ? "active" : "")}>
               {item.label}
             </NavLink>

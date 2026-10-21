@@ -40,7 +40,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
 
     reply.setCookie(SESSION_COOKIE, session.adminSessionId, { httpOnly: true, secure: true, sameSite: config.sessionCookieSameSite, path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
     reply.setCookie(CSRF_COOKIE, session.csrfToken, { httpOnly: false, secure: true, sameSite: config.sessionCookieSameSite, path: "/", maxAge: config.sessionAbsoluteTimeoutMs / 1000 });
-    reply.send({ username: session.username });
+    reply.send({ username: session.username, role: session.role });
   });
 
   app.post("/api/auth/logout", async (request, reply) => {
@@ -59,7 +59,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
       reply.status(401).send({ error: { code: "unauthenticated", message: "Not signed in" } });
       return;
     }
-    reply.send({ username: request.adminSession.username });
+    reply.send({ username: request.adminSession.username, role: request.adminSession.role });
   });
 }
 

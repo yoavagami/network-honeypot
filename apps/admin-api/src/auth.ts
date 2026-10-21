@@ -18,6 +18,7 @@ export interface AdminSession {
   adminUserId: string;
   csrfToken: string;
   username: string;
+  role: "admin" | "superadmin";
 }
 
 export async function createSession(adminUserId: string, ipHash: string | null): Promise<AdminSession> {
@@ -33,8 +34,8 @@ export async function createSession(adminUserId: string, ipHash: string | null):
     expiresAt: new Date(now.getTime() + config.sessionAbsoluteTimeoutMs),
     ipHash,
   });
-  const [user] = await db.select({ username: schema.adminUsers.username }).from(schema.adminUsers).where(eq(schema.adminUsers.adminUserId, adminUserId)).limit(1);
-  return { adminSessionId, adminUserId, csrfToken, username: user?.username ?? "unknown" };
+  const [user] = await db.select({ username: schema.adminUsers.username, role: schema.adminUsers.role }).from(schema.adminUsers).where(eq(schema.adminUsers.adminUserId, adminUserId)).limit(1);
+  return { adminSessionId, adminUserId, csrfToken, username: user?.username ?? "unknown", role: user?.role ?? "admin" };
 }
 
 export async function loadSession(adminSessionId: string): Promise<AdminSession | null> {
@@ -46,6 +47,7 @@ export async function loadSession(adminSessionId: string): Promise<AdminSession 
       lastSeenAt: schema.adminSessions.lastSeenAt,
       expiresAt: schema.adminSessions.expiresAt,
       username: schema.adminUsers.username,
+      role: schema.adminUsers.role,
       disabled: schema.adminUsers.disabled,
     })
     .from(schema.adminSessions)
@@ -60,7 +62,7 @@ export async function loadSession(adminSessionId: string): Promise<AdminSession 
 
   await db.update(schema.adminSessions).set({ lastSeenAt: new Date() }).where(eq(schema.adminSessions.adminSessionId, adminSessionId));
 
-  return { adminSessionId: row.adminSessionId, adminUserId: row.adminUserId, csrfToken: row.csrfToken, username: row.username };
+  return { adminSessionId: row.adminSessionId, adminUserId: row.adminUserId, csrfToken: row.csrfToken, username: row.username, role: row.role };
 }
 
 export async function destroySession(adminSessionId: string) {

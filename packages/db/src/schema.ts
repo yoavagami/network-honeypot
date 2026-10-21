@@ -158,6 +158,7 @@ export const adminUsers = pgTable("admin_users", {
   createdAt: timestamptz("created_at").notNull(),
   lastLoginAt: timestamptz("last_login_at"),
   disabled: boolean("disabled").notNull(),
+  role: text("role").$type<"admin" | "superadmin">().notNull().default("admin"),
 });
 
 export const adminSessions = pgTable("admin_sessions", {

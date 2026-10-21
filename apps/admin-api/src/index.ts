@@ -14,6 +14,7 @@ import { registerAnalyticsRoutes } from "./routes/analytics.js";
 import { registerSearchRoutes } from "./routes/search.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStreamRoute } from "./routes/stream.js";
+import { registerAccessLogRoutes } from "./routes/accessLog.js";
 
 async function main() {
   const app = Fastify({
@@ -44,6 +45,7 @@ async function main() {
   registerSearchRoutes(app);
   registerSystemRoutes(app);
   registerStreamRoute(app);
+  registerAccessLogRoutes(app);
 
   await app.listen({ port: config.port, host: config.host });
   app.log.info({ msg: "admin-api listening", port: config.port });
