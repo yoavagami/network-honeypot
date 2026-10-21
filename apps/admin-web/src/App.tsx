@@ -17,11 +17,19 @@ import { GeographyPage } from "./pages/GeographyPage.js";
 import { FirstContactPage } from "./pages/FirstContactPage.js";
 import { SearchPage } from "./pages/SearchPage.js";
 import { EventDetailPage } from "./pages/EventDetailPage.js";
+import { AccessLogPage } from "./pages/AccessLogPage.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { username, loading } = useAuth();
   if (loading) return <p className="muted" style={{ padding: "2rem" }}>Loading…</p>;
   if (!username) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+/** Regular admins who type the URL get sent to Overview, as if the page didn't exist. */
+function RequireSuperadmin({ children }: { children: React.ReactNode }) {
+  const { role } = useAuth();
+  if (role !== "superadmin") return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -53,6 +61,14 @@ export function App() {
           <Route path="first-contact" element={<FirstContactPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
+          <Route
+            path="access-log"
+            element={
+              <RequireSuperadmin>
+                <AccessLogPage />
+              </RequireSuperadmin>
+            }
+          />
         </Route>
       </Routes>
     </AuthProvider>

@@ -114,6 +114,15 @@ if [ -n "$TLS_DOMAIN" ]; then
   echo "    TLS active for $TLS_DOMAIN — regenerating rendered Nginx config"
   $SSH "cd $REMOTE_DIR && export DOMAIN=$TLS_DOMAIN && envsubst '\${DOMAIN}' < infrastructure/nginx/honeypot-tls.conf > infrastructure/nginx/honeypot-tls.rendered.conf"
   COMPOSE="docker compose -f docker-compose.yml -f infrastructure/vps/docker-compose.tls.yml"
+  # Same failure mode for the public dashboard: rsync --delete wipes its rendered config too, and
+  # without the overlay admin-web silently falls back to localhost-only. setup-public-admin.sh
+  # records PUBLIC_ADMIN_DOMAIN in .env so redeploys can restore it.
+  PUBLIC_ADMIN_DOMAIN=$($SSH "grep '^PUBLIC_ADMIN_DOMAIN=' $REMOTE_DIR/.env 2>/dev/null | cut -d= -f2" || echo "")
+  if [ -n "$PUBLIC_ADMIN_DOMAIN" ]; then
+    echo "    public admin active for $PUBLIC_ADMIN_DOMAIN — regenerating its Nginx config"
+    $SSH "cd $REMOTE_DIR && export DOMAIN=$PUBLIC_ADMIN_DOMAIN && envsubst '\${DOMAIN}' < infrastructure/nginx/admin-web-public-tls.conf > infrastructure/nginx/admin-web-public-tls.rendered.conf"
+    COMPOSE="$COMPOSE -f infrastructure/vps/docker-compose.public-admin.yml"
+  fi
 else
   # -f ...override.yml republishes nginx on host port 80 (base docker-compose.yml uses 8080, for
   # local dev) — see infrastructure/aws/docker-compose.override.yml for why. Without it nothing

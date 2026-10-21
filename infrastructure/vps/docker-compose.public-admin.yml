@@ -7,6 +7,10 @@
 volumes:
   certbot_certs:
     name: honeypot_certbot_certs
+  # Persistent dashboard access log (see admin-web-public-tls.conf's admin_json format). Must be
+  # writable by uid 101 — setup-public-admin.sh chowns it once after creation.
+  admin_access_logs:
+    name: honeypot_admin_access_logs
 
 services:
   admin-web:
@@ -14,6 +18,7 @@ services:
       - ./infrastructure/nginx/admin-web-public-tls.rendered.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infrastructure/nginx/proxy_params_admin.conf:/etc/nginx/proxy_params_admin.conf:ro
       - certbot_certs:/etc/letsencrypt:ro
+      - admin_access_logs:/var/log/admin-access
       - type: tmpfs
         target: /tmp
         tmpfs:
@@ -33,3 +38,9 @@ services:
     ports:
       - "8443:443"
     read_only: true
+
+  # Read-only view of the same access log, for the superadmin-only GET /api/access-log
+  # (apps/admin-api/src/routes/accessLog.ts). admin-api never writes to it.
+  admin-api:
+    volumes:
+      - admin_access_logs:/var/log/admin-access:ro

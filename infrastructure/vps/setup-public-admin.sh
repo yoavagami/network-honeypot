@@ -24,12 +24,26 @@ echo "==> Rendering admin-web's Nginx config for $DOMAIN"
 export DOMAIN
 envsubst '${DOMAIN}' < "$REPO_ROOT/infrastructure/nginx/admin-web-public-tls.conf" > "$REPO_ROOT/infrastructure/nginx/admin-web-public-tls.rendered.conf"
 
+echo "==> Preparing the persistent dashboard access log volume"
+# admin-web runs as uid 101 with a read-only root filesystem, so the log volume must be owned by
+# that uid before nginx can open its log file there.
+docker volume create honeypot_admin_access_logs >/dev/null
+docker run --rm -v honeypot_admin_access_logs:/logs alpine sh -c 'touch /logs/access.log && chown -R 101:101 /logs'
+
+echo "==> Installing weekly access-log rotation (keeps 8 weeks)"
+# nginx keeps the file open, so rotate by renaming and then asking nginx to reopen (USR1).
+ROTATE="cd /var/lib/docker/volumes/honeypot_admin_access_logs/_data && for i in 7 6 5 4 3 2 1; do [ -f access.log.\$i ] && mv access.log.\$i access.log.\$((i+1)); done; [ -s access.log ] && mv access.log access.log.1 && touch access.log && chown 101:101 access.log && docker kill -s USR1 network-honeypot-admin-web-1 >/dev/null"
+({ sudo crontab -l 2>/dev/null | grep -v 'honeypot_admin_access_logs' || true; }; echo "0 5 * * 0 $ROTATE") | sudo crontab -
+
 echo "==> Applying the public-admin overlay"
 docker compose \
   -f "$REPO_ROOT/docker-compose.yml" \
   -f "$REPO_ROOT/infrastructure/vps/docker-compose.tls.yml" \
   -f "$REPO_ROOT/infrastructure/vps/docker-compose.public-admin.yml" \
-  up -d admin-web
+  up -d admin-web admin-api
+
+# Lets deploy.sh restore this overlay on redeploy (same reasoning as TLS_DOMAIN in setup-tls.sh).
+grep -q '^PUBLIC_ADMIN_DOMAIN=' "$REPO_ROOT/.env" && sed -i "s/^PUBLIC_ADMIN_DOMAIN=.*/PUBLIC_ADMIN_DOMAIN=$DOMAIN/" "$REPO_ROOT/.env" || echo "PUBLIC_ADMIN_DOMAIN=$DOMAIN" >> "$REPO_ROOT/.env"
 
 echo "==> Opening port 8443 in the firewall"
 sudo ufw allow 8443/tcp
