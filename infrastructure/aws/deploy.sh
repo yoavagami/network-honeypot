@@ -130,6 +130,11 @@ else
   COMPOSE="docker compose -f docker-compose.yml -f infrastructure/aws/docker-compose.override.yml"
 fi
 $SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
+# Nginx's config files are single-file bind mounts. rsync replaces each changed file with a new
+# inode, but a running container keeps the old one mounted, so a changed proxy_params_*.conf
+# silently doesn't apply (`nginx -s reload` re-reads the stale copy). Found live: the
+# X-HP-Edge blanking rule stayed inactive until nginx was restarted.
+$SSH "cd $REMOTE_DIR && $COMPOSE restart nginx"
 
 echo
 echo "==> Verifying"
