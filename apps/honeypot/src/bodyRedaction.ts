@@ -8,7 +8,9 @@
  * See docs/PRIVACY.md.
  */
 
-export const EXCLUDED_BODY_PATHS = new Set(["/login", "/register", "/reset-password", "/admin/login"]);
+// /checkout/details carries a shopper's name, email, address and phone (routes/shop.ts records
+// only which fields were filled instead).
+export const EXCLUDED_BODY_PATHS = new Set(["/login", "/register", "/reset-password", "/admin/login", "/checkout/details"]);
 
 const SENSITIVE_KEY_PATTERN = /password|pwd|pass|secret|token|api[_-]?key|credit[_-]?card|cvv|ssn|social[_-]?security/i;
 

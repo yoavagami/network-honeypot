@@ -17,6 +17,7 @@ import { registerAdminRoutes } from "./routes/admin.js";
 import { registerMiscRoutes } from "./routes/misc.js";
 import { registerNotFoundHandler } from "./routes/notFound.js";
 import { registerRumRoutes } from "./routes/rum.js";
+import { registerShopRoutes } from "./routes/shop.js";
 import { startIpIntelRefresh } from "./sensing/ipIntel.js";
 
 async function main() {
@@ -48,6 +49,7 @@ async function main() {
   const queue = new IngestionQueue(logger);
   registerIngestion(app, queue);
 
+  registerShopRoutes(app);
   registerPageRoutes(app);
   registerApiRoutes(app);
   registerCrmRoutes(app);

@@ -20,7 +20,8 @@ export function registerMiscRoutes(app: FastifyInstance) {
     request.hp.extraEventTypes.push("SITEMAP_ACCESS");
     reply.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-        ["/", "/login", "/register", "/docs", "/search", "/customers"].map((p) => `<url><loc>https://meridian.example${p}</loc></url>`).join("") +
+        ["/", "/products/wildflower-raw-honey", "/products/heather-honey", "/about", "/shipping", "/terms", "/login", "/docs"]
+          .map((p) => `<url><loc>https://${request.headers.host ?? "uhoney.shop"}${p}</loc></url>`).join("") +
         `</urlset>`
     );
   });
