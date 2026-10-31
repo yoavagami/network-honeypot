@@ -14,6 +14,7 @@ import { enrichActorIfNeeded } from "./enrichment.js";
 import { prepareRequestBody } from "../bodyRedaction.js";
 import type { IngestionQueue } from "./queue.js";
 import { collectRequestSignals } from "../sensing/collect.js";
+import { decodeEdgeHeader } from "../sensing/edge.js";
 import "../context.js";
 
 const VISITOR_COOKIE = "hp_visitor";
@@ -172,6 +173,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
 
   const requestId = randomUUID();
   const path = request.url.split("?")[0]!;
+  const edge = decodeEdgeHeader(request.headers["x-hp-edge"]);
 
   queue.enqueue({
     kind: "request",
@@ -207,9 +209,11 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
       // Set by Nginx from its own view of the TLS handshake (honeypot-tls.conf), never trusted
       // from the client — same trust boundary as X-Real-IP, see docs/ARCHITECTURE.md §9. Empty
       // string (not absent) on a plain-HTTP connection, hence the explicit blank check.
-      tlsVersion: nonEmptyHeader(request.headers["x-tls-version"]),
-      tlsCipher: nonEmptyHeader(request.headers["x-tls-cipher"]),
-      alpn: nonEmptyHeader(request.headers["x-alpn-protocol"]),
+      // Behind the edge sensor, nginx sees plain HTTP — the negotiated TLS facts come from the
+      // sensor's own handshake instead (sensing/edge.ts).
+      tlsVersion: nonEmptyHeader(request.headers["x-tls-version"]) ?? edge?.negotiated?.version ?? null,
+      tlsCipher: nonEmptyHeader(request.headers["x-tls-cipher"]) ?? edge?.negotiated?.cipher ?? null,
+      alpn: nonEmptyHeader(request.headers["x-alpn-protocol"]) ?? edge?.negotiated?.alpn ?? null,
       endpoint: request.hp.endpoint,
       applicationComponent: request.hp.applicationComponent,
       riskScore,

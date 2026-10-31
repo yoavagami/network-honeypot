@@ -1,0 +1,7 @@
+# Rollback overlay: nginx terminates TLS on 443 again (as before the edge sensor). Used by
+# infrastructure/vps/edge-rollback.sh — apply after the TLS overlay.
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"

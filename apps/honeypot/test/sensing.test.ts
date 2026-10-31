@@ -178,3 +178,68 @@ describe("ClientHello / JA4", () => {
     expect(isGrease(0x1301)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------- HTTP/2 + PROXY protocol
+
+import { parseH2Start, pseudoHeaderOrder } from "../src/edge/http2.js";
+import { proxyV2Header } from "../src/edge/proxyProtocol.js";
+
+function frame(type: number, flags: number, stream: number, payload: Buffer): Buffer {
+  const h = Buffer.alloc(9);
+  h.writeUIntBE(payload.length, 0, 3);
+  h[3] = type;
+  h[4] = flags;
+  h.writeUInt32BE(stream, 5);
+  return Buffer.concat([h, payload]);
+}
+
+describe("HTTP/2 opening fingerprint", () => {
+  // Chrome-like opening: SETTINGS, WINDOW_UPDATE, HEADERS(:method GET, :authority, :scheme https, :path /)
+  const settings = Buffer.alloc(24);
+  [[1, 65536], [2, 0], [4, 6291456], [6, 262144]].forEach(([k, v], i) => { settings.writeUInt16BE(k!, i * 6); settings.writeUInt32BE(v!, i * 6 + 2); });
+  const wu = Buffer.alloc(4); wu.writeUInt32BE(15663105);
+  const host = Buffer.from("uhoney.shop");
+  const block = Buffer.concat([Buffer.from([0x82, 0x41, host.length]), host, Buffer.from([0x87, 0x84, 0x40 | 0, 0x03]), Buffer.from("abc"), Buffer.from([0x01]), Buffer.from("x")]);
+  const prio = Buffer.from([0x80, 0, 0, 0, 255]); // exclusive, dep 0, weight 256
+  const opening = Buffer.concat([
+    Buffer.from("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n", "latin1"),
+    frame(0x4, 0, 0, settings),
+    frame(0x8, 0, 0, wu),
+    frame(0x1, 0x4 | 0x1 | 0x20, 1, Buffer.concat([prio, block])),
+  ]);
+
+  it("builds the Akamai fingerprint with Chrome's pseudo-header order", () => {
+    const r = parseH2Start(opening);
+    expect(r.status).toBe("ok");
+    if (r.status !== "ok") return;
+    expect(r.info.fp).toBe("1:65536;2:0;4:6291456;6:262144|15663105|0|m,a,s,p");
+    expect(r.info.headersPriority).toBe("1:0:256");
+  });
+  it("waits for more bytes mid-frame and rejects non-h2", () => {
+    expect(parseH2Start(opening.subarray(0, 40)).status).toBe("incomplete");
+    expect(parseH2Start(Buffer.from("GET / HTTP/1.1\r\n")).status).toBe("not_h2");
+  });
+  it("reads Firefox/curl-style orders", () => {
+    expect(pseudoHeaderOrder(Buffer.from([0x82, 0x84, 0x87, 0x41, 0x01, 0x61]))).toEqual([":method", ":path", ":scheme", ":authority"]);
+  });
+});
+
+describe("PROXY v2 header", () => {
+  it("encodes an IPv4 client with a TLV", () => {
+    const h = proxyV2Header({ address: "::ffff:1.2.3.4", port: 5555 }, { address: "172.20.0.5", port: 8443 }, [[0xe0, Buffer.from("abc")]]);
+    expect(h.subarray(0, 12).toString("hex")).toBe("0d0a0d0a000d0a515549540a");
+    expect(h[12]).toBe(0x21);
+    expect(h[13]).toBe(0x11);
+    expect(h.readUInt16BE(14)).toBe(12 + 6);
+    expect([...h.subarray(16, 20)]).toEqual([1, 2, 3, 4]);
+    expect(h.readUInt16BE(24)).toBe(5555);
+    expect(h[28]).toBe(0xe0);
+    expect(h.subarray(31).toString()).toBe("abc");
+  });
+  it("encodes IPv6", () => {
+    const h = proxyV2Header({ address: "2001:db8::1", port: 1 }, { address: "::1", port: 2 }, []);
+    expect(h[13]).toBe(0x21);
+    expect(h.readUInt16BE(14)).toBe(36);
+    expect(h.subarray(16, 32).toString("hex")).toBe("20010db8000000000000000000000001");
+  });
+});

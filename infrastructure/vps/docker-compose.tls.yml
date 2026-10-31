@@ -19,7 +19,36 @@ services:
         target: /var/run
         tmpfs:
           mode: 0777
+      - ./infrastructure/nginx/proxy_params_edge.conf:/etc/nginx/proxy_params_edge.conf:ro
       - certbot_certs:/etc/letsencrypt:ro
+    # 443 is published by the edge sensor below, which fingerprints TLS/HTTP2 and forwards to
+    # nginx's internal PROXY-protocol listener (8443). Rollback to nginx-terminated TLS:
+    # infrastructure/vps/edge-rollback.sh
     ports:
       - "80:80"
-      - "443:443"
+
+  # Edge sensor — apps/honeypot/src/edge/sensor.ts. Same image as the honeypot app (built by the
+  # honeypot service), different entrypoint.
+  edge:
+    image: network-honeypot-honeypot
+    pull_policy: never
+    command: ["node_modules/.bin/tsx", "apps/honeypot/src/edge/sensor.ts"]
+    restart: unless-stopped
+    depends_on: [nginx, honeypot]
+    environment:
+      EDGE_PORT: 8443
+      EDGE_UPSTREAM_HOST: nginx
+      EDGE_UPSTREAM_PORT: 8443
+      EDGE_CERT_DIR: /etc/letsencrypt/live/${TLS_DOMAIN}
+    volumes:
+      - certbot_certs:/etc/letsencrypt:ro
+    networks: [public]
+    ports:
+      - "443:8443"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    user: "10001:10001"
+    mem_limit: 192m
+    cpus: 1
