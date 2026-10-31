@@ -87,13 +87,25 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
   const beaconSessions = new Set(clientRows.map((c) => c.session_id).filter(Boolean) as string[]);
   const visits = new Map<string, Visit>();
   const foldOpen = new Map<string, { key: string; lastMs: number }>();
-  const sessionToVisit = new Map<string, string>();
+  // A browser session splits into separate visits when its lab label changes or it goes quiet for
+  // 30 minutes — one Chrome profile carries a person's browsing and an in-browser agent's runs.
+  const sessionSegments = new Map<string, Array<{ key: string; startMs: number; lastMs: number; lab: string | null }>>();
+  const requestToVisit = new Map<string, string>();
   for (const r of rows) {
     let key: string;
+    const t = r.created_at.getTime();
     if (r.session_id && ((sessionCounts.get(r.session_id) ?? 0) > 1 || beaconSessions.has(r.session_id))) {
-      key = `s_${r.session_id}`;
+      const segs = sessionSegments.get(r.session_id) ?? [];
+      const cur = segs[segs.length - 1];
+      if (cur && cur.lab === r.lab_label && t - cur.lastMs <= FOLD_GAP_MS) {
+        cur.lastMs = t;
+        key = cur.key;
+      } else {
+        key = `s_${r.session_id}_${t}`;
+        segs.push({ key, startMs: t, lastMs: t, lab: r.lab_label });
+        sessionSegments.set(r.session_id, segs);
+      }
     } else {
-      const t = r.created_at.getTime();
       const open = foldOpen.get(r.actor_id);
       if (open && t - open.lastMs <= FOLD_GAP_MS) {
         key = open.key;
@@ -103,7 +115,7 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
         foldOpen.set(r.actor_id, { key, lastMs: t });
       }
     }
-    if (r.session_id) sessionToVisit.set(r.session_id, key);
+    requestToVisit.set(r.request_id, key);
     let v = visits.get(key);
     if (!v) {
       v = { id: key, sessionId: key.startsWith("s_") ? r.session_id : null, actorId: r.actor_id, requests: [], client: [], shop: [] };
@@ -111,12 +123,19 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
     }
     v.requests.push(r);
   }
+  // Beacons belong to the session's segment with the same label that was open when they arrived.
+  const segmentAt = (sessionId: string | null, t: number, lab: string | null) => {
+    const segs = sessionId ? sessionSegments.get(sessionId) : undefined;
+    if (!segs) return undefined;
+    const open = segs.filter((g) => g.startMs <= t + 5_000);
+    return (open.filter((g) => g.lab === lab).pop() ?? open.pop() ?? segs[0])!.key;
+  };
   for (const c of clientRows) {
-    const key = c.session_id ? sessionToVisit.get(c.session_id) : undefined;
+    const key = segmentAt(c.session_id, c.created_at.getTime(), c.lab_label);
     if (key) visits.get(key)!.client.push(c);
   }
   for (const e of shopRows) {
-    const key = e.session_id ? sessionToVisit.get(e.session_id) : undefined;
+    const key = (e.request_id ? requestToVisit.get(e.request_id) : undefined) ?? segmentAt(e.session_id, e.created_at.getTime(), null);
     if (key) visits.get(key)!.shop.push(e);
   }
   return { visits: [...visits.values()], truncated };
@@ -257,7 +276,7 @@ export function registerAgentRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>("/api/agents/visits/:id", async (request, reply) => {
     const id = request.params.id;
     let loaded;
-    if (id.startsWith("s_")) loaded = await loadVisits(24 * 90, { sessionId: id.slice(2) });
+    if (id.startsWith("s_")) loaded = await loadVisits(24 * 90, { sessionId: id.slice(2).split("_")[0] });
     else if (id.startsWith("a_")) loaded = await loadVisits(24 * 90, { actorId: id.split("_")[1] });
     else return reply.status(400).send({ error: { code: "bad_id", message: "unknown visit id" } });
     const v = loaded.visits.find((x) => x.id === id) ?? (id.startsWith("s_") ? loaded.visits[0] : undefined);
