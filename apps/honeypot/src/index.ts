@@ -16,6 +16,8 @@ import { registerWpInstallRoutes } from "./routes/wpInstall.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerMiscRoutes } from "./routes/misc.js";
 import { registerNotFoundHandler } from "./routes/notFound.js";
+import { registerRumRoutes } from "./routes/rum.js";
+import { startIpIntelRefresh } from "./sensing/ipIntel.js";
 
 async function main() {
   const app = Fastify({
@@ -53,6 +55,7 @@ async function main() {
   registerWpInstallRoutes(app);
   registerAdminRoutes(app);
   registerMiscRoutes(app);
+  registerRumRoutes(app, queue);
   registerNotFoundHandler(app);
 
   app.get("/internal/metrics", async (request, reply) => {
@@ -66,6 +69,7 @@ async function main() {
   queue.start();
   startCorrelationWorker(queue, logger);
   startHealthMonitor(queue, logger);
+  startIpIntelRefresh(logger);
 
   await app.listen({ port: config.port, host: config.host });
   logger.info({ msg: "honeypot app listening", port: config.port });

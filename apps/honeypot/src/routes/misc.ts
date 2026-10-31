@@ -1,4 +1,10 @@
 import type { FastifyInstance } from "fastify";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// The agent-sensing collector (see routes/rum.ts) ships under the site's ordinary bundle name.
+const APP_JS = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "static", "app.js"), "utf8");
 
 export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/robots.txt", async (request, reply) => {
@@ -48,7 +54,7 @@ export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/assets/app.js", async (request, reply) => {
     request.hp.endpoint = "site.asset";
     request.hp.applicationComponent = "static";
-    reply.type("application/javascript").send("// Meridian client bundle (minimal, no telemetry SDK)\n");
+    reply.type("application/javascript").header("Cache-Control", "no-cache").send(APP_JS);
   });
 }
 

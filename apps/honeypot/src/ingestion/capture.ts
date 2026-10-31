@@ -13,10 +13,13 @@ import { metrics } from "./metrics.js";
 import { enrichActorIfNeeded } from "./enrichment.js";
 import { prepareRequestBody } from "../bodyRedaction.js";
 import type { IngestionQueue } from "./queue.js";
+import { collectRequestSignals } from "../sensing/collect.js";
 import "../context.js";
 
 const VISITOR_COOKIE = "hp_visitor";
 const SESSION_COOKIE = "hp_session";
+const LAB_COOKIE = "hp_lab";
+const LAB_LABEL_RE = /^[A-Za-z0-9._-]{1,64}$/;
 
 export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
   // Actor/session resolution happens on the request path (not deferred to onResponse) because
@@ -78,6 +81,18 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
       reply.setCookie(VISITOR_COOKIE, visitorId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
     }
     request.hp.visitorId = visitorId;
+
+    // Controlled agent test runs: ?lab=<label> tags this browser for 30 days so every later
+    // request/beacon from it is labeled ground truth (agents that drop cookies are labeled on
+    // their first request only — analysis regroups those by IP + fingerprint).
+    const labParam = (request.query as Record<string, unknown>)?.lab;
+    if (typeof labParam === "string" && LAB_LABEL_RE.test(labParam)) {
+      request.hp.labLabel = labParam;
+      reply.setCookie(LAB_COOKIE, labParam, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
+    } else {
+      const labCookie = request.cookies[LAB_COOKIE];
+      request.hp.labLabel = labCookie && LAB_LABEL_RE.test(labCookie) ? labCookie : null;
+    }
 
     const ip = resolveClientIp(request.ip, request.headers["cf-connecting-ip"], config.trustCfConnectingIp);
     const ipHash = hashIp(ip, config.ipHashSecret);
@@ -254,6 +269,12 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
     authEventType: request.hp.authEvent?.type,
     riskScore,
   });
+
+  // Agent sensing — not awaited: a signature directory fetch or rDNS lookup can take seconds
+  // and must not hold up the request/event rows above.
+  collectRequestSignals(request, requestId, new Date())
+    .then((row) => queue.enqueue({ kind: "request_signals", priority: "low", row }))
+    .catch((err) => request.log.warn({ msg: "request signal collection failed", err: err instanceof Error ? err.message : String(err) }));
 }
 
 function nonEmptyHeader(value: string | string[] | undefined): string | null {
