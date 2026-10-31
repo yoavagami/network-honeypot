@@ -136,6 +136,10 @@ const KNOWN_ARTIFACT_AGENT: Record<string, string> = {
 const HOSTED: InfraCategory[] = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps"];
 
 const PRIOR = -1.2;
+/** Signals that point at an AI agent specifically, not just automation. */
+const AI_SPECIFIC = new Set(["ai_operator_ip", "unverifiable_claim", "ai_app_user_agent", "agent_like_dom", "instant_checkout"]);
+/** Browser-group signals that actually mean "no browser ran" (scripts), so not a driven browser. */
+const SCRIPT_ONLY = new Set(["no_javascript", "no_subresources"]);
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 const median = (xs: number[]) => {
   if (!xs.length) return null;
@@ -227,7 +231,9 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const hdrFlags = flags.filter((f) => !tlsFlags.includes(f));
     if (tlsFlags.length) add("tls_mismatch", "network", 1.8, `browser user-agent, but the TLS/HTTP2 handshake isn't that browser's (${tlsFlags.join(", ")})`);
     if (hdrFlags.length) add("header_mismatch", "request", Math.min(2, 0.6 * hdrFlags.length), `headers a real browser would send are missing or inconsistent (${hdrFlags.join(", ")})`);
-    type ??= "browser_automation";
+    // A TLS stack that isn't the claimed browser's means a script wearing a browser user-agent;
+    // header gaps alone can still be a real (automated) browser.
+    type ??= tlsFlags.length ? "script" : "browser_automation";
   }
   if (infra.category !== "unknown" && infra.category !== "unclassified") {
     if (hosted) add("datacenter_ip", "network", reqs.some((r) => r.browserFamily) ? 1.0 : 0.4, `connects from ${infra.label} — a data centre, where cloud agents run (people browse from home or mobile networks)`);
@@ -320,6 +326,14 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   let p = sigmoid(logit);
   // A scanner wearing an AI name is automated but is not an AI agent — cap it.
   if (type === "scanner") p = Math.min(p, 0.2);
+  // "Automated" is not "AI agent". Without AI-specific evidence, or a real browser that ran our
+  // page script and was visibly driven, the most we can honestly say is "not sure, leans agent".
+  const aiEvidence = reasons.some((r) => r.weight > 0 && AI_SPECIFIC.has(r.signal));
+  const drivenBrowser = reasons.some((r) => r.weight > 0 && (r.group === "browser" || r.group === "behavior") && !SCRIPT_ONLY.has(r.signal));
+  if (!aiEvidence && !drivenBrowser) {
+    if (p > 0.69) add("no_ai_evidence", "proof", 0, "automated, but nothing ties it to an AI agent rather than an ordinary bot — capped at \"not sure\"");
+    p = Math.min(p, 0.69);
+  }
   return finish(p, type, agent, false, reasons);
 }
 

@@ -81,6 +81,16 @@ describe("agent score", () => {
     expect(s.type).toBe("cloud_browser_agent");
   });
 
+  it("keeps a cloud script faking Chrome at 'not sure' — automated, but not shown to be AI (live Tencent case)", () => {
+    const s = scoreVisit(visit({
+      asn: "AS132203", organization: "Tencent Building, Kejizhongyi Avenue",
+      requests: [req({ consistencyFlags: ["tls_not_chromium", "h2_pseudo_order_not_chromium", "chromium_ua_without_client_hints", "no_accept_language"] })],
+    }));
+    expect(s.bucket).toBe("not_sure");
+    expect(s.type).toBe("script");
+    expect(s.leaning).toBe("agent");
+  });
+
   it("explains every point of the score", () => {
     const s = scoreVisit(visit({ requests: [req({ uaLibrary: "python-httpx", verdict: "automation", browserFamily: null })] }));
     expect(s.reasons.length).toBeGreaterThan(0);
