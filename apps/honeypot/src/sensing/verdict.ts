@@ -88,7 +88,9 @@ export function decideIdentity(i: VerdictInput): VerdictResult {
       if (i.ipRanges.length) reasons.push(`IP is inside ${i.ipRanges.join(", ")} instead`);
       return { verdict: "spoofed", agent: claim.id, method: own.length ? "ip_range" : "rdns", reasons };
     }
-    reasons.push(`user-agent claims ${claim.id}; ${claim.operator} publishes no IP list or signature to verify it`);
+    reasons.push(claim.local
+      ? `user-agent claims ${claim.id}, which runs on the user's own computer — it comes from their IP, so there is nothing to verify`
+      : `user-agent claims ${claim.id}; ${claim.operator} publishes no IP list or signature to verify it`);
     return { verdict: "claimed", agent: claim.id, method: null, reasons };
   }
 

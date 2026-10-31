@@ -14,7 +14,8 @@ export interface UaInfo {
 export function parseUserAgent(ua: string | null | undefined): UaInfo {
   const s = ua ?? "";
   const lower = s.toLowerCase();
-  const claim = AGENTS.find((a) => a.uaTokens.some((t) => lower.includes(t.toLowerCase()))) ?? null;
+  const trimmed = s.trim();
+  const claim = AGENTS.find((a) => a.uaTokens.some((t) => lower.includes(t.toLowerCase())) || a.uaExact?.includes(trimmed)) ?? null;
   const aiApp = AI_APP_PATTERNS.find((p) => p.re.test(s))?.id ?? null;
   const library = LIBRARY_PATTERNS.find((p) => p.re.test(s))?.id ?? null;
   return { claim, aiApp, library, browser: parseBrowser(s), platform: parsePlatform(s) };

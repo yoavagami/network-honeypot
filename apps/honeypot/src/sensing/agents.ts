@@ -10,6 +10,10 @@ export interface AgentDef {
   kind: "crawler" | "user_initiated";
   /** Case-insensitive user-agent substrings that claim this identity. */
   uaTokens: string[];
+  /** Whole user-agent strings that claim it (for agents whose user-agent is a bare word). */
+  uaExact?: string[];
+  /** Runs on the user's own computer, so it comes from their IP and can't be verified. */
+  local?: boolean;
   /** Files in data/ranges/ with the operator's published IPs for this agent. */
   ranges?: string[];
   /** Reverse-DNS suffixes the operator documents (forward-confirmed). */
@@ -28,10 +32,16 @@ export const AGENTS: AgentDef[] = [
   { id: "chatgpt-agent", operator: "OpenAI", kind: "user_initiated", uaTokens: [], signers: ["https://chatgpt.com"] },
   // Anthropic
   { id: "claudebot", operator: "Anthropic", kind: "crawler", uaTokens: ["ClaudeBot", "Claude-Web", "anthropic-ai"], ranges: ["anthropic-bots"] },
-  { id: "claude-user", operator: "Anthropic", kind: "user_initiated", uaTokens: ["Claude-User"], ranges: ["anthropic-bots"] },
+  // Claude Code's WebFetch: "Claude-User (claude-code/2.1.309; ...)" from the user's own machine.
+  // Must come before claude-user, whose token it also contains.
+  { id: "claude-code", operator: "Anthropic", kind: "user_initiated", uaTokens: ["claude-code/"], local: true },
+  // claude.ai's web fetch came from Anthropic's own network (anthropic-egress), not bots.json.
+  { id: "claude-user", operator: "Anthropic", kind: "user_initiated", uaTokens: ["Claude-User"], ranges: ["anthropic-bots", "anthropic-egress"] },
   { id: "claude-searchbot", operator: "Anthropic", kind: "crawler", uaTokens: ["Claude-SearchBot"], ranges: ["anthropic-bots"] },
   // Google
   { id: "google-agent", operator: "Google", kind: "user_initiated", uaTokens: ["Google-Agent"], ranges: ["google-user-triggered-agents"], signers: ["https://agent.bot.goog"] },
+  // Gemini's "read this page" fetch: user-agent is just "Google", from rate-limited-proxy-*.google.com.
+  { id: "google-user-fetch", operator: "Google", kind: "user_initiated", uaTokens: [], uaExact: ["Google"], ranges: ["google-user-triggered-fetchers"], rdnsSuffixes: [".google.com"] },
   { id: "gemini-notebook", operator: "Google", kind: "user_initiated", uaTokens: ["Google-GeminiNotebook", "Google-NotebookLM"], ranges: ["google-user-triggered-fetchers"] },
   { id: "googlebot", operator: "Google", kind: "crawler", uaTokens: ["Googlebot", "Google-InspectionTool", "GoogleOther", "Google-Extended"], ranges: ["google-googlebot"], rdnsSuffixes: [".googlebot.com", ".google.com"] },
   // NOT .googleusercontent.com: every Google Cloud customer VM reverse-resolves there (found live —

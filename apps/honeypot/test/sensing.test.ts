@@ -107,6 +107,23 @@ describe("identity verdict", () => {
     const v = decideIdentity({ ua: parseUserAgent("python-requests/2.32.5"), rawUa: "python-requests/2.32.5", ipRanges: [], rdns: null, wba: noWba, consistencyFlags: [] });
     expect(v).toMatchObject({ verdict: "automation", agent: "python-requests" });
   });
+  // Lab runs 2026-10-31.
+  it("verifies claude.ai's web fetch from Anthropic's own network", () => {
+    const ua = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)";
+    const v = decideIdentity({ ua: parseUserAgent(ua), rawUa: ua, ipRanges: ["anthropic-egress"], rdns: { ptr: null, forwardConfirmed: false }, wba: noWba, consistencyFlags: [] });
+    expect(v).toMatchObject({ verdict: "verified", agent: "claude-user" });
+  });
+  it("treats Claude Code's fetch from a home IP as claimed, not spoofed", () => {
+    const ua = "Claude-User (claude-code/2.1.309; +https://support.anthropic.com/)";
+    const v = decideIdentity({ ua: parseUserAgent(ua), rawUa: ua, ipRanges: [], rdns: { ptr: "188-142-44-123.fixed.kpn.net", forwardConfirmed: true }, wba: noWba, consistencyFlags: [] });
+    expect(v).toMatchObject({ verdict: "claimed", agent: "claude-code" });
+  });
+  it("verifies Gemini's fetch (user-agent 'Google') by Google rDNS, and only the bare word", () => {
+    const v = decideIdentity({ ua: parseUserAgent("Google"), rawUa: "Google", ipRanges: [], rdns: { ptr: "rate-limited-proxy-142-250-88-66.google.com", forwardConfirmed: true }, wba: noWba, consistencyFlags: [] });
+    expect(v).toMatchObject({ verdict: "verified", agent: "google-user-fetch" });
+    expect(decideIdentity({ ua: parseUserAgent("Google"), rawUa: "Google", ipRanges: [], rdns: { ptr: "x.bc.googleusercontent.com", forwardConfirmed: true }, wba: noWba, consistencyFlags: [] }).verdict).toBe("spoofed");
+    expect(parseUserAgent("Google Chrome helper").claim).toBeNull();
+  });
   it("recognises the Claude desktop app", () => {
     const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Claude/3.6556.2 Chrome/152.0.7977.167 Safari/537.36";
     expect(decideIdentity({ ua: parseUserAgent(ua), rawUa: ua, ipRanges: [], rdns: null, wba: noWba, consistencyFlags: [] })).toMatchObject({ verdict: "ai_app", agent: "claude-desktop" });

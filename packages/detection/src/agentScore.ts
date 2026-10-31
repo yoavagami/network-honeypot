@@ -84,6 +84,8 @@ const AGENT_KIND: Record<string, AgentType> = {
   "google-agent": "cloud_browser_agent",
   "chatgpt-user": "user_triggered_fetcher",
   "claude-user": "user_triggered_fetcher",
+  "claude-code": "user_triggered_fetcher",
+  "google-user-fetch": "user_triggered_fetcher",
   "perplexity-user": "user_triggered_fetcher",
   "gemini-notebook": "user_triggered_fetcher",
   "meta-externalfetcher": "user_triggered_fetcher",
