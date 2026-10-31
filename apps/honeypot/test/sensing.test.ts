@@ -98,6 +98,11 @@ describe("identity verdict", () => {
     const v = decideIdentity({ ua: parseUserAgent(ua), rawUa: ua, ipRanges: [], rdns: { ptr: "googlebot.com.evil.net", forwardConfirmed: true }, wba: noWba, consistencyFlags: [] });
     expect(v.verdict).toBe("spoofed");
   });
+  it("does not accept a Google Cloud customer's rDNS as Googlebot (seen live Oct 27)", () => {
+    const ua = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+    const v = decideIdentity({ ua: parseUserAgent(ua), rawUa: ua, ipRanges: [], rdns: { ptr: "215.135.194.35.bc.googleusercontent.com", forwardConfirmed: true }, wba: noWba, consistencyFlags: [] });
+    expect(v.verdict).toBe("spoofed");
+  });
   it("labels HTTP libraries as automation", () => {
     const v = decideIdentity({ ua: parseUserAgent("python-requests/2.32.5"), rawUa: "python-requests/2.32.5", ipRanges: [], rdns: null, wba: noWba, consistencyFlags: [] });
     expect(v).toMatchObject({ verdict: "automation", agent: "python-requests" });

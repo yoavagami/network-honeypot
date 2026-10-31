@@ -33,7 +33,9 @@ export const AGENTS: AgentDef[] = [
   // Google
   { id: "google-agent", operator: "Google", kind: "user_initiated", uaTokens: ["Google-Agent"], ranges: ["google-user-triggered-agents"], signers: ["https://agent.bot.goog"] },
   { id: "gemini-notebook", operator: "Google", kind: "user_initiated", uaTokens: ["Google-GeminiNotebook", "Google-NotebookLM"], ranges: ["google-user-triggered-fetchers"] },
-  { id: "googlebot", operator: "Google", kind: "crawler", uaTokens: ["Googlebot", "Google-InspectionTool", "GoogleOther", "Google-Extended"], ranges: ["google-googlebot"], rdnsSuffixes: [".googlebot.com", ".google.com", ".googleusercontent.com"] },
+  { id: "googlebot", operator: "Google", kind: "crawler", uaTokens: ["Googlebot", "Google-InspectionTool", "GoogleOther", "Google-Extended"], ranges: ["google-googlebot"], rdnsSuffixes: [".googlebot.com", ".google.com"] },
+  // NOT .googleusercontent.com: every Google Cloud customer VM reverse-resolves there (found live —
+  // a scanner on GCP sending Googlebot user-agents was "verified" by it).
   // Perplexity
   { id: "perplexitybot", operator: "Perplexity", kind: "crawler", uaTokens: ["PerplexityBot"], ranges: ["perplexity-perplexitybot"] },
   { id: "perplexity-user", operator: "Perplexity", kind: "user_initiated", uaTokens: ["Perplexity-User"], ranges: ["perplexity-perplexity-user"] },
