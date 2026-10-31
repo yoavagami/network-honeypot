@@ -41,3 +41,35 @@ artifacts.
 - Reloads the certificate every 6h.
 - **Rollback** (nginx terminates TLS again): on the server, `infrastructure/vps/edge-rollback.sh`.
   A normal `deploy.sh` re-enables the sensor.
+
+## uHoney shop (agent e-commerce flows)
+
+`/` is now a small storefront (`apps/honeypot/src/shop/`, `routes/shop.ts`): two products, basket
+(signed cookie), checkout in three steps (details → shipping → payment), confirmation. The Meridian
+site moved to `/app`; its bait pages keep their URLs and are linked from the shop footer.
+
+- Every step emits a `SHOP_*` event with the prices / totals shown or chosen — so "what the agent
+  saw vs. what it paid" is answerable. Contact details are never stored: `/checkout/details` is
+  excluded from body capture and only field fill-lengths / format checks are recorded.
+- **Payments** go through `PaymentProvider` (`shop/payments.ts`), enabled via
+  `SHOP_PAYMENT_PROVIDERS` (default `test_card,bank_transfer`). Neither accepts real payment data:
+  the card form's inputs are never submitted and only published test numbers (4242…) pass; any
+  other number is declined in the browser and only its length / Luhn validity is posted. Bank
+  transfer neither asks for nor shows account details. A real provider (e.g. Stripe Payment
+  Element, where card data goes browser → Stripe) is a new provider, not a checkout change.
+- `SHOP_DEMO_NOTICE=false` hides the "demonstration store" line in the footer and terms.
+
+## Agents page (dashboard)
+
+`/agents` in the admin dashboard scores every **visit** (a session, or an actor's cookieless burst
+within 30 minutes): probability it was an AI agent, a recommendation (**AI agent / Probably AI
+agent / Not sure / Not AI agent**), a type (cloud browser agent, in-browser agent, user-triggered
+fetcher, AI crawler, search crawler, AI app, browser automation, script, scanner, human) and the
+signals behind it, each with its weight. Tabs: visits, per-request (each request with its visit's
+score), lab runs. Visit detail shows network identity, the page-script fingerprint, behavior, the
+shop journey with prices, and every request. Event detail pages get an "Agent analysis" panel.
+
+Scoring is `packages/detection/src/agentScore.ts`, computed on read (changing a weight re-scores
+history). Proof — verified signature / operator IP list / rDNS, or a known agent's DOM marker —
+overrides the sum. Automation without AI-specific evidence or a visibly driven browser is capped at
+"Not sure". Weights are judgment until tuned on lab runs, so the page marks scores uncalibrated.
