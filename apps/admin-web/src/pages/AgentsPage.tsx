@@ -25,6 +25,9 @@ export function AgentsPage() {
   const [shop, setShop] = useState("");
   const [q, setQ] = useState("");
   const [qInput, setQInput] = useState("");
+  const [why, setWhy] = useState("");
+  const [whyInput, setWhyInput] = useState("");
+  const [whyScope, setWhyScope] = useState("any");
   const [visits, setVisits] = useState<AgentVisitsResponse | null>(null);
   const [requests, setRequests] = useState<AgentRequestRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +38,7 @@ export function AgentsPage() {
       setRequests(null);
       const params: Record<string, string> = { range: range === "30d" ? "7d" : range };
       if (bucket) params.bucket = bucket;
+      if (why) Object.assign(params, { why, whyScope });
       api.agentRequests(params).then((r) => setRequests(r.data)).catch((e) => setError(String(e.message ?? e)));
     } else {
       setVisits(null);
@@ -44,15 +48,20 @@ export function AgentsPage() {
       if (type) params.type = type;
       if (shop) params.shop = shop;
       if (q) params.q = q;
+      if (why) Object.assign(params, { why, whyScope });
       api.agentVisits(params).then(setVisits).catch((e) => setError(String(e.message ?? e)));
     }
-  }, [tab, range, bucket, type, shop, q]);
+  }, [tab, range, bucket, type, shop, q, why, whyScope]);
 
   // Every query re-scores the whole range server-side — debounce typing.
   useEffect(() => {
     const t = setTimeout(() => setQ(qInput.trim()), 400);
     return () => clearTimeout(t);
   }, [qInput]);
+  useEffect(() => {
+    const t = setTimeout(() => setWhy(whyInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [whyInput]);
 
   const typeOptions = useMemo(() => Object.keys(TYPE_LABEL), []);
 
@@ -106,6 +115,18 @@ export function AgentsPage() {
             <input type="search" placeholder="IP, user-agent, network, agent, label…" value={qInput} onChange={(e) => setQInput(e.target.value)} style={{ minWidth: 260 }} />
           </>
         )}
+        <input
+          type="search"
+          placeholder="Why… e.g. tab*hidden, cursor_*, KPN"
+          title="Filters on the reasons (text or signal name). * = anything, ? = one character. Not case-sensitive."
+          value={whyInput}
+          onChange={(e) => setWhyInput(e.target.value)}
+          style={{ minWidth: 240 }}
+        />
+        <select value={whyScope} onChange={(e) => setWhyScope(e.target.value)} aria-label="Why filter scope">
+          <option value="any">in any reason</option>
+          <option value="top">in top 2 reasons</option>
+        </select>
       </div>
 
       {error && <div className="banner error">{error}</div>}

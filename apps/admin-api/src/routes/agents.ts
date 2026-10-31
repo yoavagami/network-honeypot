@@ -216,6 +216,20 @@ function summarize(v: Visit, score: AgentScore) {
   };
 }
 
+/**
+ * "Why" filter: case-insensitive, matches anywhere in a reason's text or its signal id. `*` is any
+ * run of characters, `?` one character — "tab*hidden", "cursor_*", "KPN". `top` limits the match to
+ * the two reasons the list shows.
+ */
+function whyMatcher(pattern: string | undefined, scope: string | undefined) {
+  const p = pattern?.trim().slice(0, 200);
+  if (!p) return null;
+  const body = p.split("").map((ch) => (ch === "*" ? ".*" : ch === "?" ? "." : ch.replace(/[.+^${}()|[\]\\]/g, "\\$&"))).join("");
+  const re = new RegExp(body, "i");
+  return (reasons: Array<{ signal: string; text: string }>) =>
+    (scope === "top" ? reasons.slice(0, 2) : reasons).some((r) => re.test(r.text) || re.test(r.signal));
+}
+
 export function registerAgentRoutes(app: FastifyInstance) {
   app.get("/api/agents/visits", async (request) => {
     const q = request.query as Record<string, string | undefined>;
@@ -228,6 +242,8 @@ export function registerAgentRoutes(app: FastifyInstance) {
     else if (q.lab) rows = rows.filter((r) => r.lab === q.lab);
     if (q.shop === "checkout") rows = rows.filter((r) => r.shop && ["SHOP_CHECKOUT_START", "SHOP_CHECKOUT_DETAILS", "SHOP_CHECKOUT_SHIPPING", "SHOP_PAYMENT_ATTEMPT", "SHOP_ORDER_PLACED"].includes(r.shop.furthestStep ?? ""));
     if (q.shop === "any") rows = rows.filter((r) => r.shop);
+    const why = whyMatcher(q.why, q.whyScope);
+    if (why) rows = rows.filter((r) => why(r.score.reasons));
     if (q.q) {
       const needle = q.q.toLowerCase();
       rows = rows.filter((r) => [r.ip, r.userAgent, r.network, r.lab, r.score.agent, r.id].some((x) => x?.toLowerCase().includes(needle)));
@@ -254,10 +270,12 @@ export function registerAgentRoutes(app: FastifyInstance) {
     const q = request.query as Record<string, string | undefined>;
     const hours = RANGES[q.range ?? "24h"] ?? RANGES["24h"]!;
     const { visits } = await loadVisits(hours);
+    const why = whyMatcher(q.why, q.whyScope);
     const out = [];
     for (const v of visits) {
       const s = scoreVisit(evidence(v));
       if (q.bucket && s.bucket !== q.bucket) continue;
+      if (why && !why(s.reasons)) continue;
       for (const r of v.requests) {
         // Beacons and static assets drown the page requests; ?all=1 keeps them.
         if (q.all !== "1" && (r.path === "/api/v1/rum" || ASSET_RE.test(r.path))) continue;
