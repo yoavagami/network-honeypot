@@ -40,3 +40,46 @@ describe("payment providers never accept real payment data", () => {
     for (const n of Object.keys(TEST_CARDS)) expect(n).toMatch(/^(4242|4000|5555|2223|3782)/);
   });
 });
+
+describe("stripe_test provider is test-mode only", () => {
+  it("accepts only sk_test_/rk_test_ + pk_test_ keys", async () => {
+    const { stripeTestConfig } = await import("../src/shop/stripeTest.js");
+    expect(stripeTestConfig({})).toBeNull();
+    expect(stripeTestConfig({ STRIPE_TEST_SECRET_KEY: "sk_live_abc", STRIPE_TEST_PUBLISHABLE_KEY: "pk_live_abc" })).toBeNull();
+    expect(stripeTestConfig({ STRIPE_TEST_SECRET_KEY: "sk_test_abc", STRIPE_TEST_PUBLISHABLE_KEY: "pk_live_abc" })).toBeNull();
+    expect(stripeTestConfig({ STRIPE_TEST_SECRET_KEY: "sk_live_abc", STRIPE_TEST_PUBLISHABLE_KEY: "pk_test_abc" })).toBeNull();
+    expect(stripeTestConfig({ STRIPE_TEST_SECRET_KEY: "sk_test_abc", STRIPE_TEST_PUBLISHABLE_KEY: "pk_test_abc" })).not.toBeNull();
+    expect(stripeTestConfig({ STRIPE_TEST_SECRET_KEY: "rk_test_abc", STRIPE_TEST_PUBLISHABLE_KEY: "pk_test_abc" })).not.toBeNull();
+  });
+
+  it("is never enabled with live keys, even if listed", async () => {
+    const { enabledProviders } = await import("../src/shop/payments.js");
+    const saved = { ...process.env };
+    try {
+      Object.assign(process.env, { SHOP_PAYMENT_PROVIDERS: "stripe_test,bank_transfer", STRIPE_TEST_SECRET_KEY: "sk_live_x", STRIPE_TEST_PUBLISHABLE_KEY: "pk_live_x" });
+      expect(enabledProviders().map((p) => p.id)).toEqual(["bank_transfer"]);
+      Object.assign(process.env, { STRIPE_TEST_SECRET_KEY: "sk_test_x", STRIPE_TEST_PUBLISHABLE_KEY: "pk_test_x" });
+      expect(enabledProviders().map((p) => p.id)).toEqual(["stripe_test", "bank_transfer"]);
+      delete process.env.SHOP_PAYMENT_PROVIDERS;
+      expect(enabledProviders().map((p) => p.id)).toEqual(["stripe_test", "bank_transfer"]);
+    } finally {
+      process.env = saved;
+    }
+  });
+
+  it("refuses a PaymentIntent that wasn't created for this checkout", async () => {
+    const { stripeTestProvider } = await import("../src/shop/payments.js");
+    const saved = { ...process.env };
+    try {
+      Object.assign(process.env, { STRIPE_TEST_SECRET_KEY: "sk_test_x", STRIPE_TEST_PUBLISHABLE_KEY: "pk_test_x" });
+      const out = await stripeTestProvider.handle({ stripe_payment_intent: "pi_other" }, { totalCents: 1000, stripePaymentIntent: "pi_mine" });
+      expect(out.status).toBe("error");
+      expect(out.metadata.card_result).toBe("intent_mismatch");
+      const empty = await stripeTestProvider.handle({ stripe_client_error: "incomplete_number" }, { totalCents: 1000, stripePaymentIntent: "pi_mine" });
+      expect(empty.status).toBe("error");
+      expect(empty.metadata.card_result).toBe("missing");
+    } finally {
+      process.env = saved;
+    }
+  });
+});

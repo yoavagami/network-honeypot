@@ -9,6 +9,7 @@ import {
   readCheckout, writeCheckout, readOrder, completeOrder, type CheckoutDetails, type PlacedOrder,
 } from "../shop/cart.js";
 import { enabledProviders, providerById } from "../shop/payments.js";
+import { stripeTestConfig, createTestPaymentIntent } from "../shop/stripeTest.js";
 import {
   shopLayout, shopHomePage, productPage, cartPage, checkoutDetailsPage, checkoutShippingPage,
   checkoutPaymentPage, confirmationPage, infoPage,
@@ -26,6 +27,7 @@ import { jarSvg, FAVICON_SVG } from "../shop/assets.js";
 const STATIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "static");
 const SHOP_CSS = readFileSync(path.join(STATIC_DIR, "shop.css"), "utf8");
 const CHECKOUT_JS = readFileSync(path.join(STATIC_DIR, "checkout.js"), "utf8");
+const STRIPE_CHECKOUT_JS = readFileSync(path.join(STATIC_DIR, "stripe-checkout.js"), "utf8");
 
 type Body = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
@@ -73,6 +75,10 @@ export function registerShopRoutes(app: FastifyInstance) {
   app.get("/assets/checkout.js", async (request, reply) => {
     tag(request, "site.asset");
     reply.type("application/javascript").header("Cache-Control", "no-cache").send(CHECKOUT_JS);
+  });
+  app.get("/assets/stripe-checkout.js", async (request, reply) => {
+    tag(request, "shop.asset");
+    reply.type("application/javascript").header("Cache-Control", "no-cache").send(STRIPE_CHECKOUT_JS);
   });
   app.get("/assets/img/favicon.svg", async (request, reply) => {
     tag(request, "site.asset");
@@ -222,6 +228,38 @@ export function registerShopRoutes(app: FastifyInstance) {
     paymentView(request, reply);
   });
 
+  // Stripe test mode: create the PaymentIntent for the current basket total (computed here, never
+  // taken from the client) and remember its id in the signed checkout cookie, so /checkout/pay only
+  // accepts the intent made for this checkout.
+  app.post("/checkout/stripe/intent", async (request, reply) => {
+    const cfg = stripeTestConfig();
+    const lines = readCart(request);
+    const state = readCheckout(request);
+    if (!cfg || !providerById("stripe_test")) {
+      tag(request, "shop.checkout.stripe.intent", [], { error: "not_configured" });
+      return reply.status(404).send({ error: "not_available" });
+    }
+    if (lines.length === 0 || !state.details || !state.shipping) {
+      tag(request, "shop.checkout.stripe.intent", [], { error: "checkout_incomplete" });
+      return reply.status(409).send({ error: "checkout_incomplete" });
+    }
+    const snapshot = cartSnapshot(lines, state.shipping);
+    try {
+      const pi = await createTestPaymentIntent(cfg, snapshot.totals.totalCents, {
+        source: "uhoney-honeypot",
+        session: request.hp.sessionId ?? "",
+        lab: request.hp.labLabel ?? "",
+      });
+      writeCheckout(reply, { ...state, stripePi: pi.id });
+      tag(request, "shop.checkout.stripe.intent", [], { stripePaymentIntent: pi.id, ...snapshot });
+      return reply.header("Cache-Control", "no-store").send({ clientSecret: pi.client_secret, publishableKey: cfg.publishableKey });
+    } catch (err) {
+      request.log.warn({ msg: "stripe test intent failed", err: err instanceof Error ? err.message : String(err) });
+      tag(request, "shop.checkout.stripe.intent", [], { error: "stripe_error" });
+      return reply.status(502).send({ error: "stripe_unavailable" });
+    }
+  });
+
   app.post("/checkout/pay", async (request, reply) => {
     const lines = readCart(request);
     const state = readCheckout(request);
@@ -238,7 +276,7 @@ export function registerShopRoutes(app: FastifyInstance) {
       tag(request, "shop.checkout.pay", ["SHOP_PAYMENT_ERROR"], { error: "terms_not_accepted", method: provider.id, ...snapshot });
       return paymentView(request, reply, "Please accept the terms & conditions.", provider.id, 200);
     }
-    const outcome = provider.handle(body, { totalCents: snapshot.totals.totalCents });
+    const outcome = await provider.handle(body, { totalCents: snapshot.totals.totalCents, stripePaymentIntent: state.stripePi });
     if (outcome.status === "declined" || outcome.status === "error") {
       tag(request, "shop.checkout.pay", ["SHOP_PAYMENT_ATTEMPT", "SHOP_PAYMENT_DECLINED"], { method: provider.id, status: outcome.status, payment: outcome.metadata, ...snapshot });
       return paymentView(request, reply, outcome.message, provider.id, 200);

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import { config } from "./config.js";
+import { stripeTestConfig, STRIPE_CSP } from "./shop/stripeTest.js";
 import { IngestionQueue } from "./ingestion/queue.js";
 import { registerIngestion } from "./ingestion/capture.js";
 import { startCorrelationWorker } from "./ingestion/correlationWorker.js";
@@ -41,7 +42,9 @@ async function main() {
     reply.header("X-Content-Type-Options", "nosniff");
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
     reply.header("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()");
-    reply.header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'");
+    // The payment page loads Stripe's Payment Element (test mode only) — only there is the CSP widened.
+    const stripePage = (request.url.startsWith("/checkout/payment") || request.url.startsWith("/checkout/pay")) && stripeTestConfig() !== null;
+    reply.header("Content-Security-Policy", stripePage ? STRIPE_CSP : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'");
     reply.removeHeader("X-Powered-By");
     return payload;
   });

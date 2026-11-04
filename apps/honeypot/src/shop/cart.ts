@@ -24,7 +24,7 @@ export interface CheckoutDetails {
   country: string;
   phone: string;
 }
-export interface CheckoutState { details?: CheckoutDetails; shipping?: ShippingMethodId }
+export interface CheckoutState { details?: CheckoutDetails; shipping?: ShippingMethodId; /** Stripe test PaymentIntent id for this checkout. */ stripePi?: string }
 export interface PlacedOrder {
   id: string;
   placedAt: string;

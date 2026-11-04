@@ -13,6 +13,8 @@
  *     payment" and the confirmation says the invoice with payment details follows by email.
  */
 
+import { stripeTestConfig, retrieveTestPaymentIntent, type StripePaymentIntent } from "./stripeTest.js";
+
 export type PaymentStatus = "paid" | "pending" | "declined" | "error";
 
 export interface PaymentOutcome {
@@ -31,7 +33,13 @@ export interface PaymentProvider {
   renderFields(): string;
   /** Client scripts the panel needs (served from /assets). */
   scripts: string[];
-  handle(body: Record<string, unknown>, ctx: { totalCents: number }): PaymentOutcome;
+  handle(body: Record<string, unknown>, ctx: PaymentContext): PaymentOutcome | Promise<PaymentOutcome>;
+}
+
+export interface PaymentContext {
+  totalCents: number;
+  /** The Stripe test PaymentIntent created for this checkout (signed checkout cookie). */
+  stripePaymentIntent?: string;
 }
 
 /** Stripe's published test card numbers — the only numbers the test form will ever accept. */
@@ -108,15 +116,104 @@ export const bankTransferProvider: PaymentProvider = {
   handle: () => ({ status: "pending", metadata: { bank_transfer: true } }),
 };
 
+/** PaymentIntents already turned into an order — a replayed id can't place a second one. */
+const consumedIntents = new Set<string>();
+
+const DECLINE_MESSAGES: Record<string, string> = {
+  insufficient_funds: "Your card has insufficient funds.",
+  expired_card: "Your card has expired.",
+  incorrect_cvc: "Your card's security code is incorrect.",
+  processing_error: "An error occurred while processing your card. Please try again.",
+};
+
+/**
+ * Stripe test mode (shop/stripeTest.ts). The Payment Element (a js.stripe.com iframe) collects the
+ * test card and confirms the PaymentIntent with Stripe from the browser; this handler only gets the
+ * PaymentIntent id, checks it is the one created for this checkout, and re-fetches it from Stripe
+ * for the real outcome. Only available with sk_test_/pk_test_ keys.
+ */
+export const stripeTestProvider: PaymentProvider = {
+  id: "stripe_test",
+  label: "Credit or debit card",
+  description: "Visa, Mastercard, American Express — processed by Stripe (test mode)",
+  scripts: ["https://js.stripe.com/v3/", "/assets/stripe-checkout.js"],
+  renderFields: () => `
+    <div class="card-widget" data-provider="stripe_test">
+      <div class="card-widget-head"><span>Card details</span><span class="test-badge">STRIPE TEST MODE</span></div>
+      <div id="stripe-payment-element"><p class="muted small">Loading secure card form…</p></div>
+      <p class="muted small">Test mode — no real charge. Use a Stripe test card, e.g. 4242 4242 4242 4242, any future expiry date and any CVC. Real cards are rejected.</p>
+      <input type="hidden" name="stripe_payment_intent" value="" />
+      <input type="hidden" name="stripe_client_error" value="" />
+      <p class="card-error" role="alert" hidden></p>
+    </div>`,
+  async handle(body, ctx) {
+    const cfg = stripeTestConfig();
+    const piId = str(body.stripe_payment_intent).trim();
+    const clientError = str(body.stripe_client_error).replace(/[^a-z_]/gi, "").slice(0, 64) || null;
+    const meta: Record<string, unknown> = { stripe_client_error: clientError, stripe_payment_intent: piId || null };
+    if (!cfg) return { status: "error", message: "Card payments are unavailable right now. Please choose another method.", metadata: { ...meta, stripe: "not_configured" } };
+    if (!piId) {
+      return { status: "error", message: clientError?.startsWith("incomplete") || clientError?.startsWith("invalid") ? "Please complete your card details." : "Please enter your card details.", metadata: { ...meta, card_result: "missing" } };
+    }
+    if (piId !== ctx.stripePaymentIntent || consumedIntents.has(piId)) {
+      return { status: "error", message: "Your payment session expired. Please try again.", metadata: { ...meta, card_result: "intent_mismatch" } };
+    }
+    let pi: StripePaymentIntent;
+    try {
+      pi = await retrieveTestPaymentIntent(cfg, piId);
+    } catch (err) {
+      return { status: "error", message: "We couldn't verify your payment. Please try again.", metadata: { ...meta, card_result: "verify_failed", error: err instanceof Error ? err.message.slice(0, 200) : "unknown" } };
+    }
+    const charge = typeof pi.latest_charge === "object" ? pi.latest_charge : null;
+    const card = charge?.payment_method_details?.card;
+    Object.assign(meta, {
+      stripe_status: pi.status,
+      livemode: pi.livemode,
+      card_brand: card?.brand ?? null,
+      card_last4: card?.last4 ?? null,
+      decline_code: pi.last_payment_error?.decline_code ?? null,
+      error_code: pi.last_payment_error?.code ?? null,
+    });
+    if (pi.amount !== ctx.totalCents || pi.currency !== "eur") {
+      return { status: "error", message: "Your basket changed. Please review your order and pay again.", metadata: { ...meta, card_result: "amount_mismatch", stripe_amount: pi.amount } };
+    }
+    switch (pi.status) {
+      case "succeeded":
+        consumedIntents.add(pi.id);
+        return { status: "paid", metadata: { ...meta, card_result: "approved_stripe_test" } };
+      case "processing":
+        consumedIntents.add(pi.id);
+        return { status: "pending", metadata: { ...meta, card_result: "processing_stripe_test" } };
+      case "requires_action":
+        return { status: "error", message: "Please complete the card authentication.", metadata: { ...meta, card_result: "requires_action" } };
+      default: {
+        const code = pi.last_payment_error?.decline_code ?? pi.last_payment_error?.code;
+        if (code) return { status: "declined", message: DECLINE_MESSAGES[code] ?? "Your card was declined. Please try a different card.", metadata: { ...meta, card_result: "declined_stripe_test" } };
+        return { status: "error", message: "Please complete your card details.", metadata: { ...meta, card_result: "incomplete" } };
+      }
+    }
+  },
+};
+
 const ALL: Record<string, PaymentProvider> = {
+  [stripeTestProvider.id]: stripeTestProvider,
   [testCardProvider.id]: testCardProvider,
   [bankTransferProvider.id]: bankTransferProvider,
 };
 
-/** Enabled providers, in display order — SHOP_PAYMENT_PROVIDERS=test_card,bank_transfer (default). */
+/**
+ * Enabled providers, in display order, from SHOP_PAYMENT_PROVIDERS. Default: stripe_test,bank_transfer
+ * when Stripe test keys are configured, else test_card,bank_transfer. stripe_test is dropped
+ * whenever the keys aren't test keys.
+ */
 export function enabledProviders(): PaymentProvider[] {
-  const ids = (process.env.SHOP_PAYMENT_PROVIDERS ?? "test_card,bank_transfer").split(",").map((s) => s.trim());
-  return ids.map((id) => ALL[id]).filter((p): p is PaymentProvider => Boolean(p));
+  const stripeReady = stripeTestConfig() !== null;
+  const fallback = stripeReady ? "stripe_test,bank_transfer" : "test_card,bank_transfer";
+  const ids = (process.env.SHOP_PAYMENT_PROVIDERS || fallback).split(",").map((s) => s.trim());
+  return ids
+    .filter((id) => id !== "stripe_test" || stripeReady)
+    .map((id) => ALL[id])
+    .filter((p): p is PaymentProvider => Boolean(p));
 }
 
 export function providerById(id: string): PaymentProvider | undefined {
