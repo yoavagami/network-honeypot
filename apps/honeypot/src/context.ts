@@ -34,6 +34,9 @@ export interface HoneypotRequestContext {
   authenticatedUsername?: string;
   fetchedDocsFirst?: boolean;
   skipIngestion?: boolean;
+  /** Ground-truth label for a controlled test run — from ?lab=<label>, persisted in the hp_lab
+   * cookie. See sensing/ and docs on agent test runs. */
+  labLabel?: string | null;
   pathTemplate?: string;
   pathParams?: Record<string, string>;
 }

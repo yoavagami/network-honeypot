@@ -24,3 +24,4 @@ export * from "./rules/correlation/fuzzing.js";
 export * from "./rules/correlation/authProbing.js";
 export * from "./rules/correlation/apiProbing.js";
 export * from "./rules/correlation/scannerClassification.js";
+export * from "./agentScore.js";

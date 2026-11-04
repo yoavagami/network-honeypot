@@ -68,7 +68,8 @@ export const loginSubmit: RouteHandlerMethod = async (request, reply) => {
 };
 
 export function registerPageRoutes(app: FastifyInstance) {
-  app.get("/", async (request, reply) => {
+  // "/" is the uHoney storefront now (routes/shop.ts); the Meridian app site lives on behind it.
+  app.get("/app", async (request, reply) => {
     request.hp.endpoint = "site.home";
     request.hp.applicationComponent = "site";
     reply.type("text/html").send(homePage());

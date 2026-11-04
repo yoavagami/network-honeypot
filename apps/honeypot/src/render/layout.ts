@@ -9,7 +9,7 @@ export interface LayoutOptions {
 }
 
 const NAV_ITEMS = [
-  { href: "/", label: "Home" },
+  { href: "/app", label: "Home" },
   { href: "/search", label: "Search" },
   { href: "/customers", label: "Customers" },
   { href: "/docs", label: "Docs" },
@@ -35,7 +35,7 @@ export function layout({ title, activeNav, body }: LayoutOptions): string {
 </head>
 <body>
   <header class="site-header">
-    <a href="/" class="brand">Meridian</a>
+    <a href="/app" class="brand">Meridian</a>
     <nav>
       ${nav}
     </nav>

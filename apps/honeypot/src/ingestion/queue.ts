@@ -7,10 +7,12 @@ import type { Logger } from "@honeypot/logging";
 
 type RequestRow = InferInsertModel<typeof schema.requests>;
 type EventRow = InferInsertModel<typeof schema.events>;
+type RequestSignalsRow = InferInsertModel<typeof schema.requestSignals>;
+type ClientSignalsRow = InferInsertModel<typeof schema.clientSignals>;
 
 interface QueueItem {
-  kind: "request" | "event";
-  row: RequestRow | EventRow;
+  kind: "request" | "event" | "request_signals" | "client_signals";
+  row: RequestRow | EventRow | RequestSignalsRow | ClientSignalsRow;
   /** High-priority items (canary triggers, auth/admin events) are never dropped ahead of
    * low-priority ones under backpressure. See docs/ARCHITECTURE.md §5. */
   priority: "high" | "low";
@@ -86,6 +88,12 @@ export class IngestionQueue {
 
       if (requestRows.length > 0) await db.insert(schema.requests).values(requestRows);
       if (eventRows.length > 0) await db.insert(schema.events).values(eventRows);
+      // Agent-sensing rows (sensing/collect.ts, routes/rum.ts) — after requests so analysis joins
+      // never see a signals row whose request row is still in flight.
+      const signalRows = batch.filter((i) => i.kind === "request_signals").map((i) => i.row as RequestSignalsRow);
+      const clientRows = batch.filter((i) => i.kind === "client_signals").map((i) => i.row as ClientSignalsRow);
+      if (signalRows.length > 0) await db.insert(schema.requestSignals).values(signalRows).onConflictDoNothing();
+      if (clientRows.length > 0) await db.insert(schema.clientSignals).values(clientRows);
 
       metrics.eventsProcessedTotal += batch.length;
       metrics.lastSuccessfulFlushAt = new Date().toISOString();

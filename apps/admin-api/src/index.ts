@@ -15,6 +15,7 @@ import { registerSearchRoutes } from "./routes/search.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerStreamRoute } from "./routes/stream.js";
 import { registerAccessLogRoutes } from "./routes/accessLog.js";
+import { registerAgentRoutes } from "./routes/agents.js";
 
 async function main() {
   const app = Fastify({
@@ -38,6 +39,7 @@ async function main() {
   registerAuthRoutes(app);
   registerEventRoutes(app);
   registerRequestRoutes(app);
+  registerAgentRoutes(app);
   registerActorRoutes(app);
   registerDetectionRoutes(app);
   registerCanaryRoutes(app);

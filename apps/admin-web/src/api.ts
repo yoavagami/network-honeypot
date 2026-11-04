@@ -105,6 +105,11 @@ export const api = {
 
   search: (q: string) => request<{ data: RequestRow[]; query: string }>(`/api/search?q=${encodeURIComponent(q)}`),
 
+  agentVisits: (params: Record<string, string> = {}) => request<AgentVisitsResponse>(`/api/agents/visits?${new URLSearchParams(params)}`),
+  agentVisit: (id: string) => request<AgentVisitDetail>(`/api/agents/visits/${encodeURIComponent(id)}`),
+  agentRequests: (params: Record<string, string> = {}) => request<{ data: AgentRequestRow[]; total: number }>(`/api/agents/requests?${new URLSearchParams(params)}`),
+  agentByRequest: (requestId: string) => request<AgentRequestScore>(`/api/agents/by-request/${requestId}`),
+
   health: () => request<{ status: string; components: Record<string, boolean> }>("/api/system/health"),
   ingestion: () => request<IngestionHealth>("/api/system/ingestion"),
 };
@@ -341,3 +346,51 @@ export interface IngestionHealth {
 }
 
 export { BASE as API_BASE };
+
+// ---- Agents page (admin-api routes/agents.ts, scoring in packages/detection/src/agentScore.ts)
+export type AgentBucket = "ai_agent" | "probably_ai_agent" | "not_sure" | "not_ai_agent";
+export interface AgentReason { signal: string; group: string; weight: number; text: string }
+export interface AgentScore {
+  probability: number;
+  bucket: AgentBucket;
+  type: string;
+  agent: string | null;
+  proven: boolean;
+  leaning: "agent" | "human";
+  reasons: AgentReason[];
+  calibrated: boolean;
+}
+export interface AgentShopSummary { furthestStep: string | null; orderPlaced: boolean; orderTotalCents: number | null; paymentMethod: string | null; paymentDeclines: number }
+export interface AgentVisitRow {
+  id: string;
+  sessionId: string | null;
+  actorId: string;
+  firstAt: string;
+  lastAt: string;
+  requestCount: number;
+  pageCount: number;
+  ip: string | null;
+  network: string | null;
+  asn: string | null;
+  country: string | null;
+  userAgent: string | null;
+  lab: string | null;
+  ja4: string | null;
+  hasBrowserBeacon: boolean;
+  shop: AgentShopSummary | null;
+  score: AgentScore;
+}
+export interface AgentVisitsResponse { data: AgentVisitRow[]; total: number; counts: Record<AgentBucket, number>; types: Record<string, number>; truncated: boolean }
+export interface AgentVisitDetail extends Omit<AgentVisitRow, "network"> {
+  network: AgentNetwork;
+  requests: Array<{ requestId: string; at: string; method: string; path: string; query: string | null; status: number; verdict: string; agent: string | null; reason: string | null; flags: string[] }>;
+  fingerprint: Record<string, any> | null;
+  behavior: Array<Record<string, any>>;
+  shopEvents: Array<{ at: string; type: string; requestId: string | null; detail: Record<string, any> | null }>;
+}
+export interface AgentNetwork { ip: string | null; asn: string | null; organization: string | null; country: string | null; city: string | null; ja4: string[]; h2: string[]; webBotAuth: string[]; userAgents: string[] }
+export interface AgentRequestRow {
+  requestId: string; at: string; method: string; path: string; status: number; ip: string | null; userAgent: string | null; lab: string | null;
+  visitId: string; requestVerdict: string; requestAgent: string | null; probability: number; bucket: AgentBucket; type: string; agent: string | null; topReason: string | null;
+}
+export interface AgentRequestScore { visitId: string; probability: number; bucket: AgentBucket; type: string; agent: string | null; proven: boolean; reasons: AgentReason[] }

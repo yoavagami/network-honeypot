@@ -74,6 +74,26 @@ export const EVENT_TYPES = [
   // confirmed live, real scanners check it too, not just install.php directly.
   "WP_SETUP_CONFIG_VIEWED",
   "WP_SETUP_CONFIG_SUBMITTED",
+  // uHoney storefront funnel (apps/honeypot/src/routes/shop.ts) — browse → basket → checkout →
+  // order, with prices shown / totals in event metadata. Never contact or payment data.
+  "SHOP_HOME_VIEW",
+  "SHOP_INFO_VIEW",
+  "SHOP_PRODUCT_VIEW",
+  "SHOP_ADD_TO_CART",
+  "SHOP_CART_VIEW",
+  "SHOP_CART_UPDATE",
+  "SHOP_CART_ERROR",
+  "SHOP_CHECKOUT_START",
+  "SHOP_CHECKOUT_DETAILS",
+  "SHOP_CHECKOUT_DETAILS_INVALID",
+  "SHOP_SHIPPING_VIEW",
+  "SHOP_CHECKOUT_SHIPPING",
+  "SHOP_PAYMENT_VIEW",
+  "SHOP_PAYMENT_ATTEMPT",
+  "SHOP_PAYMENT_DECLINED",
+  "SHOP_PAYMENT_ERROR",
+  "SHOP_ORDER_PLACED",
+  "SHOP_ORDER_CONFIRMATION_VIEW",
 ] as const;
 
 export const EventTypeSchema = z.enum(EVENT_TYPES);

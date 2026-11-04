@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, type ActorRow, type EventRow, type RequestRow } from "../api.js";
 import { SeverityBadge } from "../components/SeverityBadge.js";
+import { AgentPanel } from "../components/AgentPanel.js";
 
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -77,9 +78,10 @@ export function EventDetailPage() {
               <dt>TLS</dt>
               <dd>{request.tlsVersion ? `${request.tlsVersion} · ${request.tlsCipher} · ALPN ${request.alpn ?? "—"}` : "— (plain HTTP)"}</dd>
             </dl>
-          </div>
+                    </div>
         )}
       </div>
+      {request && <AgentPanel requestId={request.requestId} />}
     </div>
   );
 }

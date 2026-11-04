@@ -83,6 +83,12 @@ const ORG_SUBSTRING_TABLE: Array<{ pattern: RegExp; category: InfraCategory }> =
   { pattern: /cox communications/i, category: "residential_mobile" },
   { pattern: /british telecom|\bbt group\b/i, category: "residential_mobile" },
   { pattern: /china telecom|china unicom|china mobile/i, category: "residential_mobile" },
+  // Europe / Israel consumer ISPs seen in this deployment's traffic (agent-sensing lab runs).
+  { pattern: /\bkpn\b|ziggo|odido|tele2|delta fiber|caiway/i, category: "residential_mobile" },
+  { pattern: /bezeq|partner communications|hot-net|cellcom/i, category: "residential_mobile" },
+  { pattern: /proximus|telenet|swisscom|free sas|bouygues|\bsfr\b|telia|\bsky\b|virgin media/i, category: "residential_mobile" },
+  // More hosting seen probing the honeypot.
+  { pattern: /techoff|tc datacenter|hostinger|ionos|scaleway|leaseweb|m247|datacamp|godaddy|tencent|hurricane/i, category: "hosting_vps" },
 ];
 
 const CATEGORY_LABELS: Record<InfraCategory, string> = {

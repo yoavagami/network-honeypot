@@ -5,6 +5,8 @@ import { LoginPage } from "./pages/LoginPage.js";
 import { OverviewPage } from "./pages/OverviewPage.js";
 import { LiveStreamPage } from "./pages/LiveStreamPage.js";
 import { RequestsPage } from "./pages/RequestsPage.js";
+import { AgentsPage } from "./pages/AgentsPage.js";
+import { AgentVisitPage } from "./pages/AgentVisitPage.js";
 import { IpsBreakdownPage } from "./pages/IpsBreakdownPage.js";
 import { UserAgentsBreakdownPage } from "./pages/UserAgentsBreakdownPage.js";
 import { ActorsPage } from "./pages/ActorsPage.js";
@@ -49,6 +51,8 @@ export function App() {
           <Route index element={<OverviewPage />} />
           <Route path="live" element={<LiveStreamPage />} />
           <Route path="requests" element={<RequestsPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="agents/:id" element={<AgentVisitPage />} />
           <Route path="overview/ips" element={<IpsBreakdownPage />} />
           <Route path="overview/user-agents" element={<UserAgentsBreakdownPage />} />
           <Route path="actors" element={<ActorsPage />} />

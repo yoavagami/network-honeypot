@@ -237,3 +237,38 @@ export const crmApiIntegrations = pgTable("crm_api_integrations", {
   webhookUrl: text("webhook_url"),
   createdAt: timestamptz("created_at").notNull(),
 });
+
+// Agent sensing — mirrors migrations/0010_agent_sensing.sql.
+export const requestSignals = pgTable("request_signals", {
+  requestId: uuid("request_id").primaryKey(),
+  createdAt: timestamptz("created_at").notNull(),
+  actorId: uuid("actor_id").notNull(),
+  sessionId: uuid("session_id"),
+  labLabel: text("lab_label"),
+  ja4: text("ja4"),
+  ja3nHash: text("ja3n_hash"),
+  h2Fp: text("h2_fp"),
+  headerOrderHash: text("header_order_hash"),
+  uaClaim: text("ua_claim"),
+  uaLibrary: text("ua_library"),
+  wbaStatus: text("wba_status").notNull(),
+  wbaSigner: text("wba_signer"),
+  identityVerdict: text("identity_verdict").notNull(),
+  identityAgent: text("identity_agent"),
+  ipAgentRange: text("ip_agent_range"),
+  ipTor: boolean("ip_tor").notNull(),
+  data: jsonb("data").notNull(),
+});
+
+export const clientSignals = pgTable("client_signals", {
+  id: uuid("id").primaryKey(),
+  createdAt: timestamptz("created_at").notNull(),
+  actorId: uuid("actor_id").notNull(),
+  sessionId: uuid("session_id"),
+  visitorId: text("visitor_id"),
+  labLabel: text("lab_label"),
+  pageLoadId: text("page_load_id"),
+  kind: text("kind").notNull(),
+  path: text("path"),
+  data: jsonb("data").notNull(),
+});

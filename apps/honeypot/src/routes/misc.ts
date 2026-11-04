@@ -1,4 +1,10 @@
 import type { FastifyInstance } from "fastify";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// The agent-sensing collector (see routes/rum.ts) ships under the site's ordinary bundle name.
+const APP_JS = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "static", "app.js"), "utf8");
 
 export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/robots.txt", async (request, reply) => {
@@ -14,7 +20,8 @@ export function registerMiscRoutes(app: FastifyInstance) {
     request.hp.extraEventTypes.push("SITEMAP_ACCESS");
     reply.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-        ["/", "/login", "/register", "/docs", "/search", "/customers"].map((p) => `<url><loc>https://meridian.example${p}</loc></url>`).join("") +
+        ["/", "/products/wildflower-raw-honey", "/products/heather-honey", "/about", "/shipping", "/terms", "/login", "/docs"]
+          .map((p) => `<url><loc>https://${request.headers.host ?? "uhoney.shop"}${p}</loc></url>`).join("") +
         `</urlset>`
     );
   });
@@ -48,7 +55,7 @@ export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/assets/app.js", async (request, reply) => {
     request.hp.endpoint = "site.asset";
     request.hp.applicationComponent = "static";
-    reply.type("application/javascript").send("// Meridian client bundle (minimal, no telemetry SDK)\n");
+    reply.type("application/javascript").header("Cache-Control", "no-cache").send(APP_JS);
   });
 }
 

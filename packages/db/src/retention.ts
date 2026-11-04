@@ -26,6 +26,20 @@ async function redactOldRawIps(sql: postgres.Sql) {
   return result.count;
 }
 
+// Agent-sensing tables (migrations/0010_agent_sensing.sql). Reverse-DNS names can identify a
+// residential subscriber the same way a raw IP can, so they follow the raw-IP window; the rows
+// themselves follow the event window.
+async function pruneAgentSignals(sql: postgres.Sql) {
+  const rdnsRedacted = await sql`
+    UPDATE request_signals SET data = data #- '{ip,rdns}'
+    WHERE data #> '{ip,rdns}' IS NOT NULL AND data #> '{ip,rdns}' <> 'null'::jsonb
+      AND created_at < now() - make_interval(days => ${RAW_IP_RETENTION_DAYS})
+  `;
+  const requestSignals = await sql`DELETE FROM request_signals WHERE created_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  const clientSignals = await sql`DELETE FROM client_signals WHERE created_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  return { rdnsRedacted: rdnsRedacted.count, requestSignalsDeleted: requestSignals.count, clientSignalsDeleted: clientSignals.count };
+}
+
 async function ensureFuturePartitions(sql: postgres.Sql) {
   const created: string[] = [];
   for (let i = 0; i <= FUTURE_PARTITION_MONTHS; i++) {
@@ -88,6 +102,7 @@ async function main() {
     const redactedRows = await redactOldRawIps(sql);
     const createdPartitions = await ensureFuturePartitions(sql);
     const droppedPartitions = await dropExpiredPartitions(sql);
+    const agentSignals = await pruneAgentSignals(sql);
     console.log(
       JSON.stringify(
         {
@@ -96,6 +111,7 @@ async function main() {
           redactedRows,
           createdPartitions,
           droppedPartitions,
+          agentSignals,
         },
         null,
         2

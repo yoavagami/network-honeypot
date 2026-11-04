@@ -1,0 +1,7 @@
+{
+ "creationTime": "2026-10-31T00:00:00Z",
+ "source": "Anthropic's own network (ARIN NetRange 160.79.104.0/21, OrgName Anthropic, PBC; announced via AS396982). Claude's web fetch came from 160.79.106.142 on 2026-10-31 — not in claude.com/crawling/bots.json. Not refreshed from a URL.",
+ "prefixes": [
+  { "ipv4Prefix": "160.79.104.0/21" }
+ ]
+}
