@@ -103,22 +103,26 @@ export function registerAccessLogRoutes(app: FastifyInstance) {
     }
 
     // Which account each login was for. Nginx's log has the IP but not the username; the login
-    // handler's audit rows have the account and the hashed IP. Match on hashed IP + time (±10s).
+    // handler writes a login / login_failed audit row at the same second. Match on action + time
+    // (±3s); the hashed IP only breaks ties (older rows were hashed differently, so it can't be
+    // required).
     const auditRows = await db
       .select({ action: schema.adminAuditLog.action, at: schema.adminAuditLog.createdAt, ipHash: schema.adminAuditLog.ipHash, target: schema.adminAuditLog.target, username: schema.adminUsers.username, role: schema.adminUsers.role })
       .from(schema.adminAuditLog)
       .leftJoin(schema.adminUsers, eq(schema.adminUsers.adminUserId, schema.adminAuditLog.adminUserId))
-      .where(and(inArray(schema.adminAuditLog.action, ["login", "login_failed"]), gte(schema.adminAuditLog.createdAt, new Date(sinceMs))));
+      .where(and(inArray(schema.adminAuditLog.action, ["login", "login_failed"]), gte(schema.adminAuditLog.createdAt, new Date(sinceMs - 5000))));
     const used = new Set<number>();
     const accountFor = (l: AccessLine): { username: string | null; role: string | null } => {
       const t = Date.parse(l.time);
       const h = hashIp(l.ip, config.ipHashSecret);
       const want = l.status === 200 ? "login" : "login_failed";
-      let best = -1, bestDiff = 10_001;
+      let best = -1, bestScore = Infinity;
       auditRows.forEach((r, i) => {
-        if (used.has(i) || r.action !== want || r.ipHash !== h) return;
+        if (used.has(i) || r.action !== want) return;
         const d = Math.abs(r.at.getTime() - t);
-        if (d < bestDiff) { best = i; bestDiff = d; }
+        if (d > 3000) return;
+        const score = d - (r.ipHash === h ? 10_000 : 0);
+        if (score < bestScore) { best = i; bestScore = score; }
       });
       if (best < 0) return { username: null, role: null };
       used.add(best);
