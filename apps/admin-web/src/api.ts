@@ -65,7 +65,8 @@ export interface AccessLogResponse {
   viewerIp: string;
   totals: { requests: number; uniqueIps: number; loginsOk: number; loginsFailed: number };
   visitors: Array<{ ip: string; hits: number; loginsOk: number; loginsFailed: number; firstSeen: string; lastSeen: string; userAgent: string }>;
-  logins: Array<{ time: string; ip: string; result: "success" | "wrong_password" | "rate_limited" | "other"; userAgent: string }>;
+  logins: Array<{ time: string; ip: string; result: "success" | "wrong_password" | "rate_limited" | "other"; userAgent: string; username: string | null; role: string | null }>;
+  accounts: Array<{ username: string; role: string | null; loginsOk: number; loginsFailed: number; lastLogin: string | null; lastIp: string | null; ips: string[] }>;
   recent: Array<{ time: string; ip: string; method: string; uri: string; status: number; userAgent: string }>;
 }
 
