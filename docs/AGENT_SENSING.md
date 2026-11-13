@@ -116,5 +116,26 @@ scoring worker stores each visit's verdict in `visit_scores` as the visit happen
 rescored every ~30 s, and once more when they settle), so the list is an indexed query; the visit
 detail page rescores on read. After changing a weight, bump `SCORER_VERSION` and run
 `pnpm rescore --days N` (deploy.sh runs `--days 30`). Proof — verified signature / operator IP list / rDNS, or a known agent's DOM marker —
-overrides the sum. Automation without AI-specific evidence or a visibly driven browser is capped at
+overrides the sum.
+
+**Who was driving** (`packages/detection/src/pageControl.ts`). Each page load is judged on its own
+as *agent*, *human*, *both* or *unknown* — automation signs: jump clicks (≤1 mouse event and
+≤50 ms before the click; keyboard, touch and synthetic clicks excluded), form fields set by script
+(input events with no `inputType` and no keys or pastes), scrolling with no wheel/key/touch/mouse;
+human signs: mouse paths, wheel/trackpad, touch, clicks after a mouse path. Pages are ordered by
+their first report (a back/forward-cache restore keeps an old page clock), and the visit gets a
+control mode: **agent**, **human**, **agent → human** (an agent browses and fills checkout, a
+person pays — the common agentic-commerce handover), **human → agent**, or **mixed**, with the
+handover page. Once a visit is clearly agent-driven, human-input credit from the person's pages is
+shown at weight 0, so a person finishing the checkout no longer cancels the agent's evidence. The
+Agents list has a *Driven by* column and filter (`?control=hybrid` for any handover); the visit
+page shows a per-page *Who was driving* table. Found on the lab run `claude-full-buy-3-11-11`,
+which scored 0.13 before and 0.995 (agent → human at `/checkout/payment`) after.
+
+**Server vs. page checks** (`pageConsistency.ts`): the page's user-agent vs. the request header,
+`navigator.languages` vs. `Accept-Language`, the user-agent's OS vs. `navigator.platform` and
+client hints, browser timezone vs. IP country (skipped behind VPNs/proxies), fingerprint
+stability across page loads, and the claimed browser's fixed traits (vendor, productSub,
+`window.chrome`, buildID, userAgentData). Shown as a table on the visit page and a *Checks* column
+on the list. Automation without AI-specific evidence or a visibly driven browser is capped at
 "Not sure". Weights are judgment until tuned on lab runs, so the page marks scores uncalibrated.
