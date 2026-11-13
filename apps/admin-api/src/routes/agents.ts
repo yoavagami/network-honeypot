@@ -28,6 +28,7 @@ interface ReqRow {
   ua_library: string | null; ja4: string | null; h2_fp: string | null; wba_status: string; wba_signer: string | null; ip_tor: boolean;
   verdict_method: string | null; verdict_reasons: string[] | null; ai_app: string | null; browser_family: string | null; flags: string[] | null;
   asn: string | null; organization: string | null; country: string | null; city: string | null; accept_language: string | null;
+  page_load_id: string | null;
 }
 interface ClientRow { session_id: string | null; actor_id: string; kind: string; created_at: Date; path: string | null; lab_label: string | null; page_load_id: string | null; data: Record<string, any> }
 interface ShopRow { session_id: string | null; actor_id: string; created_at: Date; event_type: string; request_id: string | null; shop: Record<string, any> | null }
@@ -51,7 +52,7 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
            ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data #> '{identity,reasons}', '[]'))) AS verdict_reasons,
            s.data #>> '{ua,aiApp}' AS ai_app, s.data #>> '{ua,browser,family}' AS browser_family,
            ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data -> 'consistencyFlags', '[]'))) AS flags,
-           s.data #>> '{headers,values,accept-language}' AS accept_language,
+           s.data #>> '{headers,values,accept-language}' AS accept_language, s.data ->> 'pageLoadId' AS page_load_id,
            a.asn, a.organization, a.country, a.city
     FROM requests r
     JOIN request_signals s USING (request_id)
@@ -68,7 +69,10 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
         SELECT session_id, actor_id, kind, created_at, path, lab_label, page_load_id,
                CASE WHEN kind = 'fp' THEN jsonb_build_object(
                  'nav', jsonb_build_object('webdriver', data #> '{nav,webdriver}', 'languages', data #> '{nav,languages}', 'platform', data #> '{nav,platform}', 'hardwareConcurrency', data #> '{nav,hardwareConcurrency}',
-                   'ua', data #> '{nav,ua}', 'deviceMemory', data #> '{nav,deviceMemory}', 'plugins', data #> '{nav,plugins}'),
+                   'ua', data #> '{nav,ua}', 'deviceMemory', data #> '{nav,deviceMemory}', 'plugins', data #> '{nav,plugins}',
+                   'vendor', data #> '{nav,vendor}', 'productSub', data #> '{nav,productSub}', 'buildID', data #> '{nav,buildID}',
+                   'pdfViewerEnabled', data #> '{nav,pdfViewerEnabled}', 'mimeTypes', data #> '{nav,mimeTypes}'),
+                 'permNotifications', data -> 'permNotifications',
                  'voices', data -> 'voices', 'devices', data -> 'devices', 'battery', data -> 'battery',
                  'automation', data -> 'automation', 'webgl', data -> 'webgl', 'screen', data -> 'screen', 'doc', data -> 'doc',
                  'globalsDiff', data -> 'globalsDiff', 'artifacts', data -> 'artifacts', 'intl', data -> 'intl', 'timing', data -> 'timing',
@@ -151,6 +155,16 @@ function evidence(v: Visit): VisitEvidence {
     organization: first.organization,
     country: first.country,
     shopEvents: v.shop.map((e) => e.event_type),
+    evaluatedAt: new Date().toISOString(),
+    ladder: {
+      served: v.requests.filter((r) => r.page_load_id).map((r) => ({ pl: r.page_load_id!, path: r.path, at: r.created_at.toISOString() })),
+      // fp/behavior beacons carry the server's page-load id too, so they also prove JS ran.
+      hits: v.client.flatMap((c) => {
+        if (!c.page_load_id) return [];
+        const rung = c.kind === "ladder" ? c.data?.rung : c.kind === "fp" || c.kind === "behavior" ? "js" : null;
+        return rung === "css" || rung === "noscript" || rung === "js" ? [{ pl: c.page_load_id, rung, at: c.created_at.toISOString() }] : [];
+      }),
+    },
     client: {
       fingerprints: v.client.filter((c) => c.kind === "fp").map((c) => c.data),
       behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path })),

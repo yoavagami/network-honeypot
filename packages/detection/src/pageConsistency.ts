@@ -7,7 +7,7 @@
 
 export type CheckStatus = "match" | "mismatch" | "unknown";
 export interface ConsistencyCheck {
-  id: "user_agent" | "language" | "os" | "client_hints_platform" | "timezone_country" | "fingerprint_stable";
+  id: "user_agent" | "language" | "os" | "client_hints_platform" | "timezone_country" | "fingerprint_stable" | "browser_identity";
   label: string;
   page: string | null;
   server: string | null;
@@ -139,7 +139,64 @@ export function consistencyChecks(input: ConsistencyInput): ConsistencyCheck[] {
     const distinct = new Set(keys).size;
     out.push({ id: "fingerprint_stable", label: "Device fingerprint across page loads", page: `${distinct} distinct of ${fps.length} page loads`, server: null, status: distinct === 1 ? "match" : "mismatch" });
   }
+
+  // 7. The browser the user-agent claims vs. the fixed traits every real copy of it has.
+  const ident = browserIdentity(fp, pageUa ?? input.headerUserAgents[0] ?? null);
+  if (ident) {
+    out.push({
+      id: "browser_identity", label: "Browser traits vs. claimed browser",
+      page: ident.wrong.length ? ident.wrong.join("; ") : "vendor, productSub, engine objects as expected",
+      server: ident.claimed, status: ident.wrong.length ? "mismatch" : "match",
+    });
+  }
   return out;
+}
+
+export type BrowserEngine = "chromium" | "firefox" | "safari";
+/** Engine a user-agent claims. Chrome/Firefox/Edge on iOS are WebKit underneath. */
+export function claimedEngine(ua: string | null | undefined): BrowserEngine | null {
+  if (!ua) return null;
+  if (/iPhone|iPad|iPod/.test(ua) || /CriOS|FxiOS|EdgiOS/.test(ua)) return /AppleWebKit/.test(ua) ? "safari" : null;
+  if (/Firefox\//.test(ua) && !/Seamonkey/i.test(ua)) return "firefox";
+  if (/Chrome\/|Chromium\/|Edg\//.test(ua)) return "chromium";
+  if (/Safari\//.test(ua) && /Version\//.test(ua)) return "safari";
+  return null;
+}
+
+/**
+ * Every Chrome reports vendor "Google Inc." and productSub "20030107", has window.chrome on
+ * desktop and navigator.userAgentData; Firefox has an empty vendor, productSub "20100101", a
+ * buildID and no userAgentData; Safari reports "Apple Computer, Inc." and has neither
+ * userAgentData nor window.chrome. A user-agent swapped without the rest breaks these.
+ */
+export function browserIdentity(fp: Record<string, any>, ua: string | null): { claimed: string; wrong: string[] } | null {
+  const engine = claimedEngine(ua);
+  const nav = fp.nav ?? {};
+  if (!engine || nav.vendor === undefined) return null; // older beacons didn't include these fields
+  const wrong: string[] = [];
+  const vendor = nav.vendor == null ? null : String(nav.vendor);
+  const productSub = nav.productSub == null ? null : String(nav.productSub);
+  const hasChromeObj = fp.automation?.chrome != null;
+  const hasUaData = fp.uaData != null;
+  const hasBuildId = nav.buildID != null && nav.buildID !== "";
+  const mobile = /Mobile|Android/.test(String(ua));
+  if (engine === "chromium") {
+    if (vendor !== null && vendor !== "Google Inc.") wrong.push(`vendor "${vendor}" (Chrome says "Google Inc.")`);
+    if (productSub !== null && productSub !== "20030107") wrong.push(`productSub ${productSub} (Chrome: 20030107)`);
+    if (hasBuildId) wrong.push("has Firefox's navigator.buildID");
+    if (!hasChromeObj && !mobile) wrong.push("no window.chrome object");
+  } else if (engine === "firefox") {
+    if (vendor) wrong.push(`vendor "${vendor}" (Firefox's is empty)`);
+    if (productSub !== null && productSub !== "20100101") wrong.push(`productSub ${productSub} (Firefox: 20100101)`);
+    if (hasUaData) wrong.push("has Chromium's userAgentData");
+    if (hasChromeObj) wrong.push("has a window.chrome object");
+  } else {
+    if (vendor !== null && vendor !== "Apple Computer, Inc.") wrong.push(`vendor "${vendor}" (Safari says "Apple Computer, Inc.")`);
+    if (hasUaData) wrong.push("has Chromium's userAgentData");
+    if (hasChromeObj) wrong.push("has a window.chrome object");
+    if (hasBuildId) wrong.push("has Firefox's navigator.buildID");
+  }
+  return { claimed: engine === "chromium" ? "Chrome / Chromium" : engine === "firefox" ? "Firefox" : "Safari (WebKit)", wrong };
 }
 
 /** Virtual-machine / server tells from fields the collector already sends. */
@@ -162,6 +219,11 @@ export function environmentFacts(fps: Array<Record<string, any>>): EnvironmentFa
     if (Number.isFinite(cores) && cores > 0 && cores <= 2) tells.add(`${cores} CPU core${cores === 1 ? "" : "s"}`);
     const mem = Number(fp.nav?.deviceMemory);
     if (Number.isFinite(mem) && mem > 0 && mem < 2) tells.add(`${mem} GB device memory`);
+    const permQuery = fp.permNotifications;
+    const permApi = fp.automation?.notificationPermission;
+    if (typeof permQuery === "string" && typeof permApi === "string" && (permApi === "default" ? "prompt" : permApi) !== permQuery)
+      tells.add(`notification permission contradicts itself (${permApi} vs. ${permQuery}) — a known headless-Chrome sign`);
+    if (fp.nav?.pdfViewerEnabled === false && claimedEngine(fp.nav?.ua) === "chromium" && !/Mobile|Android/.test(String(fp.nav?.ua ?? ""))) tells.add("PDF viewer disabled in desktop Chrome");
     if (Array.isArray(fp.nav?.plugins) && fp.nav.plugins.length === 0 && /Chrome\//.test(String(fp.nav?.ua ?? "")) && !/Mobile|Android/.test(String(fp.nav?.ua ?? ""))) tells.add("desktop Chrome with no PDF plugins");
   }
   return { tells: [...tells], utcTimezone: utc };
@@ -177,6 +239,10 @@ export interface InputFacts {
   modifierKeys: number;
   pastes: number;
   keyDowns: number;
+  /** "Think, then act": a long gap since the previous click with the cursor still, then a jump onto the target. */
+  clickGaps: number;
+  thinkPauses: number;
+  medianThinkPauseMs: number | null;
 }
 export function inputFacts(behaviors: Array<Record<string, any>>): InputFacts {
   // Behaviour beacons are cumulative snapshots per page load; the last one per page holds the
@@ -194,6 +260,21 @@ export function inputFacts(behaviors: Array<Record<string, any>>): InputFacts {
       if (typeof c.dx === "number" && typeof c.dy === "number" && !c.zeroCoords) offsets.push({ dx: c.dx, dy: c.dy });
     }
   }
+  // Gaps between consecutive trusted clicks on the same page load. A screen-driving AI agent
+  // takes a screenshot, waits seconds for the model, then moves straight to the target and
+  // clicks (≤2 mouse moves in the last second). People move the mouse while they read.
+  let gaps = 0;
+  const pauses: number[] = [];
+  for (const b of behaviors) {
+    const cs = (Array.isArray(b.behavior?.clicks) ? b.behavior.clicks : []).filter((c: any) => c.trusted !== false && typeof c.t === "number").sort((x: any, y: any) => x.t - y.t);
+    for (let i = 1; i < cs.length; i++) {
+      const gap = cs[i].t - cs[i - 1].t;
+      if (gap < 300) continue; // double-clicks and click bursts aren't decisions
+      gaps++;
+      if (gap >= 2000 && (cs[i].movesLast1s ?? 99) <= 2) pauses.push(gap);
+    }
+  }
+  pauses.sort((a, b) => a - b);
   const centred = offsets.filter((o) => Math.abs(o.dx) <= 0.04 && Math.abs(o.dy) <= 0.06).length;
   let spread: number | null = null;
   if (offsets.length >= 3) {
@@ -219,5 +300,6 @@ export function inputFacts(behaviors: Array<Record<string, any>>): InputFacts {
     trustedClicks: trusted, centredClicks: centred, clickSpread: spread,
     printableKeys: total("printable"), correctionKeys: total("nav"), modifierKeys: total("modifier"),
     pastes: total("pastes"), keyDowns: total("keyDowns"),
+    clickGaps: gaps, thinkPauses: pauses.length, medianThinkPauseMs: pauses.length ? pauses[Math.floor(pauses.length / 2)]! : null,
   };
 }

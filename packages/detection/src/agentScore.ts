@@ -1,4 +1,5 @@
 import { classifyOrigin, type InfraCategory } from "./infraClassification.js";
+import { renderingLadder, type LadderHit, type RenderingLadder, type ServedPage } from "./renderingLadder.js";
 import { consistencyChecks, environmentFacts, inputFacts, type ConsistencyCheck, type EnvironmentFacts, type InputFacts } from "./pageConsistency.js";
 
 /**
@@ -47,6 +48,8 @@ export interface AgentScore {
   checks: ConsistencyCheck[];
   environment: EnvironmentFacts;
   input: InputFacts;
+  /** Per page load: did it render CSS / run JS / fetch the noscript image (renderingLadder.ts). */
+  ladder: RenderingLadder;
 }
 
 /** One request's server-side view (request_signals + requests). */
@@ -86,6 +89,10 @@ export interface VisitEvidence {
   shopEvents: string[];
   /** ISO country of the connecting IP (actors.country). */
   country?: string | null;
+  /** Rendering-ladder inputs: HTML pages served with a page-load id, and the beacons that came back. */
+  ladder?: { served: ServedPage[]; hits: LadderHit[] };
+  /** When the visit is being scored (ISO); decides whether recent page loads have settled. */
+  evaluatedAt?: string;
 }
 
 /** AI-operator agents (from the sensing registry) vs. classic search crawlers. */
@@ -149,9 +156,9 @@ const HOSTED: InfraCategory[] = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud
 
 const PRIOR = -1.2;
 /** Signals that point at an AI agent specifically, not just automation. */
-const AI_SPECIFIC = new Set(["ai_operator_ip", "unverifiable_claim", "ai_app_user_agent", "agent_like_dom", "instant_checkout"]);
+const AI_SPECIFIC = new Set(["ai_operator_ip", "unverifiable_claim", "ai_app_user_agent", "agent_like_dom", "instant_checkout", "think_then_act"]);
 /** Browser-group signals that actually mean "no browser ran" (scripts), so not a driven browser. */
-const SCRIPT_ONLY = new Set(["no_javascript", "no_subresources"]);
+const SCRIPT_ONLY = new Set(["no_javascript", "no_subresources", "html_only", "html_parser_images", "css_no_js", "js_without_css"]);
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 const median = (xs: number[]) => {
   if (!xs.length) return null;
@@ -185,7 +192,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   });
   const env = environmentFacts(fps);
   const input = inputFacts(bs);
-  const extras = { checks, environment: env, input };
+  const ladder = renderingLadder(v.ladder?.served ?? [], v.ladder?.hits ?? [], v.evaluatedAt ? Date.parse(v.evaluatedAt) : Date.now());
+  const extras = { checks, environment: env, input, ladder };
 
   // ---------------------------------------------------------------- proof
   const verified = reqs.find((r) => r.verdict === "verified" && r.agent);
@@ -267,11 +275,33 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
 
   // ---------------------------------------------------------------- browser (in-page collector)
   const htmlPages = reqs.filter((r) => r.isHtmlPage).length;
-  if (htmlPages >= 2 && fps.length === 0 && !lib) {
+  // ---- Rendering ladder: decides from a single page load. The older count-based fallbacks
+  // below only run for visits whose pages carried no ladder beacons (served before it existed).
+  const judged = ladder.pages.filter((p) => p.rung !== "pending");
+  const claimsBrowser = reqs.some((r) => r.browserFamily);
+  const n = (k: number, word: string) => `${k} page load${k === 1 ? "" : "s"}${word}`;
+  if (judged.length && !judged.some((p) => p.js)) {
+    if (ladder.summary === "html_only") {
+      add("html_only", "browser", claimsBrowser ? 1.6 : 1.0, `${n(judged.length, "")} fetched as HTML only — no CSS rendered, no images, no JavaScript${claimsBrowser ? ", despite a browser user-agent" : ""} (a fetcher or LLM browse tool, not a browser)`);
+      type ??= "script";
+    } else if (ladder.summary === "images_only") {
+      add("html_parser_images", "browser", 1.2, "fetched images from the HTML (including the <noscript> one) but never applied CSS or ran JavaScript — an HTML parser such as a link-preview or fetch tool");
+      type ??= "script";
+    } else if (ladder.summary === "css_no_js") {
+      const off = judged.some((p) => p.css && p.noscript);
+      add("css_no_js", "browser", 0.8, `rendered CSS but never ran our page script${off ? " — and loaded the <noscript> image, so JavaScript was switched off" : ""} (a renderer with scripts off, a reader tool, or a JS-disabled browser such as Tor's safest mode)`);
+    }
+  }
+  const jsNoCss = judged.filter((p) => p.rung === "js_no_css");
+  if (jsNoCss.length && !judged.some((p) => p.rung === "ran_js")) {
+    add("js_without_css", "browser", 1.2, `ran JavaScript but never fetched the page's CSS background image (${n(jsNoCss.length, "")}) — a DOM emulator (jsdom-style) or an automated browser that blocks images`);
+  }
+  const ladderDecided = judged.length > 0;
+  if (!ladderDecided && htmlPages >= 2 && fps.length === 0 && !lib) {
     add("no_javascript", "browser", 1.2, `${htmlPages} pages loaded but our page script never reported — no JavaScript ran (a fetcher/script, not a browser)`);
     type ??= "script";
   }
-  if (htmlPages >= 1 && fps.length === 0 && reqs.some((r) => r.browserFamily) && !reqs.some((r) => r.isAsset)) {
+  if (!ladderDecided && htmlPages >= 1 && fps.length === 0 && reqs.some((r) => r.browserFamily) && !reqs.some((r) => r.isAsset)) {
     add("no_subresources", "browser", 0.8, "browser user-agent, but no CSS/JS/images were fetched — the page was read, not rendered");
   }
   // Every page load counts, not just the first: an automation tell on any page is a tell.
@@ -303,6 +333,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (tzBad) add("timezone_mismatch", "network", 0.7, `browser timezone ${tzBad.page} doesn't fit the IP's country (${tzBad.server}) — a remote/cloud browser or a proxy`);
     const desktop = fps.some((f) => !/Mobile|Android|iPhone|iPad/.test(String(f.nav?.ua ?? "")));
     if (env.utcTimezone && desktop) add("utc_timezone", "browser", 1.0, "browser clock is set to UTC — the default on servers and cloud browsers; people's devices use a local zone");
+    const identBad = bad("browser_identity");
+    if (identBad) add("browser_identity_mismatch", "browser", 1.6, `claims to be ${identBad.server}, but ${identBad.page} — the user-agent was changed without the browser underneath`);
     const fpBad = bad("fingerprint_stable");
     if (fpBad) add("fingerprint_changed", "browser", 1.0, `the device fingerprint changed within one visit (${fpBad.page}) — randomised or rotating browser profiles`);
     if (env.tells.length >= 2) add("vm_environment", "browser", Math.min(1.5, 0.9 + 0.3 * (env.tells.length - 2)), `looks like a virtual machine or server: ${env.tells.join(", ")}`);
@@ -336,6 +368,9 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
       const placed = input.centredClicks;
       if (placed >= 3 && placed / Math.max(1, input.trustedClicks) >= 0.8) add("centred_clicks", "behavior", 1.4, `${placed} of ${input.trustedClicks} clicks hit the exact centre of their target — coordinates computed from the element's box, not aimed by hand`);
       else if (input.clickSpread >= 0.12) add("human_click_spread", "behavior", -0.6, "click positions spread naturally across their targets");
+    }
+    if (input.thinkPauses >= 3 && input.thinkPauses / Math.max(1, input.clickGaps) >= 0.6) {
+      add("think_then_act", "behavior", 1.3, `${input.thinkPauses} times the cursor sat still for ~${((input.medianThinkPauseMs ?? 0) / 1000).toFixed(1)} s, then jumped straight onto the next target — the pause-then-act rhythm of an AI agent working from screenshots`);
     }
     if (input.printableKeys >= 25 && input.correctionKeys === 0 && input.modifierKeys === 0) add("no_typing_corrections", "behavior", 0.6, `${input.printableKeys} characters typed without a single correction, Shift or arrow key`);
     else if (input.printableKeys >= 10 && input.correctionKeys >= 2) add("typing_corrections", "behavior", -0.5, `typing included ${input.correctionKeys} corrections/navigation keys — a person fixing what they typed`);
@@ -404,7 +439,7 @@ export function latestPerPage(bs: Array<Record<string, any>>): Array<Record<stri
   return [...loose, ...byPl.values()];
 }
 
-function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[], extras: Pick<AgentScore, "checks" | "environment" | "input">): AgentScore {
+function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[], extras: Pick<AgentScore, "checks" | "environment" | "input" | "ladder">): AgentScore {
   const probability = Math.round(p * 1000) / 1000;
   reasons.sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
   return {

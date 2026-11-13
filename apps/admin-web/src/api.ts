@@ -363,11 +363,16 @@ export interface AgentScore {
   checks: AgentConsistencyCheck[];
   environment: { tells: string[]; utcTimezone: boolean };
   input: AgentInputFacts;
+  ladder: AgentRenderingLadder;
 }
+export type AgentLadderRung = "pending" | "html_only" | "images_only" | "css_no_js" | "js_no_css" | "ran_js";
+export interface AgentPageLadder { pl: string; path: string; at: string; css: boolean; noscript: boolean; js: boolean; settled: boolean; rung: AgentLadderRung }
+export interface AgentRenderingLadder { pages: AgentPageLadder[]; summary: AgentLadderRung | null }
 export interface AgentConsistencyCheck { id: string; label: string; page: string | null; server: string | null; status: "match" | "mismatch" | "unknown" }
 export interface AgentInputFacts {
   trustedClicks: number; centredClicks: number; clickSpread: number | null;
   printableKeys: number; correctionKeys: number; modifierKeys: number; pastes: number; keyDowns: number;
+  clickGaps: number; thinkPauses: number; medianThinkPauseMs: number | null;
 }
 export interface AgentShopSummary { furthestStep: string | null; orderPlaced: boolean; orderTotalCents: number | null; paymentMethod: string | null; paymentDeclines: number }
 export interface AgentVisitRow {

@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, type AgentVisitDetail } from "../api.js";
+import { api, type AgentLadderRung, type AgentVisitDetail } from "../api.js";
 import { AgentBadge, ProbabilityBar, TYPE_LABEL } from "../components/AgentBadge.js";
 import { ReasonList } from "../components/ReasonList.js";
+
+const RUNG_LABEL: Record<AgentLadderRung, string> = {
+  pending: "waiting for beacons",
+  html_only: "HTML only",
+  images_only: "HTML + images, no CSS",
+  css_no_js: "rendered CSS, no JS",
+  js_no_css: "ran JS, no CSS",
+  ran_js: "ran JavaScript",
+};
 
 const cents = (c: unknown) => (typeof c === "number" ? `€${(c / 100).toFixed(2)}` : "—");
 
@@ -138,6 +147,31 @@ export function AgentVisitPage() {
         </div>
       )}
 
+      {s.ladder?.pages.length > 0 && (
+        <div className="panel">
+          <h2>Rendering ladder</h2>
+          <p className="muted small" style={{ marginTop: 0 }}>
+            How far the client got with each page: every page carries a CSS-only beacon, a &lt;noscript&gt; image and a JavaScript beacon.
+            Overall: <strong>{RUNG_LABEL[s.ladder.summary ?? "pending"]}</strong>
+          </p>
+          <table>
+            <thead><tr><th>Served</th><th>Page</th><th>CSS rendered</th><th>&lt;noscript&gt; image</th><th>JavaScript ran</th><th>Rung</th></tr></thead>
+            <tbody>
+              {s.ladder.pages.map((p) => (
+                <tr key={p.pl}>
+                  <td className="mono">{new Date(p.at).toLocaleTimeString()}</td>
+                  <td className="mono cell-reason">{p.path}</td>
+                  <td>{p.css ? "✓" : "—"}</td>
+                  <td>{p.noscript ? "✓" : "—"}</td>
+                  <td>{p.js ? "✓" : "—"}</td>
+                  <td><span className={`check-pill ${p.rung === "ran_js" ? "match" : p.rung === "pending" ? "unknown" : "mismatch"}`}>{RUNG_LABEL[p.rung]}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {(fp || beh.length > 0) && (
         <div className="grid-2">
           <div className="panel">
@@ -158,6 +192,12 @@ export function AgentVisitPage() {
                 {s.input.trustedClicks
                   ? `${s.input.centredClicks} of ${s.input.trustedClicks} clicks dead centre${s.input.clickSpread !== null ? ` · spread ${s.input.clickSpread} (0 = always centre, ≥0.12 = natural)` : ""}`
                   : "no clicks"}
+              </dd>
+              <dt>Think, then act</dt>
+              <dd>
+                {s.input.clickGaps
+                  ? `${s.input.thinkPauses} of ${s.input.clickGaps} gaps between clicks were a still pause (≥2 s, cursor not moving) followed by a jump onto the target${s.input.medianThinkPauseMs ? ` · median pause ${(s.input.medianThinkPauseMs / 1000).toFixed(1)} s` : ""}`
+                  : "fewer than two clicks on a page"}
               </dd>
               <dt>Typing</dt>
               <dd>{s.input.printableKeys} characters · {s.input.correctionKeys} corrections/arrows · {s.input.modifierKeys} modifier keys</dd>

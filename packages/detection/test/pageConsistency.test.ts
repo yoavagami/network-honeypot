@@ -111,3 +111,48 @@ describe("input facts", () => {
     expect(signals(visit({ client: { fingerprints: [fp()], behaviors: [pasted] } }))).toContain("paste_only_input");
   });
 });
+
+describe("browser identity, headless signs and think-then-act", () => {
+  const FF_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:132.0) Gecko/20100101 Firefox/132.0";
+  const SAFARI_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15";
+  const chromeFp = (navOver: Record<string, any> = {}, over: Record<string, any> = {}) =>
+    fp({ nav: { ...fp().nav, vendor: "Google Inc.", productSub: "20030107", buildID: null, pdfViewerEnabled: true, ...navOver }, automation: { ...fp().automation, chrome: { runtime: false }, notificationPermission: "default" }, permNotifications: "prompt", ...over });
+  const checksOf = (v: VisitEvidence) => scoreVisit(v).checks;
+
+  it("accepts real Chrome, Firefox and Safari trait sets", () => {
+    expect(checksOf(visit({ client: { fingerprints: [chromeFp()], behaviors: [] } })).find((c) => c.id === "browser_identity")?.status).toBe("match");
+    const ff = fp({ nav: { ...fp().nav, ua: FF_UA, vendor: "", productSub: "20100101", buildID: "20181001000000" }, uaData: null, automation: { ...fp().automation, chrome: null } });
+    expect(checksOf(visit({ requests: [req({ userAgent: FF_UA })], client: { fingerprints: [ff], behaviors: [] } })).find((c) => c.id === "browser_identity")?.status).toBe("match");
+    const sf = fp({ nav: { ...fp().nav, ua: SAFARI_UA, vendor: "Apple Computer, Inc.", productSub: "20030107", buildID: null }, uaData: null, automation: { ...fp().automation, chrome: null } });
+    expect(checksOf(visit({ requests: [req({ userAgent: SAFARI_UA })], client: { fingerprints: [sf], behaviors: [] } })).find((c) => c.id === "browser_identity")?.status).toBe("match");
+  });
+
+  it("flags a Safari user-agent on Chrome underneath", () => {
+    const fake = chromeFp({ ua: SAFARI_UA });
+    const v = visit({ requests: [req({ userAgent: SAFARI_UA })], client: { fingerprints: [fake], behaviors: [] } });
+    expect(signals(v)).toContain("browser_identity_mismatch");
+    expect(checksOf(v).find((c) => c.id === "browser_identity")?.page).toMatch(/vendor "Google Inc."/);
+  });
+
+  it("flags desktop Chrome without window.chrome", () => {
+    const v = visit({ client: { fingerprints: [chromeFp({}, { automation: { ...fp().automation, chrome: null } })], behaviors: [] } });
+    expect(signals(v)).toContain("browser_identity_mismatch");
+  });
+
+  it("counts a self-contradicting notification permission and a disabled PDF viewer as headless signs", () => {
+    const tells = environmentFacts([chromeFp({ pdfViewerEnabled: false }, { permNotifications: "prompt", automation: { ...fp().automation, chrome: {}, notificationPermission: "denied" } })]).tells;
+    expect(tells.join(" ")).toMatch(/notification permission contradicts/);
+    expect(tells.join(" ")).toMatch(/PDF viewer disabled/);
+    expect(environmentFacts([chromeFp()]).tells).toEqual([]);
+  });
+
+  it("detects think-then-act clicking and leaves a moving human alone", () => {
+    const c = (t: number, moves: number) => ({ t, x: t % 500, y: 100, trusted: true, dx: 0.2, dy: -0.1, movesLast1s: moves, hadMouseDown: true });
+    const agent = { pl: "p", clientT: 1, path: "/", behavior: { mouseMoves: 5, mouseDistance: 900, clicks: [c(1000, 1), c(6000, 1), c(11500, 2), c(16000, 1)], keyDowns: 0, inputWithoutKey: 0, scrolls: 0 } };
+    expect(inputFacts([agent])).toMatchObject({ clickGaps: 3, thinkPauses: 3, medianThinkPauseMs: 5000 });
+    const s = scoreVisit(visit({ client: { fingerprints: [fp()], behaviors: [agent] } }));
+    expect(s.reasons.map((r) => r.signal)).toContain("think_then_act");
+    const human = { ...agent, behavior: { ...agent.behavior, mouseMoves: 400, clicks: [c(1000, 30), c(6000, 25), c(11500, 40), c(16000, 18)] } };
+    expect(signals(visit({ client: { fingerprints: [fp()], behaviors: [human] } }))).not.toContain("think_then_act");
+  });
+});
