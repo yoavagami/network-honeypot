@@ -1,5 +1,6 @@
 import { classifyOrigin, type InfraCategory } from "./infraClassification.js";
 import { renderingLadder, type LadderHit, type RenderingLadder, type ServedPage } from "./renderingLadder.js";
+import { pageControl, type ControlSummary } from "./pageControl.js";
 import { consistencyChecks, environmentFacts, inputFacts, type ConsistencyCheck, type EnvironmentFacts, type InputFacts } from "./pageConsistency.js";
 
 /**
@@ -46,6 +47,8 @@ export interface AgentScore {
   calibrated: false;
   /** Server-vs-page comparisons (pageConsistency.ts) — shown as a table on the visit page. */
   checks: ConsistencyCheck[];
+  /** Who drove each page load, and whether control changed hands (pageControl.ts). */
+  control: ControlSummary;
   environment: EnvironmentFacts;
   input: InputFacts;
   /** Per page load: did it render CSS / run JS / fetch the noscript image (renderingLadder.ts). */
@@ -195,7 +198,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   const env = environmentFacts(fps);
   const input = inputFacts(bs);
   const ladder = renderingLadder(v.ladder?.served ?? [], v.ladder?.hits ?? [], v.evaluatedAt ? Date.parse(v.evaluatedAt) : Date.now());
-  const extras = { checks, environment: env, input, ladder };
+  const control = pageControl(bs);
+  const extras = { checks, environment: env, input, ladder, control };
 
   // ---------------------------------------------------------------- proof
   const verified = reqs.find((r) => r.verdict === "verified" && r.agent);
@@ -321,8 +325,10 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (any((f) => f.webgl && f.webgl.supported === false)) add("no_webgl", "browser", 1.2, "no WebGL — typical of headless/server browsers");
     else if (softGpu) add("software_gpu", "browser", 1.5, `software GPU renderer (${softGpu.webgl.renderer}) — a browser running on a server`);
     if (any((f) => f.screen?.outerW === 0 && f.screen?.outerH === 0)) add("zero_outer_window", "browser", 0.6, "window has no outer size (hidden, minimised or headless window)");
-    const injected = any((f) => Array.isArray(f.globalsDiff) && f.globalsDiff.length > 3);
-    if (injected) add("injected_globals", "browser", 0.6, `${injected.globalsDiff.length} scripts' globals injected into the page (extensions/agents): ${injected.globalsDiff.slice(0, 5).join(", ")}`);
+    // window["0"], window["1"]… are the page's iframes (Stripe's card form), not injected scripts.
+    const injectedNames = (f: Record<string, any>): string[] => (Array.isArray(f.globalsDiff) ? f.globalsDiff.filter((k: unknown) => typeof k === "string" && !/^\d+$/.test(k)) : []);
+    const injected = any((f) => injectedNames(f).length > 3);
+    if (injected) { const names = injectedNames(injected); add("injected_globals", "browser", 0.6, `${names.length} scripts' globals injected into the page (extensions/agents): ${names.slice(0, 5).join(", ")}`); }
 
     // ---- Phase 0: server vs. page consistency
     const bad = (id: ConsistencyCheck["id"]) => checks.find((c) => c.id === id && c.status === "mismatch");
@@ -366,7 +372,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
       const noMouseDown = clicks.filter((c: any) => c.hadMouseDown === false).length;
       if (untrusted) add("synthetic_clicks", "behavior", 2.5, `${untrusted} click(s) were created by script (isTrusted=false)`);
       if (noMouseDown) add("click_without_press", "behavior", 1.2, `${noMouseDown} click(s) without a mouse press — element.click() style`);
-      if (teleport === clicks.length && moves <= clicks.length * 2) add("cursor_teleport", "behavior", 1.6, `cursor jumped straight onto ${clicks.length} click target(s) (≤1 mouse move before each) — no human mouse path`);
+      if (control.jumpClicks >= 2) add("jump_clicks", "behavior", control.jumpClicks >= 3 ? 2.0 : 1.2, `${control.jumpClicks} clicks where the cursor appeared on the target and clicked within 50 ms, with no mouse path — automation moving then clicking`);
+      else if (teleport === clicks.length && moves <= clicks.length * 2) add("cursor_teleport", "behavior", 1.6, `cursor jumped straight onto ${clicks.length} click target(s) (≤1 mouse move before each) — no human mouse path`);
     }
     // ---- Phase 0: click placement and typing corrections
     if (input.trustedClicks >= 3 && input.clickSpread !== null) {
@@ -380,6 +387,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (input.printableKeys >= 25 && input.correctionKeys === 0 && input.modifierKeys === 0) add("no_typing_corrections", "behavior", 0.6, `${input.printableKeys} characters typed without a single correction, Shift or arrow key`);
     else if (input.printableKeys >= 10 && input.correctionKeys >= 2) add("typing_corrections", "behavior", -0.5, `typing included ${input.correctionKeys} corrections/navigation keys — a person fixing what they typed`);
     if (input.pastes >= 2 && input.keyDowns === 0) add("paste_only_input", "behavior", 0.7, `${input.pastes} pastes and no key presses — fields filled by pasting`);
+    if (control.scriptFilledPages) add("form_set_by_script", "behavior", 1.8, `${control.scriptFilledFields} form fields were filled with no key presses or pastes (input events without an input type) — values set by script`);
+    if (control.inputlessScrollPages) add("scroll_without_input", "behavior", 0.8, `scrolled on ${control.inputlessScrollPages} page${control.inputlessScrollPages > 1 ? "s" : ""} with no wheel, key, touch or mouse — scrolled by script`);
     if (inputNoKey > 0) add("text_without_keys", "behavior", 1.6, `${inputNoKey} text input(s) arrived without key presses — inserted programmatically`);
     const intervals = bs.flatMap((x) => (Array.isArray(x.behavior?.keyIntervals) ? x.behavior.keyIntervals : []));
     if (intervals.length >= 8) {
@@ -413,6 +422,21 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     type = hosted ? "cloud_browser_agent" : "browser_automation";
   }
 
+  // A person taking over from an agent (or handing over to one) must not cancel the agent's own
+  // evidence: once the agent's part is clear, human-input credit is shown but not counted.
+  if (control.agentDriven) {
+    for (const r of reasons) {
+      if (r.group === "behavior" && r.weight < 0 && control.mode !== "agent") {
+        r.text = `${r.text} (from the person's part of the visit — not counted against the agent's)`;
+        r.weight = 0;
+      }
+    }
+    const h = control.handover;
+    const when = h?.at ? ` at ${h.at.slice(11, 19)}` : "";
+    if (control.mode === "agent_then_human") add("handover_agent_to_human", "journey", 0, `started by an automated agent (${control.pages.filter((p) => p.driver === "agent").length} pages), then a person took over on ${h?.path ?? "a later page"}${when}`);
+    else if (control.mode === "human_then_agent") add("handover_human_to_agent", "journey", 0, `a person started; automation took over on ${h?.path ?? "a later page"}${when}`);
+    else if (control.mode === "mixed") add("mixed_control", "journey", 0, "pages alternate between automated and human input — an agent and a person shared the session");
+  }
   const logit = PRIOR + reasons.reduce((s, r) => s + r.weight, 0);
   let p = sigmoid(logit);
   // A scanner wearing an AI name is automated but is not an AI agent — cap it.
@@ -435,16 +459,20 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
  */
 export function latestPerPage(bs: Array<Record<string, any>>): Array<Record<string, any>> {
   const byPl = new Map<string, Record<string, any>>();
+  const firstAt = new Map<string, string>();
   const loose: Array<Record<string, any>> = [];
   for (const b of bs) {
     if (typeof b.pl !== "string" || !b.pl) { loose.push(b); continue; }
     const cur = byPl.get(b.pl);
     if (!cur || (Number(b.clientT) || 0) >= (Number(cur.clientT) || 0)) byPl.set(b.pl, b);
+    // When the page's first report arrived — the page clock alone can't date a page restored
+    // from the back/forward cache (it keeps counting from the original load).
+    if (typeof b.at === "string" && (!firstAt.has(b.pl) || b.at < firstAt.get(b.pl)!)) firstAt.set(b.pl, b.at);
   }
-  return [...loose, ...byPl.values()];
+  return [...loose, ...[...byPl.values()].map((b) => (firstAt.has(b.pl) ? { ...b, firstAt: firstAt.get(b.pl) } : b))];
 }
 
-function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[], extras: Pick<AgentScore, "checks" | "environment" | "input" | "ladder">): AgentScore {
+function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[], extras: Pick<AgentScore, "checks" | "environment" | "input" | "ladder" | "control">): AgentScore {
   const probability = Math.round(p * 1000) / 1000;
   reasons.sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
   return {

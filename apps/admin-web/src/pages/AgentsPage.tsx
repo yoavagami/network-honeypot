@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, type AgentBucket, type AgentConsistencyCheck, type AgentRequestRow, type AgentVisitsResponse } from "../api.js";
-import { AgentBadge, ProbabilityBar, BUCKET_LABEL, TYPE_LABEL } from "../components/AgentBadge.js";
+import { AgentBadge, ControlChip, ProbabilityBar, BUCKET_LABEL, CONTROL_LABEL, TYPE_LABEL } from "../components/AgentBadge.js";
 
 const BUCKETS: AgentBucket[] = ["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"];
 const SHOP_STEP_LABEL: Record<string, string> = {
@@ -32,6 +32,7 @@ export function AgentsPage() {
   const [bucket, setBucket] = useState("");
   const [type, setType] = useState("");
   const [shop, setShop] = useState("");
+  const [control, setControl] = useState("");
   const [q, setQ] = useState("");
   const [qInput, setQInput] = useState("");
   const [why, setWhy] = useState("");
@@ -56,11 +57,12 @@ export function AgentsPage() {
       if (bucket) params.bucket = bucket;
       if (type) params.type = type;
       if (shop) params.shop = shop;
+      if (control) params.control = control;
       if (q) params.q = q;
       if (why) Object.assign(params, { why, whyScope });
       api.agentVisits(params).then(setVisits).catch((e) => setError(String(e.message ?? e)));
     }
-  }, [tab, range, bucket, type, shop, q, why, whyScope]);
+  }, [tab, range, bucket, type, shop, control, q, why, whyScope]);
 
   // Every query re-scores the whole range server-side — debounce typing.
   useEffect(() => {
@@ -121,6 +123,11 @@ export function AgentsPage() {
               <option value="any">Used the shop</option>
               <option value="checkout">Reached checkout</option>
             </select>
+            <select value={control} onChange={(e) => setControl(e.target.value)} aria-label="Driven by">
+              <option value="">Driven by anyone</option>
+              <option value="hybrid">Agent and human (any handover)</option>
+              {["agent", "human", "agent_then_human", "human_then_agent", "mixed"].map((m) => <option key={m} value={m}>{CONTROL_LABEL[m]}</option>)}
+            </select>
             <input type="search" placeholder="IP, user-agent, network, agent, label…" value={qInput} onChange={(e) => setQInput(e.target.value)} style={{ minWidth: 260 }} />
           </>
         )}
@@ -151,6 +158,7 @@ export function AgentsPage() {
                 <th>Recommendation</th>
                 <th>P(AI agent)</th>
                 <th>Type</th>
+                <th title="Who drove the pages: an agent, a person, or a handover between them">Driven by</th>
                 <th>Agent</th>
                 <th>Why (top signals)</th>
                 <th title="Server-vs-page consistency checks">Checks</th>
@@ -161,7 +169,7 @@ export function AgentsPage() {
               </tr>
             </thead>
             <tbody>
-              {!visits && <tr><td colSpan={12} className="muted">Scoring…</td></tr>}
+              {!visits && <tr><td colSpan={13} className="muted">Scoring…</td></tr>}
               {visits?.data.map((v) => (
                 <tr key={v.id} onClick={() => navigate(`/agents/${encodeURIComponent(v.id)}`)}>
                   <td>{new Date(v.lastAt).toLocaleString()}</td>
@@ -169,6 +177,7 @@ export function AgentsPage() {
                   <td><AgentBadge bucket={v.score.bucket} />{v.score.proven && <span className="muted"> ✓ proven</span>}</td>
                   <td><ProbabilityBar p={v.score.probability} /></td>
                   <td>{TYPE_LABEL[v.score.type] ?? v.score.type}</td>
+                  <td><ControlChip mode={v.score.control?.mode ?? "unknown"} handoverPath={v.score.control?.handover?.path} /></td>
                   <td className="mono">{v.score.agent ?? "—"}</td>
                   <td className="cell-reason">{v.score.reasons.slice(0, 2).map((r) => r.text).join(" · ") || "no distinguishing signals"}</td>
                   <td><ChecksCell checks={v.score.checks} /></td>
@@ -178,7 +187,7 @@ export function AgentsPage() {
                   <td className="ua-cell" title={v.userAgent ?? ""}>{v.userAgent ?? "—"}</td>
                 </tr>
               ))}
-              {visits && visits.data.length === 0 && <tr><td colSpan={12} className="muted">{tab === "lab" ? "No labeled runs yet — open the site with ?lab=<label>." : "No visits in this range."}</td></tr>}
+              {visits && visits.data.length === 0 && <tr><td colSpan={13} className="muted">{tab === "lab" ? "No labeled runs yet — open the site with ?lab=<label>." : "No visits in this range."}</td></tr>}
             </tbody>
           </table>
           {visits && visits.total > visits.data.length && <p className="muted">Showing {visits.data.length} of {visits.total} visits.</p>}

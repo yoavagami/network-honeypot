@@ -258,13 +258,30 @@ export function inputFacts(behaviors: Array<Record<string, any>>): InputFacts {
   // clicks (≤2 mouse moves in the last second). People move the mouse while they read.
   let gaps = 0;
   const pauses: number[] = [];
+  // An agent that clicks once per page (each click navigates) only shows its rhythm across page
+  // loads, so clicks are placed on one visit timeline when the beacon carries its arrival time
+  // (`at`) and page clock (`clientT`); older data falls back to gaps within one page.
+  const groups = new Map<string, Array<{ abs: number; moves: number }>>();
   for (const b of behaviors) {
-    const cs = (Array.isArray(b.behavior?.clicks) ? b.behavior.clicks : []).filter((c: any) => c.trusted !== false && typeof c.t === "number").sort((x: any, y: any) => x.t - y.t);
+    const at = typeof b.at === "string" ? Date.parse(b.at) : NaN;
+    const clientT = Number(b.clientT);
+    const start = Number.isFinite(at) && Number.isFinite(clientT) ? at - clientT : null;
+    const key = start === null ? `page:${b.pl ?? b.path ?? ""}` : "visit";
+    const list = groups.get(key) ?? [];
+    for (const c of Array.isArray(b.behavior?.clicks) ? b.behavior.clicks : []) {
+      if (c.trusted === false || typeof c.t !== "number") continue;
+      list.push({ abs: (start ?? 0) + c.t, moves: typeof c.movesLast1s === "number" ? c.movesLast1s : 99 });
+    }
+    groups.set(key, list);
+  }
+  for (const cs of groups.values()) {
+    cs.sort((x, y) => x.abs - y.abs);
     for (let i = 1; i < cs.length; i++) {
-      const gap = cs[i].t - cs[i - 1].t;
+      const gap = cs[i]!.abs - cs[i - 1]!.abs;
       if (gap < 300) continue; // double-clicks and click bursts aren't decisions
+      if (gap > 120_000) continue; // the visitor walked away; not a decision pause
       gaps++;
-      if (gap >= 2000 && (cs[i].movesLast1s ?? 99) <= 2) pauses.push(gap);
+      if (gap >= 2000 && cs[i]!.moves <= 2) pauses.push(gap);
     }
   }
   pauses.sort((a, b) => a - b);

@@ -26,4 +26,5 @@ export * from "./rules/correlation/apiProbing.js";
 export * from "./rules/correlation/scannerClassification.js";
 export * from "./agentScore.js";
 export * from "./pageConsistency.js";
+export * from "./pageControl.js";
 export * from "./renderingLadder.js";

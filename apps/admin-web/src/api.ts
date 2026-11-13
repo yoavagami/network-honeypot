@@ -361,6 +361,7 @@ export interface AgentScore {
   reasons: AgentReason[];
   calibrated: boolean;
   checks: AgentConsistencyCheck[];
+  control: AgentControl;
   environment: { tells: string[]; utcTimezone: boolean };
   input: AgentInputFacts;
   ladder: AgentRenderingLadder;
@@ -368,6 +369,15 @@ export interface AgentScore {
 export type AgentLadderRung = "pending" | "html_only" | "images_only" | "css_no_js" | "js_no_css" | "ran_js";
 export interface AgentPageLadder { pl: string; path: string; at: string; css: boolean; noscript: boolean; js: boolean; settled: boolean; rung: AgentLadderRung }
 export interface AgentRenderingLadder { pages: AgentPageLadder[]; summary: AgentLadderRung | null }
+export type AgentControlMode = "agent" | "human" | "agent_then_human" | "human_then_agent" | "mixed" | "unknown";
+export interface AgentPageControl { pl: string | null; path: string | null; at: string | null; driver: "agent" | "human" | "both" | "unknown"; agentSigns: string[]; humanSigns: string[] }
+export interface AgentControl {
+  mode: AgentControlMode;
+  pages: AgentPageControl[];
+  jumpClicks: number; scriptFilledFields: number; scriptFilledPages: number; inputlessScrollPages: number;
+  handover: { at: string | null; path: string | null; from: "agent" | "human"; to: "agent" | "human" } | null;
+  agentDriven: boolean;
+}
 export interface AgentConsistencyCheck { id: string; label: string; page: string | null; server: string | null; status: "match" | "mismatch" | "unknown" }
 export interface AgentInputFacts {
   trustedClicks: number; centredClicks: number; clickSpread: number | null;

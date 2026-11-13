@@ -167,7 +167,7 @@ function evidence(v: Visit): VisitEvidence {
     },
     client: {
       fingerprints: v.client.filter((c) => c.kind === "fp").map((c) => c.data),
-      behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path })),
+      behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path, at: c.created_at.toISOString() })),
     },
     requests: v.requests.map<RequestEvidence>((r) => ({
       at: r.created_at.toISOString(),
@@ -262,6 +262,8 @@ export function registerAgentRoutes(app: FastifyInstance) {
     else if (q.lab) rows = rows.filter((r) => r.lab === q.lab);
     if (q.shop === "checkout") rows = rows.filter((r) => r.shop && ["SHOP_CHECKOUT_START", "SHOP_CHECKOUT_DETAILS", "SHOP_CHECKOUT_SHIPPING", "SHOP_PAYMENT_ATTEMPT", "SHOP_ORDER_PLACED"].includes(r.shop.furthestStep ?? ""));
     if (q.shop === "any") rows = rows.filter((r) => r.shop);
+    if (q.control === "hybrid") rows = rows.filter((r) => ["agent_then_human", "human_then_agent", "mixed"].includes(r.score.control.mode));
+    else if (q.control) rows = rows.filter((r) => r.score.control.mode === q.control);
     const why = whyMatcher(q.why, q.whyScope);
     if (why) rows = rows.filter((r) => why(r.score.reasons));
     if (q.q) {
@@ -278,7 +280,8 @@ export function registerAgentRoutes(app: FastifyInstance) {
     const limit = Math.min(1000, Number(q.limit ?? 300));
     await audit(request.adminSession!.adminUserId, "list_agent_visits", null, null, { count: rows.length });
     return {
-      data: rows.slice(0, limit).map((r) => ({ ...r, score: { ...r.score, reasons: r.score.reasons.slice(0, 4) } })),
+      // The list needs only the mode/handover; the per-page table is on the visit page.
+      data: rows.slice(0, limit).map((r) => ({ ...r, score: { ...r.score, reasons: r.score.reasons.slice(0, 4), control: { ...r.score.control, pages: [] } } })),
       total: rows.length,
       counts,
       types,

@@ -35,3 +35,23 @@ export function ProbabilityBar({ p }: { p: number }) {
     </span>
   );
 }
+
+export const CONTROL_LABEL: Record<string, string> = {
+  agent: "Agent",
+  human: "Human",
+  agent_then_human: "Agent → human",
+  human_then_agent: "Human → agent",
+  mixed: "Agent + human",
+  unknown: "—",
+};
+
+/** Who drove the visit (packages/detection/src/pageControl.ts). Hybrid modes get a highlighted chip. */
+export function ControlChip({ mode, handoverPath }: { mode: string; handoverPath?: string | null }) {
+  if (mode === "unknown") return <span className="muted">—</span>;
+  const hybrid = mode === "agent_then_human" || mode === "human_then_agent" || mode === "mixed";
+  return (
+    <span className={`control-chip ${hybrid ? "hybrid" : mode}`} title={handoverPath ? `control changed hands on ${handoverPath}` : undefined}>
+      {CONTROL_LABEL[mode] ?? mode}
+    </span>
+  );
+}

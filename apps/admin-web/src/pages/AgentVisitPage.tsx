@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, type AgentLadderRung, type AgentVisitDetail } from "../api.js";
-import { AgentBadge, ProbabilityBar, TYPE_LABEL } from "../components/AgentBadge.js";
+import { AgentBadge, ControlChip, ProbabilityBar, TYPE_LABEL } from "../components/AgentBadge.js";
 import { ReasonList } from "../components/ReasonList.js";
 
 const RUNG_LABEL: Record<AgentLadderRung, string> = {
@@ -82,6 +82,13 @@ export function AgentVisitPage() {
           <div><div className="muted small">P(AI agent)</div><ProbabilityBar p={s.probability} /></div>
           <div><div className="muted small">Type</div><div><strong>{TYPE_LABEL[s.type] ?? s.type}</strong></div></div>
           <div><div className="muted small">Agent</div><div className="mono">{s.agent ?? "unknown"}</div></div>
+          <div>
+            <div className="muted small">Driven by</div>
+            <div>
+              <ControlChip mode={s.control.mode} handoverPath={s.control.handover?.path} />
+              {s.control.handover && <div className="muted small">handover on <span className="mono">{s.control.handover.path}</span>{s.control.handover.at ? ` at ${new Date(s.control.handover.at).toLocaleTimeString()}` : ""}</div>}
+            </div>
+          </div>
           <div><div className="muted small">Basis</div><div>{s.proven ? "Proven identity" : `Evidence score — leans ${s.leaning}`}</div></div>
         </div>
         {!s.calibrated && !s.proven && <p className="muted small">Uncalibrated: weights are expert judgment until tuned on labeled runs.</p>}
@@ -124,6 +131,30 @@ export function AgentVisitPage() {
           )}
         </div>
       </div>
+
+      {s.control.pages.length > 0 && (
+        <div className="panel">
+          <h2>Who was driving</h2>
+          <p className="muted small" style={{ marginTop: 0 }}>
+            Each page load judged on its own: automation signs (clicks with no mouse path, form fields set by script, scrolling with no input) vs. human signs (mouse paths, wheel/trackpad, touch).
+            {s.control.agentDriven && s.control.mode !== "agent" ? " Human-input credit from the person's pages isn't counted against the agent's evidence." : ""}
+          </p>
+          <table>
+            <thead><tr><th>Page loaded</th><th>Page</th><th>Driver</th><th>Automation signs</th><th>Human signs</th></tr></thead>
+            <tbody>
+              {s.control.pages.map((p, i) => (
+                <tr key={p.pl ?? i}>
+                  <td>{p.at ? new Date(p.at).toLocaleTimeString() : "—"}</td>
+                  <td className="mono">{p.path ?? "—"}</td>
+                  <td className={`driver-${p.driver}`}>{p.driver === "both" ? "agent + human" : p.driver}</td>
+                  <td className="cell-reason">{p.agentSigns.join("; ") || "—"}</td>
+                  <td className="cell-reason">{p.humanSigns.join("; ") || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {s.checks.length > 0 && (
         <div className="panel">
