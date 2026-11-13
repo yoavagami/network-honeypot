@@ -99,7 +99,15 @@ infrastructure/vps/setup-tls.sh yourdomain.example you@example.com
 ```
 
 This issues a Let's Encrypt certificate, switches Nginx to the TLS config
-(`infrastructure/nginx/honeypot-tls.conf`), and prints the crontab line for renewal. Without a
+(`infrastructure/nginx/honeypot-tls.conf`), and prints the crontab line for renewal. Extra names
+for the same site go on the same certificate: `setup-tls.sh uhoney.shop you@example.com
+staging.uhoney.shop` (each needs DNS pointing at the host first). They're recorded as
+`TLS_EXTRA_DOMAINS` in `.env`, and a later run without extra names keeps them. Nginx and the edge
+sensor answer for any hostname, so an alias needs no other change. The script restarts the edge
+sensor, which serves TLS on 443 and otherwise only reloads the certificate every 6 hours.
+*(`staging.uhoney.shop`, added 2026-11-13, is such an alias: a CNAME to `uhoney.shop` at GoDaddy,
+on the same certificate, serving the same shop and database. Cookies are per hostname, so a visit
+there is its own session.)* Without a
 domain, the honeypot still works fine over plain HTTP on the bare IP — a domain mainly buys you
 HSTS/valid-cert realism, which matters for the deception but isn't required to start observing
 scanning traffic.
