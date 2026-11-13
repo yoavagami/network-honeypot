@@ -160,3 +160,9 @@ tbody tr:hover { background: var(--bg-hover); cursor: pointer; }
 .cell-reason { max-width: 420px; color: var(--text-muted); }
 .ua-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: .75rem; }
 .small { font-size: .78rem; }
+
+/* Server-vs-page consistency checks (Agents list + visit page) */
+.check-pill { display: inline-block; padding: .1rem .45rem; border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+.check-pill.match { background: #12301f; color: #4ade80; }
+.check-pill.mismatch { background: #3a1210; color: var(--critical); }
+.check-pill.unknown { background: #1c2333; color: var(--info); }

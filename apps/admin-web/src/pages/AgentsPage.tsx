@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, type AgentBucket, type AgentRequestRow, type AgentVisitsResponse } from "../api.js";
+import { api, type AgentBucket, type AgentConsistencyCheck, type AgentRequestRow, type AgentVisitsResponse } from "../api.js";
 import { AgentBadge, ProbabilityBar, BUCKET_LABEL, TYPE_LABEL } from "../components/AgentBadge.js";
 
 const BUCKETS: AgentBucket[] = ["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"];
@@ -15,6 +15,15 @@ const SHOP_STEP_LABEL: Record<string, string> = {
 };
 
 type Tab = "visits" | "requests" | "lab";
+
+/** "3 ✓" when the page agrees with the server, "1 ✗ language" when not, "—" without a page script. */
+function ChecksCell({ checks }: { checks: AgentConsistencyCheck[] }) {
+  if (!checks?.length) return <span className="muted">—</span>;
+  const bad = checks.filter((c) => c.status === "mismatch");
+  const ok = checks.filter((c) => c.status === "match").length;
+  if (!bad.length) return <span className="check-pill match" title={checks.map((c) => `${c.label}: ${c.status}`).join("\n")}>{ok} ✓</span>;
+  return <span className="check-pill mismatch" title={bad.map((c) => `${c.label}: ${c.page} vs ${c.server}`).join("\n")}>{bad.length} ✗ {bad.map((c) => c.id.replace(/_/g, " ")).join(", ")}</span>;
+}
 
 export function AgentsPage() {
   const navigate = useNavigate();
@@ -144,6 +153,7 @@ export function AgentsPage() {
                 <th>Type</th>
                 <th>Agent</th>
                 <th>Why (top signals)</th>
+                <th title="Server-vs-page consistency checks">Checks</th>
                 <th>Requests</th>
                 <th>Shop</th>
                 <th>Network</th>
@@ -151,7 +161,7 @@ export function AgentsPage() {
               </tr>
             </thead>
             <tbody>
-              {!visits && <tr><td colSpan={11} className="muted">Scoring…</td></tr>}
+              {!visits && <tr><td colSpan={12} className="muted">Scoring…</td></tr>}
               {visits?.data.map((v) => (
                 <tr key={v.id} onClick={() => navigate(`/agents/${encodeURIComponent(v.id)}`)}>
                   <td>{new Date(v.lastAt).toLocaleString()}</td>
@@ -161,13 +171,14 @@ export function AgentsPage() {
                   <td>{TYPE_LABEL[v.score.type] ?? v.score.type}</td>
                   <td className="mono">{v.score.agent ?? "—"}</td>
                   <td className="cell-reason">{v.score.reasons.slice(0, 2).map((r) => r.text).join(" · ") || "no distinguishing signals"}</td>
+                  <td><ChecksCell checks={v.score.checks} /></td>
                   <td>{v.requestCount}{v.lab && tab !== "lab" ? <span className="muted"> · {v.lab}</span> : null}</td>
                   <td>{v.shop ? `${SHOP_STEP_LABEL[v.shop.furthestStep ?? ""] ?? "browsed"}${v.shop.orderTotalCents ? ` · €${(v.shop.orderTotalCents / 100).toFixed(2)}` : ""}` : "—"}</td>
                   <td>{v.network ?? "—"}{v.country ? ` · ${v.country}` : ""}</td>
                   <td className="ua-cell" title={v.userAgent ?? ""}>{v.userAgent ?? "—"}</td>
                 </tr>
               ))}
-              {visits && visits.data.length === 0 && <tr><td colSpan={11} className="muted">{tab === "lab" ? "No labeled runs yet — open the site with ?lab=<label>." : "No visits in this range."}</td></tr>}
+              {visits && visits.data.length === 0 && <tr><td colSpan={12} className="muted">{tab === "lab" ? "No labeled runs yet — open the site with ?lab=<label>." : "No visits in this range."}</td></tr>}
             </tbody>
           </table>
           {visits && visits.total > visits.data.length && <p className="muted">Showing {visits.data.length} of {visits.total} visits.</p>}

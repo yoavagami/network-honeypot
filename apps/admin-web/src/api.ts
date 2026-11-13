@@ -360,6 +360,14 @@ export interface AgentScore {
   leaning: "agent" | "human";
   reasons: AgentReason[];
   calibrated: boolean;
+  checks: AgentConsistencyCheck[];
+  environment: { tells: string[]; utcTimezone: boolean };
+  input: AgentInputFacts;
+}
+export interface AgentConsistencyCheck { id: string; label: string; page: string | null; server: string | null; status: "match" | "mismatch" | "unknown" }
+export interface AgentInputFacts {
+  trustedClicks: number; centredClicks: number; clickSpread: number | null;
+  printableKeys: number; correctionKeys: number; modifierKeys: number; pastes: number; keyDowns: number;
 }
 export interface AgentShopSummary { furthestStep: string | null; orderPlaced: boolean; orderTotalCents: number | null; paymentMethod: string | null; paymentDeclines: number }
 export interface AgentVisitRow {
@@ -386,6 +394,8 @@ export interface AgentVisitDetail extends Omit<AgentVisitRow, "network"> {
   network: AgentNetwork;
   requests: Array<{ requestId: string; at: string; method: string; path: string; query: string | null; status: number; verdict: string; agent: string | null; reason: string | null; flags: string[] }>;
   fingerprint: Record<string, any> | null;
+  /** Number of page loads the page script reported from. */
+  pageLoads: number;
   behavior: Array<Record<string, any>>;
   shopEvents: Array<{ at: string; type: string; requestId: string | null; detail: Record<string, any> | null }>;
 }

@@ -116,6 +116,57 @@ export function AgentVisitPage() {
         </div>
       </div>
 
+      {s.checks.length > 0 && (
+        <div className="panel">
+          <h2>Consistency checks (server vs. page)</h2>
+          <p className="muted small" style={{ marginTop: 0 }}>
+            What the page script reported compared with what the server saw for the same visit. Spoofing tools and cloud browsers usually patch one side only.
+          </p>
+          <table>
+            <thead><tr><th>Check</th><th>Page says</th><th>Server says</th><th>Result</th></tr></thead>
+            <tbody>
+              {s.checks.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.label}</td>
+                  <td className="mono cell-reason">{c.page ?? "—"}</td>
+                  <td className="mono cell-reason">{c.server ?? "—"}</td>
+                  <td><span className={`check-pill ${c.status}`}>{c.status === "match" ? "✓ match" : c.status === "mismatch" ? "✗ mismatch" : "? not compared"}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {(fp || beh.length > 0) && (
+        <div className="grid-2">
+          <div className="panel">
+            <h2>Environment</h2>
+            <dl className="kv">
+              <dt>Virtual-machine signs</dt><dd>{s.environment.tells.length ? s.environment.tells.join(", ") : "none"}</dd>
+              <dt>Clock</dt><dd>{s.environment.utcTimezone ? "UTC (server default)" : fp?.intl?.tz ?? "—"}</dd>
+              <dt>CPU / memory</dt><dd>{fp?.nav?.hardwareConcurrency ?? "?"} cores / {fp?.nav?.deviceMemory ?? "?"} GB</dd>
+              <dt>Voices / media devices</dt><dd>{fp?.voices ?? "?"} / {fp?.devices ? Object.entries(fp.devices).map(([k, n]) => `${n} ${k}`).join(", ") || "none" : "?"}</dd>
+              <dt>Page loads reported</dt><dd>{v.pageLoads ?? "—"}</dd>
+            </dl>
+          </div>
+          <div className="panel">
+            <h2>Input details</h2>
+            <dl className="kv">
+              <dt>Click placement</dt>
+              <dd>
+                {s.input.trustedClicks
+                  ? `${s.input.centredClicks} of ${s.input.trustedClicks} clicks dead centre${s.input.clickSpread !== null ? ` · spread ${s.input.clickSpread} (0 = always centre, ≥0.12 = natural)` : ""}`
+                  : "no clicks"}
+              </dd>
+              <dt>Typing</dt>
+              <dd>{s.input.printableKeys} characters · {s.input.correctionKeys} corrections/arrows · {s.input.modifierKeys} modifier keys</dd>
+              <dt>Pastes</dt><dd>{s.input.pastes}{s.input.pastes && !s.input.keyDowns ? " (with no key presses)" : ""}</dd>
+            </dl>
+          </div>
+        </div>
+      )}
+
       {beh.length > 0 && (
         <div className="panel">
           <h2>Behavior</h2>

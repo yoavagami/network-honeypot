@@ -27,9 +27,9 @@ interface ReqRow {
   status_code: number; user_agent_raw: string | null; ip: string | null; lab_label: string | null; identity_verdict: string; identity_agent: string | null;
   ua_library: string | null; ja4: string | null; h2_fp: string | null; wba_status: string; wba_signer: string | null; ip_tor: boolean;
   verdict_method: string | null; verdict_reasons: string[] | null; ai_app: string | null; browser_family: string | null; flags: string[] | null;
-  asn: string | null; organization: string | null; country: string | null; city: string | null;
+  asn: string | null; organization: string | null; country: string | null; city: string | null; accept_language: string | null;
 }
-interface ClientRow { session_id: string | null; actor_id: string; kind: string; created_at: Date; path: string | null; lab_label: string | null; data: Record<string, any> }
+interface ClientRow { session_id: string | null; actor_id: string; kind: string; created_at: Date; path: string | null; lab_label: string | null; page_load_id: string | null; data: Record<string, any> }
 interface ShopRow { session_id: string | null; actor_id: string; created_at: Date; event_type: string; request_id: string | null; shop: Record<string, any> | null }
 
 interface Visit {
@@ -51,6 +51,7 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
            ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data #> '{identity,reasons}', '[]'))) AS verdict_reasons,
            s.data #>> '{ua,aiApp}' AS ai_app, s.data #>> '{ua,browser,family}' AS browser_family,
            ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data -> 'consistencyFlags', '[]'))) AS flags,
+           s.data #>> '{headers,values,accept-language}' AS accept_language,
            a.asn, a.organization, a.country, a.city
     FROM requests r
     JOIN request_signals s USING (request_id)
@@ -64,9 +65,11 @@ async function loadVisits(sinceHours: number, filter: { sessionId?: string; acto
   const actorIds = [...new Set(rows.map((r) => r.actor_id))];
   const clientRows = actorIds.length
     ? await client<ClientRow[]>`
-        SELECT session_id, actor_id, kind, created_at, path, lab_label,
+        SELECT session_id, actor_id, kind, created_at, path, lab_label, page_load_id,
                CASE WHEN kind = 'fp' THEN jsonb_build_object(
-                 'nav', jsonb_build_object('webdriver', data #> '{nav,webdriver}', 'languages', data #> '{nav,languages}', 'platform', data #> '{nav,platform}', 'hardwareConcurrency', data #> '{nav,hardwareConcurrency}'),
+                 'nav', jsonb_build_object('webdriver', data #> '{nav,webdriver}', 'languages', data #> '{nav,languages}', 'platform', data #> '{nav,platform}', 'hardwareConcurrency', data #> '{nav,hardwareConcurrency}',
+                   'ua', data #> '{nav,ua}', 'deviceMemory', data #> '{nav,deviceMemory}', 'plugins', data #> '{nav,plugins}'),
+                 'voices', data -> 'voices', 'devices', data -> 'devices', 'battery', data -> 'battery',
                  'automation', data -> 'automation', 'webgl', data -> 'webgl', 'screen', data -> 'screen', 'doc', data -> 'doc',
                  'globalsDiff', data -> 'globalsDiff', 'artifacts', data -> 'artifacts', 'intl', data -> 'intl', 'timing', data -> 'timing',
                  'uaData', data -> 'uaData', 'canvas', data -> 'canvas', 'audio', data -> 'audio', 'fonts', data -> 'fonts')
@@ -146,10 +149,11 @@ function evidence(v: Visit): VisitEvidence {
   return {
     asn: first.asn,
     organization: first.organization,
+    country: first.country,
     shopEvents: v.shop.map((e) => e.event_type),
     client: {
       fingerprints: v.client.filter((c) => c.kind === "fp").map((c) => c.data),
-      behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => c.data),
+      behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path })),
     },
     requests: v.requests.map<RequestEvidence>((r) => ({
       at: r.created_at.toISOString(),
@@ -168,6 +172,8 @@ function evidence(v: Visit): VisitEvidence {
       isHtmlPage: r.method === "GET" && r.status_code < 400 && !NON_PAGE_RE.test(r.path),
       isAsset: ASSET_RE.test(r.path),
       probing: PROBING_RE.test(r.path),
+      userAgent: r.user_agent_raw,
+      acceptLanguage: r.accept_language,
     })),
   };
 }
@@ -317,6 +323,7 @@ export function registerAgentRoutes(app: FastifyInstance) {
         verdict: r.identity_verdict, agent: r.identity_agent, reason: r.verdict_reasons?.[0] ?? null, flags: r.flags ?? [],
       })),
       fingerprint: fp,
+      pageLoads: v.client.filter((c) => c.kind === "fp").length,
       behavior,
       shopEvents: v.shop.map((e) => ({ at: e.created_at, type: e.event_type, requestId: e.request_id, detail: e.shop })),
     };

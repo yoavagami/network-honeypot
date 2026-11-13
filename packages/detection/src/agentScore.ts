@@ -1,4 +1,5 @@
 import { classifyOrigin, type InfraCategory } from "./infraClassification.js";
+import { consistencyChecks, environmentFacts, inputFacts, type ConsistencyCheck, type EnvironmentFacts, type InputFacts } from "./pageConsistency.js";
 
 /**
  * Visit-level "was this an AI agent?" score for the admin dashboard's Agents page.
@@ -42,6 +43,10 @@ export interface AgentScore {
   leaning: "agent" | "human";
   reasons: ScoreReason[];
   calibrated: false;
+  /** Server-vs-page comparisons (pageConsistency.ts) — shown as a table on the visit page. */
+  checks: ConsistencyCheck[];
+  environment: EnvironmentFacts;
+  input: InputFacts;
 }
 
 /** One request's server-side view (request_signals + requests). */
@@ -62,6 +67,9 @@ export interface RequestEvidence {
   isHtmlPage: boolean;
   isAsset: boolean;
   probing: boolean;
+  /** Raw User-Agent / Accept-Language headers, for the server-vs-page checks. */
+  userAgent?: string | null;
+  acceptLanguage?: string | null;
 }
 
 /** What the in-page collector reported (client_signals). */
@@ -76,6 +84,8 @@ export interface VisitEvidence {
   asn: string | null;
   organization: string | null;
   shopEvents: string[];
+  /** ISO country of the connecting IP (actors.country). */
+  country?: string | null;
 }
 
 /** AI-operator agents (from the sensing registry) vs. classic search crawlers. */
@@ -165,7 +175,17 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   const infra = classifyOrigin(v.asn, v.organization);
   const hosted = HOSTED.includes(infra.category);
   const fps = v.client.fingerprints;
-  const bs = v.client.behaviors;
+  const bs = latestPerPage(v.client.behaviors);
+  const checks = consistencyChecks({
+    fingerprints: fps,
+    headerUserAgents: [...new Set(reqs.map((r) => r.userAgent).filter((x): x is string => Boolean(x)))],
+    acceptLanguages: [...new Set(reqs.map((r) => r.acceptLanguage).filter((x): x is string => Boolean(x)))],
+    ipCountry: v.country ?? null,
+    viaProxy: infra.category === "cdn_proxy" || reqs.some((r) => r.tor),
+  });
+  const env = environmentFacts(fps);
+  const input = inputFacts(bs);
+  const extras = { checks, environment: env, input };
 
   // ---------------------------------------------------------------- proof
   const verified = reqs.find((r) => r.verdict === "verified" && r.agent);
@@ -173,14 +193,14 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const type = AGENT_KIND[verified.agent!] ?? "ai_crawler";
     const isAi = type !== "search_crawler";
     add("verified_identity", "proof", isAi ? 9 : -9, `${verified.verdictReasons[0] ?? `verified ${verified.agent}`}${isAi ? "" : " — a search crawler, not an AI agent"}`);
-    return finish(isAi ? 0.99 : 0.02, type, verified.agent, true, reasons);
+    return finish(isAi ? 0.99 : 0.02, type, verified.agent, true, reasons, extras);
   }
   const artifacts = [...fps, ...bs].flatMap((d) => (Array.isArray(d.artifacts) ? d.artifacts : []));
   const known = artifacts.find((a: any) => a?.known);
   if (known) {
     const agent = KNOWN_ARTIFACT_AGENT[known.known] ?? known.known;
     add("agent_dom_marker", "proof", 9, `the page contained #${known.id}, injected by ${agent} while it controlled the browser`);
-    return finish(0.98, "in_browser_agent", agent, true, reasons);
+    return finish(0.98, "in_browser_agent", agent, true, reasons, extras);
   }
 
   // ---------------------------------------------------------------- request / network
@@ -254,18 +274,38 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   if (htmlPages >= 1 && fps.length === 0 && reqs.some((r) => r.browserFamily) && !reqs.some((r) => r.isAsset)) {
     add("no_subresources", "browser", 0.8, "browser user-agent, but no CSS/JS/images were fetched — the page was read, not rendered");
   }
-  const fp = fps[0];
-  if (fp) {
-    const auto = fp.automation ?? {};
-    if (fp.nav?.webdriver === true) add("webdriver", "browser", 2.5, "navigator.webdriver is true — the browser is under automation control");
-    if (Array.isArray(auto.globals) && auto.globals.length) add("automation_globals", "browser", 2.5, `automation framework globals present: ${auto.globals.join(", ")}`);
-    if (auto.webdriverGetterNative === false || auto.webdriverOwnProp === true) add("webdriver_tampered", "browser", 2.0, "navigator.webdriver was patched — a stealth plugin hiding automation");
-    if (auto.cdpRuntime === true) add("cdp_attached", "browser", 1.5, "a DevTools-protocol client is attached to the page (Puppeteer/Playwright/extension debugger)");
-    const gpu = String(fp.webgl?.renderer ?? "");
-    if (fp.webgl && fp.webgl.supported === false) add("no_webgl", "browser", 1.2, "no WebGL — typical of headless/server browsers");
-    else if (/swiftshader|llvmpipe|software/i.test(gpu)) add("software_gpu", "browser", 1.5, `software GPU renderer (${gpu}) — a browser running on a server`);
-    if (fp.screen?.outerW === 0 && fp.screen?.outerH === 0) add("zero_outer_window", "browser", 0.6, "window has no outer size (hidden, minimised or headless window)");
-    if (Array.isArray(fp.globalsDiff) && fp.globalsDiff.length > 3) add("injected_globals", "browser", 0.6, `${fp.globalsDiff.length} scripts' globals injected into the page (extensions/agents): ${fp.globalsDiff.slice(0, 5).join(", ")}`);
+  // Every page load counts, not just the first: an automation tell on any page is a tell.
+  if (fps.length) {
+    const any = (pred: (f: Record<string, any>) => unknown) => fps.find((f) => { try { return Boolean(pred(f)); } catch { return false; } });
+    const globalsFp = any((f) => Array.isArray(f.automation?.globals) && f.automation.globals.length);
+    if (any((f) => f.nav?.webdriver === true)) add("webdriver", "browser", 2.5, "navigator.webdriver is true — the browser is under automation control");
+    if (globalsFp) add("automation_globals", "browser", 2.5, `automation framework globals present: ${globalsFp.automation.globals.join(", ")}`);
+    if (any((f) => f.automation?.webdriverGetterNative === false || f.automation?.webdriverOwnProp === true)) add("webdriver_tampered", "browser", 2.0, "navigator.webdriver was patched — a stealth plugin hiding automation");
+    if (any((f) => f.automation?.cdpRuntime === true)) add("cdp_attached", "browser", 1.5, "a DevTools-protocol client is attached to the page (Puppeteer/Playwright/extension debugger)");
+    const softGpu = any((f) => /swiftshader|llvmpipe|software/i.test(String(f.webgl?.renderer ?? "")));
+    if (any((f) => f.webgl && f.webgl.supported === false)) add("no_webgl", "browser", 1.2, "no WebGL — typical of headless/server browsers");
+    else if (softGpu) add("software_gpu", "browser", 1.5, `software GPU renderer (${softGpu.webgl.renderer}) — a browser running on a server`);
+    if (any((f) => f.screen?.outerW === 0 && f.screen?.outerH === 0)) add("zero_outer_window", "browser", 0.6, "window has no outer size (hidden, minimised or headless window)");
+    const injected = any((f) => Array.isArray(f.globalsDiff) && f.globalsDiff.length > 3);
+    if (injected) add("injected_globals", "browser", 0.6, `${injected.globalsDiff.length} scripts' globals injected into the page (extensions/agents): ${injected.globalsDiff.slice(0, 5).join(", ")}`);
+
+    // ---- Phase 0: server vs. page consistency
+    const bad = (id: ConsistencyCheck["id"]) => checks.find((c) => c.id === id && c.status === "mismatch");
+    const uaBad = bad("user_agent");
+    if (uaBad) add("ua_mismatch", "browser", 1.5, "the user-agent the page reports differs from the request header's — one of them was rewritten (spoofing extension or agent framework)");
+    const osBad = bad("os");
+    if (osBad) add("os_mismatch", "browser", 1.6, `the user-agent claims ${osBad.server} but navigator.platform is "${osBad.page}" — a disguised user-agent, typical of cloud browsers`);
+    const chBad = bad("client_hints_platform");
+    if (chBad && !osBad) add("client_hints_mismatch", "browser", 1.2, `client hints say "${chBad.page}" but the user-agent says ${chBad.server}`);
+    const langBad = bad("language");
+    if (langBad) add("language_mismatch", "browser", 0.9, `browser language ${langBad.page} vs. Accept-Language "${langBad.server}" — patched in one place only`);
+    const tzBad = bad("timezone_country");
+    if (tzBad) add("timezone_mismatch", "network", 0.7, `browser timezone ${tzBad.page} doesn't fit the IP's country (${tzBad.server}) — a remote/cloud browser or a proxy`);
+    const desktop = fps.some((f) => !/Mobile|Android|iPhone|iPad/.test(String(f.nav?.ua ?? "")));
+    if (env.utcTimezone && desktop) add("utc_timezone", "browser", 1.0, "browser clock is set to UTC — the default on servers and cloud browsers; people's devices use a local zone");
+    const fpBad = bad("fingerprint_stable");
+    if (fpBad) add("fingerprint_changed", "browser", 1.0, `the device fingerprint changed within one visit (${fpBad.page}) — randomised or rotating browser profiles`);
+    if (env.tells.length >= 2) add("vm_environment", "browser", Math.min(1.5, 0.9 + 0.3 * (env.tells.length - 2)), `looks like a virtual machine or server: ${env.tells.join(", ")}`);
   }
   const unknownArtifacts = artifacts.filter((a: any) => !a?.known);
   if (unknownArtifacts.length) add("agent_like_dom", "browser", 1.5, `page elements injected with agent-like names: ${unknownArtifacts.slice(0, 3).map((a: any) => `${a.tag}#${a.id || a.cls}`).join(", ")}`);
@@ -291,6 +331,15 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
       if (noMouseDown) add("click_without_press", "behavior", 1.2, `${noMouseDown} click(s) without a mouse press — element.click() style`);
       if (teleport === clicks.length && moves <= clicks.length * 2) add("cursor_teleport", "behavior", 1.6, `cursor jumped straight onto ${clicks.length} click target(s) (≤1 mouse move before each) — no human mouse path`);
     }
+    // ---- Phase 0: click placement and typing corrections
+    if (input.trustedClicks >= 3 && input.clickSpread !== null) {
+      const placed = input.centredClicks;
+      if (placed >= 3 && placed / Math.max(1, input.trustedClicks) >= 0.8) add("centred_clicks", "behavior", 1.4, `${placed} of ${input.trustedClicks} clicks hit the exact centre of their target — coordinates computed from the element's box, not aimed by hand`);
+      else if (input.clickSpread >= 0.12) add("human_click_spread", "behavior", -0.6, "click positions spread naturally across their targets");
+    }
+    if (input.printableKeys >= 25 && input.correctionKeys === 0 && input.modifierKeys === 0) add("no_typing_corrections", "behavior", 0.6, `${input.printableKeys} characters typed without a single correction, Shift or arrow key`);
+    else if (input.printableKeys >= 10 && input.correctionKeys >= 2) add("typing_corrections", "behavior", -0.5, `typing included ${input.correctionKeys} corrections/navigation keys — a person fixing what they typed`);
+    if (input.pastes >= 2 && input.keyDowns === 0) add("paste_only_input", "behavior", 0.7, `${input.pastes} pastes and no key presses — fields filled by pasting`);
     if (inputNoKey > 0) add("text_without_keys", "behavior", 1.6, `${inputNoKey} text input(s) arrived without key presses — inserted programmatically`);
     const intervals = bs.flatMap((x) => (Array.isArray(x.behavior?.keyIntervals) ? x.behavior.keyIntervals : []));
     if (intervals.length >= 8) {
@@ -336,10 +385,26 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (p > 0.69) add("no_ai_evidence", "proof", 0, "automated, but nothing ties it to an AI agent rather than an ordinary bot — capped at \"not sure\"");
     p = Math.min(p, 0.69);
   }
-  return finish(p, type, agent, false, reasons);
+  return finish(p, type, agent, false, reasons, extras);
 }
 
-function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[]): AgentScore {
+/**
+ * Behaviour beacons are cumulative snapshots of one page load (sent every 15 s and on hide), so
+ * summing them double-counts. Keep the latest snapshot per page load (`pl`); beacons without a
+ * page-load id (older data) are kept as they are.
+ */
+export function latestPerPage(bs: Array<Record<string, any>>): Array<Record<string, any>> {
+  const byPl = new Map<string, Record<string, any>>();
+  const loose: Array<Record<string, any>> = [];
+  for (const b of bs) {
+    if (typeof b.pl !== "string" || !b.pl) { loose.push(b); continue; }
+    const cur = byPl.get(b.pl);
+    if (!cur || (Number(b.clientT) || 0) >= (Number(cur.clientT) || 0)) byPl.set(b.pl, b);
+  }
+  return [...loose, ...byPl.values()];
+}
+
+function finish(p: number, type: AgentType, agent: string | null, proven: boolean, reasons: ScoreReason[], extras: Pick<AgentScore, "checks" | "environment" | "input">): AgentScore {
   const probability = Math.round(p * 1000) / 1000;
   reasons.sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
   return {
@@ -351,5 +416,6 @@ function finish(p: number, type: AgentType, agent: string | null, proven: boolea
     leaning: probability >= 0.5 ? "agent" : "human",
     reasons,
     calibrated: false,
+    ...extras,
   };
 }
