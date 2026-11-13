@@ -106,7 +106,7 @@ describe("score with hybrid control", () => {
 describe("browser autofill vs script-filled forms", () => {
   const autofillCheckout = page("a1", "2026-11-13T16:06:00Z", "/checkout", {
     mouseMoves: 120, mouseDistance: 2400, wheels: 6, clicks: [aimed(3000)],
-    inputs: { none: 7 }, untypedTrusted: 7, untypedUntrusted: 0, autofilled: 7,
+    inputs: { none: 7 }, untypedTrusted: 7, untypedTrustedText: 7, untypedUntrusted: 0, autofilled: 7,
   });
   const scriptCheckout = page("s1", "2026-11-13T16:06:00Z", "/checkout", {
     mouseMoves: 1, clicks: [jump(3000)], inputs: { none: 7 }, untypedTrusted: 0, untypedUntrusted: 7, autofilled: 0,
@@ -125,6 +125,14 @@ describe("browser autofill vs script-filled forms", () => {
     expect(c.scriptFilledFields).toBe(7);
     expect(c.autofilledFields).toBe(0);
     expect(c.agentDriven).toBe(true);
+  });
+
+  it("doesn't call a checkbox or radio click autofill", () => {
+    // The agent-claude-chrome-Nov-13-evening-2 payment page: one trusted untyped event, a checkbox.
+    const checkbox = page("c1", "2026-11-13T20:40:48Z", "/checkout/payment", { mouseMoves: 2, inputs: { none: 1 }, untypedTrusted: 1, untypedTrustedText: 0, untypedUntrusted: 0, autofilled: 0 });
+    const v121 = page("c2", "2026-11-13T20:40:48Z", "/checkout/payment", { mouseMoves: 2, inputs: { none: 1 }, untypedTrusted: 1, untypedUntrusted: 0, autofilled: 0 });
+    expect(pageControl([checkbox]).autofilledFields).toBe(0);
+    expect(pageControl([v121]).autofilledFields).toBe(0);
   });
 
   it("keeps the old rule for snapshots from before SDK 1.2.1", () => {
