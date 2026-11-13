@@ -188,12 +188,28 @@ else
   # listens on the port provision.sh's security group actually opens publicly.
   COMPOSE="docker compose -f docker-compose.yml -f infrastructure/aws/docker-compose.override.yml"
 fi
+# Docker's build cache grows by GBs per deploy (it reached 10 GB of a 20 GB disk on 2026-11-13).
+# If the disk is already nearly full, clear it before building so the build itself can't fail.
+DISK_PCT=$($SSH "df --output=pcent / | tail -1 | tr -dc 0-9")
+if [ "${DISK_PCT:-0}" -ge 85 ]; then
+  echo "    disk ${DISK_PCT}% full — clearing unused Docker build cache before building"
+  $SSH "docker builder prune -af >/dev/null"
+fi
 $SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
 # Nginx's config files are single-file bind mounts. rsync replaces each changed file with a new
 # inode, but a running container keeps the old one mounted, so a changed proxy_params_*.conf
 # silently doesn't apply (`nginx -s reload` re-reads the stale copy). Found live: the
 # X-HP-Edge blanking rule stayed inactive until nginx was restarted.
 $SSH "cd $REMOTE_DIR && $COMPOSE restart nginx"
+
+echo "==> Cleaning up Docker build leftovers"
+# Only what no running container uses: all build cache (the next build re-downloads its
+# dependencies, a minute or two slower) and dangling images. Never volumes — pgdata lives there.
+$SSH "docker builder prune -af >/dev/null && docker image prune -f >/dev/null"
+DISK=$($SSH "df -h / | tail -1 | awk '{print \$5\" used, \"\$4\" free\"}'")
+echo "    disk: $DISK"
+DISK_PCT=$($SSH "df --output=pcent / | tail -1 | tr -dc 0-9")
+[ "${DISK_PCT:-0}" -ge 85 ] && echo "    WARNING: disk is ${DISK_PCT}% full even after cleanup — check volumes, logs and ~/backups"
 
 echo
 echo "==> Backfilling stored visit scores (idempotent; the honeypot's worker keeps them current)"
