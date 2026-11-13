@@ -85,7 +85,7 @@ async function main() {
   app.get("/internal/metrics", async (request, reply) => {
     request.hp.endpoint = "internal.metrics";
     request.hp.applicationComponent = "internal";
-    reply.send(snapshotMetrics(queue.depth, config.queueCapacity));
+    return reply.send(snapshotMetrics(queue.depth, config.queueCapacity));
   });
 
   await refreshCanaries();

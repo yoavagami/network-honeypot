@@ -69,11 +69,10 @@ export function registerCrmRoutes(app: FastifyInstance) {
       // Real production apps don't echo raw DB errors — same generic failure either way,
       // whether the underlying cause was a genuine bug or someone's injection attempt.
       if (result.pgError) {
-        reply.type("text/html").status(500).send(customersPage({ search, company, rows: [], error: true }));
-        return;
+        return reply.type("text/html").status(500).send(customersPage({ search, company, rows: [], error: true }));
       }
     }
-    reply.type("text/html").send(customersPage({ search, company, rows, error: false }));
+    return reply.type("text/html").send(customersPage({ search, company, rows, error: false }));
   });
 
   app.get("/api/v1/customers", async (request, reply) => {
@@ -86,17 +85,15 @@ export function registerCrmRoutes(app: FastifyInstance) {
     request.hp.canaryHaystacks.push(search, company ?? "");
 
     if (!search) {
-      reply.status(400).send({ error: { code: "invalid_parameter", message: "search is required" } });
       request.hp.paramValidationFailed = true;
-      return;
+      return reply.status(400).send({ error: { code: "invalid_parameter", message: "search is required" } });
     }
 
     const result = await runSearch(search, company);
     recordSqliTelemetry(request, result);
     if (result.pgError) {
-      reply.status(500).send({ error: { code: "internal_error", message: "Something went wrong processing your request." } });
-      return;
+      return reply.status(500).send({ error: { code: "internal_error", message: "Something went wrong processing your request." } });
     }
-    reply.send({ data: result.rows, total: result.rows.length });
+    return reply.send({ data: result.rows, total: result.rows.length });
   });
 }

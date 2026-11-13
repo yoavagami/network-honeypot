@@ -33,16 +33,14 @@ export function registerBackdoorRoutes(app: FastifyInstance) {
         if (command === undefined) {
           request.hp.extraEventTypes.push("BACKDOOR_PATH_HIT");
           request.hp.extraRiskFlags.push("backdoorPathHit");
-          reply.type("text/html").send(BAIT_FORM);
-          return;
+          return reply.type("text/html").send(BAIT_FORM);
         }
 
         const resolved = resolveFakeCommand(command);
         if (!resolved) {
           request.hp.extraEventTypes.push("BACKDOOR_ENGAGED");
           request.hp.extraEventMetadata.submittedCommand = command;
-          reply.type("text/plain").send("");
-          return;
+          return reply.type("text/plain").send("");
         }
 
         const isIteration = recordCommandAndCheckIteration(request.hp.actorId, path, resolved.family);
@@ -50,7 +48,7 @@ export function registerBackdoorRoutes(app: FastifyInstance) {
         request.hp.extraRiskFlags.push(isIteration ? "backdoorCommandIteration" : "backdoorCommandRecognized");
         request.hp.extraEventMetadata.submittedCommand = command;
         request.hp.extraEventMetadata.commandFamily = resolved.family;
-        reply.type("text/plain").send(resolved.output);
+        return reply.type("text/plain").send(resolved.output);
       },
     });
   }

@@ -73,29 +73,29 @@ export function registerShopRoutes(app: FastifyInstance) {
   // ---- static
   app.get("/assets/shop.css", async (request, reply) => {
     tag(request, "site.asset");
-    reply.type("text/css").header("Cache-Control", "public, max-age=3600").send(SHOP_CSS);
+    return reply.type("text/css").header("Cache-Control", "public, max-age=3600").send(SHOP_CSS);
   });
   app.get("/assets/checkout.js", async (request, reply) => {
     tag(request, "site.asset");
-    reply.type("application/javascript").header("Cache-Control", "no-cache").send(CHECKOUT_JS);
+    return reply.type("application/javascript").header("Cache-Control", "no-cache").send(CHECKOUT_JS);
   });
   app.get("/assets/stripe-checkout.js", async (request, reply) => {
     tag(request, "shop.asset");
-    reply.type("application/javascript").header("Cache-Control", "no-cache").send(STRIPE_CHECKOUT_JS);
+    return reply.type("application/javascript").header("Cache-Control", "no-cache").send(STRIPE_CHECKOUT_JS);
   });
   app.get("/assets/img/favicon.svg", async (request, reply) => {
     tag(request, "site.asset");
-    reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(FAVICON_SVG);
+    return reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(FAVICON_SVG);
   });
   app.get("/favicon.ico", async (request, reply) => {
     tag(request, "site.asset");
-    reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(FAVICON_SVG);
+    return reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(FAVICON_SVG);
   });
   app.get<{ Params: { file: string } }>("/assets/img/:file", async (request, reply) => {
     tag(request, "site.asset");
     const p = findProduct(request.params.file.replace(/\.svg$/, ""));
     if (!p) return reply.status(404).send();
-    reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(jarSvg(p));
+    return reply.type("image/svg+xml").header("Cache-Control", "public, max-age=86400").send(jarSvg(p));
   });
 
   // ---- browse
@@ -138,7 +138,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     const lines = addToCart(readCart(request), sku, qty);
     writeCart(reply, lines);
     tag(request, "shop.cart.add", ["SHOP_ADD_TO_CART"], { sku, qty, unitCents: found.variant.priceCents, ...cartSnapshot(lines) });
-    reply.redirect(`/products/${found.product.slug}?added=1`, 303);
+    return reply.redirect(`/products/${found.product.slug}?added=1`, 303);
   });
 
   app.get("/cart", async (request, reply) => {
@@ -154,7 +154,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     const lines = setQty(readCart(request), sku, qty);
     writeCart(reply, lines);
     tag(request, "shop.cart.update", ["SHOP_CART_UPDATE"], { sku, qty, ...cartSnapshot(lines) });
-    reply.redirect("/cart", 303);
+    return reply.redirect("/cart", 303);
   });
 
   // ---- checkout
@@ -185,7 +185,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     }
     writeCheckout(reply, { ...readCheckout(request), details: d });
     tag(request, "shop.checkout.details.submit", ["SHOP_CHECKOUT_DETAILS"], shape);
-    reply.redirect("/checkout/shipping", 303);
+    return reply.redirect("/checkout/shipping", 303);
   });
 
   app.get("/checkout/shipping", async (request, reply) => {
@@ -207,7 +207,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     const shipping = (SHIPPING_METHODS.find((m) => m.id === choice)?.id ?? "standard") as ShippingMethodId;
     writeCheckout(reply, { ...state, shipping });
     tag(request, "shop.checkout.shipping.submit", ["SHOP_CHECKOUT_SHIPPING"], { shipping, ...cartSnapshot(lines, shipping) });
-    reply.redirect("/checkout/payment", 303);
+    return reply.redirect("/checkout/payment", 303);
   });
 
   const paymentView = (request: FastifyRequest, reply: FastifyReply, error?: string, selected?: string, status = 200) => {
@@ -299,7 +299,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     tag(request, "shop.checkout.pay", ["SHOP_PAYMENT_ATTEMPT", "SHOP_ORDER_PLACED"], {
       orderId: order.id, method: provider.id, status: outcome.status, payment: outcome.metadata, ...snapshot,
     });
-    reply.redirect("/order/confirmation", 303);
+    return reply.redirect("/order/confirmation", 303);
   });
 
   app.get("/order/confirmation", async (request, reply) => {
