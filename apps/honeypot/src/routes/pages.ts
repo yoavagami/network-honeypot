@@ -32,7 +32,7 @@ export const loginView: RouteHandlerMethod = async (request, reply) => {
   request.hp.endpoint = "auth.login.view";
   request.hp.applicationComponent = "auth";
   request.hp.extraEventTypes.push("AUTH_PAGE_VIEW");
-  reply.type("text/html").send(loginPage());
+  return reply.type("text/html").send(loginPage());
 };
 
 // Also registered as /wp-login.php (routes/wpInstall.ts, gated behind WP_INSTALL_BAIT_ENABLED)
@@ -57,34 +57,34 @@ export const loginSubmit: RouteHandlerMethod = async (request, reply) => {
       request.hp.extraRiskFlags.push("wpTakeoverConfirmed");
     }
     await db.update(schema.sessions).set({ authenticatedAs: username }).where(eq(schema.sessions.sessionId, request.hp.sessionId));
-    reply.redirect("/profile");
-    return;
+    return reply.redirect("/profile");
   }
 
   request.hp.extraEventTypes.push("LOGIN_ATTEMPT", "LOGIN_FAILURE");
   request.hp.authEvent = { type: "LOGIN_FAILURE", username };
   void passwordShape(password); // shape computed for parity with redaction contract; not persisted here
-  reply.type("text/html").status(401).send(loginPage({ error: "Invalid email/username or password." }));
+  return reply.type("text/html").status(401).send(loginPage({ error: "Invalid email/username or password." }));
 };
 
 export function registerPageRoutes(app: FastifyInstance) {
-  app.get("/", async (request, reply) => {
+  // "/" is the uHoney storefront now (routes/shop.ts); the Meridian app site lives on behind it.
+  app.get("/app", async (request, reply) => {
     request.hp.endpoint = "site.home";
     request.hp.applicationComponent = "site";
-    reply.type("text/html").send(homePage());
+    return reply.type("text/html").send(homePage());
   });
 
   app.get("/privacy", async (request, reply) => {
     request.hp.endpoint = "site.privacy";
     request.hp.applicationComponent = "site";
-    reply.type("text/html").send(privacyPage());
+    return reply.type("text/html").send(privacyPage());
   });
 
   app.get("/docs", async (request, reply) => {
     request.hp.endpoint = "site.docs";
     request.hp.applicationComponent = "docs";
     request.hp.extraEventTypes.push("API_DOCUMENTATION_ACCESS");
-    reply.type("text/html").send(docsPage());
+    return reply.type("text/html").send(docsPage());
   });
 
   app.get("/login", loginView);
@@ -93,7 +93,7 @@ export function registerPageRoutes(app: FastifyInstance) {
   app.get("/register", async (request, reply) => {
     request.hp.endpoint = "auth.register.view";
     request.hp.applicationComponent = "auth";
-    reply.type("text/html").send(registerPage());
+    return reply.type("text/html").send(registerPage());
   });
 
   app.post("/register", async (request, reply) => {
@@ -105,19 +105,18 @@ export function registerPageRoutes(app: FastifyInstance) {
 
     const existing = await findSyntheticUser(email);
     if (existing) {
-      reply.type("text/html").status(409).send(registerPage({ error: "An account with that email already exists." }));
-      return;
+      return reply.type("text/html").status(409).send(registerPage({ error: "An account with that email already exists." }));
     }
 
     // Realistic-looking success without ever creating persistent real capability — the
     // "account" isn't actually created; this models a plausible flow for observation purposes.
-    reply.type("text/html").send(registerPage({ error: undefined }));
+    return reply.type("text/html").send(registerPage({ error: undefined }));
   });
 
   app.get("/reset-password", async (request, reply) => {
     request.hp.endpoint = "auth.reset.view";
     request.hp.applicationComponent = "auth";
-    reply.type("text/html").send(resetPasswordPage());
+    return reply.type("text/html").send(resetPasswordPage());
   });
 
   app.post("/reset-password", async (request, reply) => {
@@ -125,7 +124,7 @@ export function registerPageRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "auth";
     request.hp.extraEventTypes.push("PASSWORD_RESET_ATTEMPT");
     request.hp.authEvent = { type: "PASSWORD_RESET_ATTEMPT" };
-    reply.type("text/html").send(resetPasswordPage({ submitted: true }));
+    return reply.type("text/html").send(resetPasswordPage({ submitted: true }));
   });
 
   app.get("/profile", async (request, reply) => {
@@ -133,16 +132,14 @@ export function registerPageRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "profile";
     const [session] = await db.select({ authenticatedAs: schema.sessions.authenticatedAs }).from(schema.sessions).where(eq(schema.sessions.sessionId, request.hp.sessionId)).limit(1);
     if (!session?.authenticatedAs) {
-      reply.redirect("/login");
-      return;
+      return reply.redirect("/login");
     }
     const user = await findSyntheticUser(session.authenticatedAs);
     if (!user) {
-      reply.redirect("/login");
-      return;
+      return reply.redirect("/login");
     }
     const data = user.data as SyntheticUserData;
-    reply.type("text/html").send(profilePage({ name: data.name, email: data.email, publicRef: user.publicRef, apiKeyPreview: data.apiKeyPreview }));
+    return reply.type("text/html").send(profilePage({ name: data.name, email: data.email, publicRef: user.publicRef, apiKeyPreview: data.apiKeyPreview }));
   });
 
   app.get("/search", async (request, reply) => {
@@ -159,6 +156,6 @@ export function registerPageRoutes(app: FastifyInstance) {
         .slice(0, 10)
         .map((o) => ({ title: (o.data as { title?: string }).title ?? o.publicRef, type: "document", href: `/api/v1/objects/${o.publicRef}` }));
     }
-    reply.type("text/html").send(searchPage({ query, results }));
+    return reply.type("text/html").send(searchPage({ query, results }));
   });
 }

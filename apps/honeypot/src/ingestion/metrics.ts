@@ -11,6 +11,11 @@ export const metrics = {
   requestsTotal: 0,
   lastSuccessfulFlushAt: null as string | null,
   dbWriteLatencyMsSamples: [] as number[],
+  // Visit scoring worker (scoring/visitScorer.ts)
+  visitsScoredTotal: 0,
+  scoringFailuresTotal: 0,
+  lastScoringAt: null as string | null,
+  scoringDurationMs: 0,
 };
 
 export function recordDbWriteLatency(ms: number) {
@@ -38,5 +43,9 @@ export function snapshotMetrics(queueDepth: number, queueCapacity: number) {
     db_write_latency_ms_p95: percentile(metrics.dbWriteLatencyMsSamples, 95),
     db_write_latency_ms_p99: percentile(metrics.dbWriteLatencyMsSamples, 99),
     last_successful_flush_at: metrics.lastSuccessfulFlushAt,
+    visits_scored_total: metrics.visitsScoredTotal,
+    scoring_failures_total: metrics.scoringFailuresTotal,
+    last_scoring_at: metrics.lastScoringAt,
+    scoring_duration_ms: metrics.scoringDurationMs,
   };
 }

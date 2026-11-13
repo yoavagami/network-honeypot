@@ -1,0 +1,223 @@
+{
+  "name": "stealth-playwright-datacenter",
+  "source": "synthetic",
+  "description": "Playwright with a stealth plugin on a cloud VM, claiming Chrome on macOS; clicks via element.click().",
+  "expect": {
+    "bucket": "ai_agent",
+    "type": "cloud_browser_agent",
+    "signalsInclude": [
+      "webdriver_tampered",
+      "software_gpu",
+      "os_mismatch",
+      "click_without_press"
+    ]
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:00:40Z",
+        "method": "GET",
+        "path": "/products/aurora-kettle",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:01:30Z",
+        "method": "GET",
+        "path": "/cart",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "platform": "Linux x86_64",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "hardwareConcurrency": 2,
+            "deviceMemory": 8,
+            "plugins": [],
+            "pdfViewerEnabled": true
+          },
+          "automation": {
+            "globals": [],
+            "webdriverGetterNative": false,
+            "webdriverOwnProp": false,
+            "cdpRuntime": true,
+            "chrome": {
+              "runtime": false
+            }
+          },
+          "webgl": {
+            "supported": true,
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)), SwiftShader driver)"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 945,
+            "innerW": 1512,
+            "innerH": 860,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "UTC"
+          },
+          "uaData": {
+            "low": {
+              "platform": "Linux"
+            }
+          },
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "canvas": "a1b2c3",
+          "artifacts": []
+        }
+      ],
+      "behaviors": [
+        {
+          "pl": "plA000000000000000000003",
+          "path": "/cart",
+          "visibility": "visible",
+          "focus": true,
+          "behavior": {
+            "mouseMoves": 0,
+            "mouseDistance": 0,
+            "clicks": [
+              {
+                "t": 900,
+                "trusted": true,
+                "movesLast1s": 0,
+                "hadMouseDown": false,
+                "dx": 0,
+                "dy": 0
+              },
+              {
+                "t": 2100,
+                "trusted": true,
+                "movesLast1s": 0,
+                "hadMouseDown": false,
+                "dx": 0,
+                "dy": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "asn": "AS14061",
+    "organization": "DigitalOcean, LLC",
+    "country": "DE",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "plA000000000000000000001",
+          "path": "/",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "path": "/products/aurora-kettle",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "path": "/cart",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ],
+      "hits": [
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "css",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "js",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "css",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "js",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "css",
+          "at": "2026-11-10T10:01:30Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "js",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ]
+    }
+  }
+}

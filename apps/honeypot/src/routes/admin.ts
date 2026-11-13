@@ -11,14 +11,14 @@ export function registerAdminRoutes(app: FastifyInstance) {
     request.hp.endpoint = "admin.root";
     request.hp.applicationComponent = "admin_decoy";
     request.hp.isAdminArea = true;
-    reply.type("text/html").send(adminLoginPage());
+    return reply.type("text/html").send(adminLoginPage());
   });
 
   app.get("/admin/dashboard", async (request, reply) => {
     request.hp.endpoint = "admin.dashboard";
     request.hp.applicationComponent = "admin_decoy";
     request.hp.isAdminArea = true;
-    reply.type("text/html").send(adminDashboardPage());
+    return reply.type("text/html").send(adminDashboardPage());
   });
 
   app.post("/admin/login", async (request, reply) => {
@@ -29,7 +29,7 @@ export function registerAdminRoutes(app: FastifyInstance) {
     const body = (request.body ?? {}) as { username?: string; password?: string };
     request.hp.authEvent = { type: "LOGIN_FAILURE", username: String(body.username ?? "").slice(0, 256) };
     // Always fails — there is no real admin credential path on the public surface at all.
-    reply.status(401).type("text/html").send(adminLoginPage({ error: "Invalid credentials." }));
+    return reply.status(401).type("text/html").send(adminLoginPage({ error: "Invalid credentials." }));
   });
 
   app.get("/api/v1/admin/config", async (request, reply) => {
@@ -37,6 +37,6 @@ export function registerAdminRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "admin_decoy";
     request.hp.isAdminArea = true;
     const canaryToken = await getCanaryValueForLocation("GET /api/v1/admin/config");
-    reply.status(403).send({ error: { code: "forbidden", message: "Admin scope required" }, hint: canaryToken ?? undefined });
+    return reply.status(403).send({ error: { code: "forbidden", message: "Admin scope required" }, hint: canaryToken ?? undefined });
   });
 }

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import { config } from "./config.js";
+import { stripeTestConfig, STRIPE_CSP } from "./shop/stripeTest.js";
 import { IngestionQueue } from "./ingestion/queue.js";
 import { registerIngestion } from "./ingestion/capture.js";
 import { startCorrelationWorker } from "./ingestion/correlationWorker.js";
@@ -16,6 +17,15 @@ import { registerWpInstallRoutes } from "./routes/wpInstall.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerMiscRoutes } from "./routes/misc.js";
 import { registerNotFoundHandler } from "./routes/notFound.js";
+import { registerRumRoutes } from "./routes/rum.js";
+import { registerShopRoutes } from "./routes/shop.js";
+import { applyLadder, registerLadderRoutes } from "./sensing/ladder.js";
+import { startIpIntelRefresh } from "./sensing/ipIntel.js";
+import { setPageLoadLookup } from "./sensing/pageLoads.js";
+import { startVisitScorer } from "./scoring/visitScorer.js";
+import { eq } from "drizzle-orm";
+import { schema } from "@honeypot/db";
+import { db } from "./db.js";
 
 async function main() {
   const app = Fastify({
@@ -38,14 +48,29 @@ async function main() {
     reply.header("X-Content-Type-Options", "nosniff");
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
     reply.header("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()");
-    reply.header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'");
+    // The payment page loads Stripe's Payment Element (test mode only) — only there is the CSP widened.
+    const stripePage = (request.url.startsWith("/checkout/payment") || request.url.startsWith("/checkout/pay")) && stripeTestConfig() !== null;
+    reply.header("Content-Security-Policy", stripePage ? STRIPE_CSP : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'");
     reply.removeHeader("X-Powered-By");
     return payload;
+  });
+  // Rendering ladder: page-load id + CSS / noscript beacons in every HTML document.
+  app.addHook("onSend", async (request, reply, payload) => applyLadder(request, reply, payload));
+
+  // Beacon → served-page binding falls back to the DB for ids minted before a restart.
+  setPageLoadLookup(async (pl) => {
+    const [row] = await db
+      .select({ actorId: schema.requestSignals.actorId, sessionId: schema.requestSignals.sessionId })
+      .from(schema.requestSignals)
+      .where(eq(schema.requestSignals.pageLoadId, pl))
+      .limit(1);
+    return row ?? null;
   });
 
   const queue = new IngestionQueue(logger);
   registerIngestion(app, queue);
 
+  registerShopRoutes(app);
   registerPageRoutes(app);
   registerApiRoutes(app);
   registerCrmRoutes(app);
@@ -53,12 +78,14 @@ async function main() {
   registerWpInstallRoutes(app);
   registerAdminRoutes(app);
   registerMiscRoutes(app);
+  registerRumRoutes(app, queue);
+  registerLadderRoutes(app, queue);
   registerNotFoundHandler(app);
 
   app.get("/internal/metrics", async (request, reply) => {
     request.hp.endpoint = "internal.metrics";
     request.hp.applicationComponent = "internal";
-    reply.send(snapshotMetrics(queue.depth, config.queueCapacity));
+    return reply.send(snapshotMetrics(queue.depth, config.queueCapacity));
   });
 
   await refreshCanaries();
@@ -66,6 +93,8 @@ async function main() {
   queue.start();
   startCorrelationWorker(queue, logger);
   startHealthMonitor(queue, logger);
+  startIpIntelRefresh(logger);
+  if (config.scorerEnabled) startVisitScorer(logger);
 
   await app.listen({ port: config.port, host: config.host });
   logger.info({ msg: "honeypot app listening", port: config.port });

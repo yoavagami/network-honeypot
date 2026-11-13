@@ -41,6 +41,11 @@ export const config = {
   // need "none" or the browser silently drops the session cookie on every admin-api call — see
   // docs/DEPLOY_RENDER.md. Never "none" without Secure, which we always set.
   sessionCookieSameSite: sameSiteFromEnv(),
+  // Signs ?lab= links (packages/detection/src/labToken.ts); the honeypot verifies them with the
+  // same secret. Unset: the Lab page can't mint links.
+  labLinkSecret: process.env.LAB_LINK_SECRET || undefined,
+  // Public base URL of the site, so minted lab links are clickable (e.g. https://uhoney.shop).
+  publicSiteUrl: (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, ""),
   honeypotInternalUrl: normalizeInternalUrl(process.env.HONEYPOT_INTERNAL_URL ?? "http://localhost:8080"),
   sessionIdleTimeoutMs: Number(process.env.ADMIN_SESSION_IDLE_MS ?? 30 * 60 * 1000),
   sessionAbsoluteTimeoutMs: Number(process.env.ADMIN_SESSION_ABSOLUTE_MS ?? 12 * 60 * 60 * 1000),

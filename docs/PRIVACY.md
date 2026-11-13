@@ -17,15 +17,29 @@ everything technically available.
 | Submitted passwords | **Never retained in any form** — not even hashed. Only length bucket + complexity shape. | N/A — not stored |
 | TLS version/cipher/ALPN | Passive fingerprinting signal, already visible to any TLS-terminating proxy | Same as above |
 | Geolocation/ASN (Phase 2, opt-in) | Aggregate threat-intelligence value | Cached, aggregate-oriented; disabled by default (`GEOLOCATION_ENABLED=false`) |
+| TLS ClientHello / HTTP/2 fingerprints (JA4, JA3, H2 settings), full header order and values (cookie/authorization/secret-looking values never stored) — `request_signals` | Telling AI agents, automation and real browsers apart (docs/AGENT_SENSING.md) | Event window (90 days); reverse-DNS names follow the raw-IP window (7 days) |
+| Page-script device and browser fingerprint — `client_signals` kind `fp`: screen and window sizes, GPU renderer, canvas and audio hashes, installed-font list (30 probed fonts), timezone/locale, languages, client hints, CPU cores / memory, plugins, permission *states*, automation tells | Detecting headless/automated browsers and agents, and spotting the same automated client across visits | Event window (90 days) |
+| Page-script behaviour — kind `behavior`: counts and timings of mouse moves, clicks (position relative to the clicked element, not the page), key presses (key *category* and intervals only — never the key or the text), scrolls, pastes, focus/visibility; agent-injected page elements | Telling a person from software operating the page | Event window (90 days) |
+| Rendering-ladder beacons — kind `ladder` (did the page's CSS / `<noscript>` image / script load) | Recognising HTML-only fetchers from their first page | Event window (90 days) |
+| Stored visit verdicts — `visit_scores` (probability, type, reasons, display IP) | The Agents dashboard | Event window; the display IP is cleared after the raw-IP window (7 days) |
+| Signed lab runs — rows tagged by a lab link we minted ourselves (`lab_verified`) | Ground truth to measure the detector against | Kept past the event window — these are our own controlled test visits, not third-party visitors |
+| Cookies we set: `hp_visitor` (random id, 90 days), `hp_session` (12 h), `hp_lab` (only when opened from a lab link; until it expires, max 30 days), shop basket/checkout cookies | Session and visit continuity | As stated |
 
 ## What we deliberately do not collect
 
-- No browser fingerprinting beyond passive header/TLS observation (no canvas fingerprinting, no
-  invasive client-side scripts).
+- No cross-site tracking: the page script only runs on this site, sends only to this site
+  (`/api/v1/rum`), and its identifiers are first-party only.
+- No typed values: field contents, passwords, card numbers and individual keys are never sent by
+  the page script — only counts, key categories and timings.
+- No raw mouse paths, no geolocation coordinates (only the permission *state*), no WebRTC IP
+  probing, no camera/microphone access.
 - No tracking pixels, no third-party analytics, no ad-tech SDKs.
 - No attempt to deanonymize visitors using external data broker lookups.
-- No collection from client-side JS beyond what a normal production site would plausibly run (the
-  deception requires *looking* like a real app, not *acting* like a surveillance one).
+- *Correction (2026-11):* earlier versions of this document said there was no canvas
+  fingerprinting or client-side collection beyond a normal site's. That stopped being true when
+  agent sensing shipped (`apps/honeypot/static/app.js`); the table above is the accurate list.
+  Under the EU ePrivacy rules, device fingerprinting for security purposes should be reviewed by
+  counsel before relying on the "strictly necessary" exemption.
 
 ## Legal considerations
 

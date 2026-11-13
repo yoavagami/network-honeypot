@@ -190,7 +190,9 @@ that doc's comparison table before assuming behavior is identical.
       the login rate limiter is active and the admin password is a real generated one, not a
       placeholder.
 - [ ] **Backups**: nightly `pg_dump` to encrypted, off-host storage; a restore drill has actually
-      been performed (not just scripted) before go-live.
+      been performed (not just scripted) before go-live. *(AWS deploy: nightly dumps on the host
+      and a restore drill are done — see §8; the off-host copy is `infrastructure/aws/pull-backups.sh`,
+      run from a laptop, and encryption needs `BACKUP_GPG_RECIPIENT`.)*
 - [ ] **Monitoring**: `/internal/metrics` scraped or at minimum checked on a schedule; an alert
       exists for `events_dropped_total` trending up or `last_successful_flush_at` going stale.
 - [ ] **Log retention**: Nginx access/error log rotation configured (logrotate), bounded disk
@@ -213,12 +215,34 @@ which is the number that matters, not the aspiration.
 
 ## 8. Operations quick reference
 
+- **Deploy** (`infrastructure/aws/deploy.sh`): ships exactly `git archive HEAD` of the checkout it
+  runs from — never the working folder — and refuses to run while tracked files have uncommitted
+  changes (`DEPLOY_ALLOW_DIRTY=1` deploys HEAD anyway). Untracked and git-ignored files (local
+  notes, `SDK/`, `backups/`) can't reach the server, and the `--delete` sync leaves server-side
+  state alone (`.env`, `*.pem`, `backups/`, `*.log`, rendered Nginx configs). What's running:
+  `cat ~/network-honeypot/.deployed-commit` on the host. Only one person or session should
+  deploy at a time; deploy from a clean checkout of a pushed commit. *(Changed 2026-11-13: it used
+  to rsync the working tree, which shipped an ignored third-party folder and planning notes to the
+  server, and its `--delete` removed a server-side `backups/` directory.)*
+- **Dashboard accounts**: `pnpm create-superadmin <username> [--role admin] [--reset-password]`,
+  run against the host's Postgres as the superuser (same `docker run` pattern as migrate). New
+  accounts default to `superadmin`; `--role admin` is a regular account (everything except the
+  Access Log). `--reset-password` prints a new password, signs the account out and **keeps its
+  current role** unless `--role` is given. *(Before 2026-11-13 a reset without `--role` silently
+  made the account a superadmin.)*
 - **Rotate a secret**: update `.env` on the host, `docker compose up -d <service>` to recreate
   just that container; DB-role passwords are rotated via a migration-adjacent SQL script plus the
   corresponding `.env` update, applied together.
 - **Backup**: `scripts/backup.sh [output-dir]` — runs `pg_dump --format=custom` inside the running
   `postgres` container (no host Postgres client tools required), optionally GPG-encrypting the
   result if `BACKUP_GPG_RECIPIENT` is set. Move the output off-host for real production use.
+  - **Nightly on the AWS host**: `deploy.sh` installs `infrastructure/vps/backup-cron.sh` as a
+    02:30 cron job. Dumps go to `~/backups` — outside the synced repo dir, so no deploy can touch
+    them — and the last 14 days are kept (`BACKUP_KEEP_DAYS`). Log: `~/backups/backup.log`; the job
+    exits non-zero if the newest dump is missing or under 10 KB.
+  - **Off-host copy**: `infrastructure/aws/pull-backups.sh [local-dir]` from your laptop copies any
+    new dumps to `./backups` (git-ignored); it never deletes. Run it by hand or schedule it locally
+    (cron/launchd) — the host has no credentials to push anywhere itself.
 - **Restore**: `scripts/restore.sh <dump-file>`, after `docker compose up -d postgres` (fresh
   volume) and `pnpm migrate` (recreates schema + `honeypot_role`/`admin_api_role`). The script
   runs `pg_restore --data-only --disable-triggers --no-owner`, truncating `_migrations` first —
@@ -242,6 +266,12 @@ which is the number that matters, not the aspiration.
     data-only restore. Re-ran end-to-end against a clean drill instance: exit code 0, zero errors,
     all 9 tables (including `_migrations`) matched baseline exactly. Drill container/volume torn
     down afterward; live dev stack was never touched by any of this.
+  - **Drilled on production data (2026-11-13)**: the pre-deploy dump
+    (`~/backups-2026-11-13/honeypot-20261113T101912Z.dump`, 7.3 MB) restored with `pg_restore
+    --no-owner --no-privileges` into a throwaway `postgres:16-alpine` container on the host (not
+    the live DB): zero errors; rows created before the dump time matched live exactly (18,752
+    requests, 654 client_signals, 4 admin users, 11 migrations — the dump predates 0012). Container
+    removed afterwards.
 - **Retention**: `pnpm retention` (`packages/db/src/retention.ts`) — NULLs `requests.ip_raw` past
   `RAW_IP_RETENTION_DAYS`, creates the next few months' partitions, and drops `requests`/`events`
   partitions entirely past `EVENT_RETENTION_DAYS`. Runs as the Postgres superuser (same connection

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { schema } from "@honeypot/db";
-import { hashIp, resolveClientIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, type RiskFlag } from "@honeypot/detection";
+import { hashIp, resolveClientIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, parseLabValue, type RiskFlag } from "@honeypot/detection";
 import type { EventType } from "@honeypot/types";
 import { db } from "../db.js";
 import { config } from "../config.js";
@@ -13,10 +13,13 @@ import { metrics } from "./metrics.js";
 import { enrichActorIfNeeded } from "./enrichment.js";
 import { prepareRequestBody } from "../bodyRedaction.js";
 import type { IngestionQueue } from "./queue.js";
+import { collectRequestSignals } from "../sensing/collect.js";
+import { decodeEdgeHeader } from "../sensing/edge.js";
 import "../context.js";
 
 const VISITOR_COOKIE = "hp_visitor";
 const SESSION_COOKIE = "hp_session";
+const LAB_COOKIE = "hp_lab";
 
 export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
   // Actor/session resolution happens on the request path (not deferred to onResponse) because
@@ -75,9 +78,25 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
     let visitorId = request.cookies[VISITOR_COOKIE];
     if (!visitorId) {
       visitorId = randomUUID();
-      reply.setCookie(VISITOR_COOKIE, visitorId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
+      // 90 days, matching EVENT_RETENTION_DAYS — a cookie shouldn't outlive the data it links.
+      reply.setCookie(VISITOR_COOKIE, visitorId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 90 });
     }
     request.hp.visitorId = visitorId;
+
+    // Controlled test runs: ?lab=<signed token> (minted on the dashboard's Lab page) tags this
+    // browser until the token expires, so every later request/beacon is labeled ground truth.
+    // A bare ?lab=<label> is still recorded but only as a *claimed* label — any visitor can type
+    // it, so it never counts as ground truth (packages/detection/src/labToken.ts). Agents that
+    // drop cookies are labeled on their first request only.
+    const labParam = (request.query as Record<string, unknown>)?.lab;
+    const fromParam = parseLabValue(labParam, config.labLinkSecret);
+    const lab = fromParam ?? parseLabValue(request.cookies[LAB_COOKIE], config.labLinkSecret);
+    if (fromParam) {
+      const ttlS = fromParam.verified && fromParam.expiresAt ? Math.max(60, fromParam.expiresAt - Math.floor(Date.now() / 1000)) : 60 * 60 * 24 * 30;
+      reply.setCookie(LAB_COOKIE, labParam as string, { httpOnly: true, sameSite: "lax", path: "/", maxAge: ttlS });
+    }
+    request.hp.labLabel = lab?.label ?? null;
+    request.hp.labVerified = lab?.verified ?? false;
 
     const ip = resolveClientIp(request.ip, request.headers["cf-connecting-ip"], config.trustCfConnectingIp);
     const ipHash = hashIp(ip, config.ipHashSecret);
@@ -157,6 +176,7 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
 
   const requestId = randomUUID();
   const path = request.url.split("?")[0]!;
+  const edge = decodeEdgeHeader(request.headers["x-hp-edge"]);
 
   queue.enqueue({
     kind: "request",
@@ -192,9 +212,11 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
       // Set by Nginx from its own view of the TLS handshake (honeypot-tls.conf), never trusted
       // from the client — same trust boundary as X-Real-IP, see docs/ARCHITECTURE.md §9. Empty
       // string (not absent) on a plain-HTTP connection, hence the explicit blank check.
-      tlsVersion: nonEmptyHeader(request.headers["x-tls-version"]),
-      tlsCipher: nonEmptyHeader(request.headers["x-tls-cipher"]),
-      alpn: nonEmptyHeader(request.headers["x-alpn-protocol"]),
+      // Behind the edge sensor, nginx sees plain HTTP — the negotiated TLS facts come from the
+      // sensor's own handshake instead (sensing/edge.ts).
+      tlsVersion: nonEmptyHeader(request.headers["x-tls-version"]) ?? edge?.negotiated?.version ?? null,
+      tlsCipher: nonEmptyHeader(request.headers["x-tls-cipher"]) ?? edge?.negotiated?.cipher ?? null,
+      alpn: nonEmptyHeader(request.headers["x-alpn-protocol"]) ?? edge?.negotiated?.alpn ?? null,
       endpoint: request.hp.endpoint,
       applicationComponent: request.hp.applicationComponent,
       riskScore,
@@ -254,6 +276,12 @@ async function finalizeRequest(request: FastifyRequest, reply: FastifyReply, que
     authEventType: request.hp.authEvent?.type,
     riskScore,
   });
+
+  // Agent sensing — not awaited: a signature directory fetch or rDNS lookup can take seconds
+  // and must not hold up the request/event rows above.
+  collectRequestSignals(request, requestId, new Date())
+    .then((row) => queue.enqueue({ kind: "request_signals", priority: "low", row }))
+    .catch((err) => request.log.warn({ msg: "request signal collection failed", err: err instanceof Error ? err.message : String(err) }));
 }
 
 function nonEmptyHeader(value: string | string[] | undefined): string | null {

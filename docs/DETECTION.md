@@ -175,3 +175,27 @@ New detection rules are added as a new file under `rules/inline/` or `rules/corr
 implementing a shared `DetectionRule` interface (`evaluate(context): DetectionResult[]`) and
 registered in an index array — no changes to the ingestion pipeline itself. This is the mechanism
 Phase 5's "pluggable detection rule packs" builds on.
+
+## 8. AI-agent visit score (Agents page)
+
+Separate from the risk score above: `packages/detection/src/agentScore.ts` answers "was this
+visit an AI agent, how sure, and why" for the dashboard's Agents page.
+
+- **Input:** a *visit* (`packages/detection/src/visits.ts`: a session split at 30-minute gaps and
+  lab-label changes, or an actor's cookieless burst) — its requests with their identity verdicts
+  (`request_signals`), the page script's beacons (`client_signals`, only those bound to a page we
+  served the visitor) and its `SHOP_*` events.
+- **Method:** log-odds sum from a prior (−1.2) over named signals, squashed to a probability.
+  Proof (a verified Web Bot Auth signature, an operator IP list, forward-confirmed rDNS, a known
+  agent's own page element) overrides the sum. Without AI-specific evidence or a visibly driven
+  browser the probability is capped at 0.69 ("not sure"): automated is not the same as AI.
+- **Signals:** every signal, its weight, group, the question it answers (who is it / is a human
+  driving / is the environment real / journey) and its cap behaviour live in one registry,
+  `packages/detection/src/signals.ts`, listed on the dashboard at `/agents/signals`. Changing a
+  weight means bumping `SCORER_VERSION` there and running `pnpm rescore`.
+- **Storage:** the honeypot's scoring worker (`apps/honeypot/src/scoring/visitScorer.ts`) scores
+  visits as data arrives and stores them in `visit_scores`; the visit detail page rescores on read.
+- **Tests:** unit tests per signal family plus golden visits
+  (`packages/detection/test/fixtures/visits/`, exported from real lab runs with
+  `pnpm --filter @honeypot/app-honeypot export-fixture <visitId>`) that must keep their verdict.
+- **Calibration:** weights are judgment until fitted on signed lab runs; the UI says so.

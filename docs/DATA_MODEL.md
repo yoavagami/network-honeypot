@@ -187,6 +187,41 @@ ip_hash                              text
 metadata                              jsonb
 ```
 
+### Agent sensing (`migrations/0010_agent_sensing.sql`, `0012_sdk_v2_foundations.sql`)
+Not partitioned; rows are deleted by `retention.ts` after `EVENT_RETENTION_DAYS`, except rows from
+signed lab runs (`lab_verified`), which are the detector's ground truth.
+
+```
+request_signals      one row per request: who sent it
+  request_id PK, created_at, actor_id, session_id, lab_label, lab_verified,
+  page_load_id        server-minted id of the HTML page this request served (rendering ladder)
+  ja4, ja3n_hash, h2_fp, header_order_hash, ua_claim, ua_library,
+  wba_status, wba_signer, identity_verdict, identity_agent, ip_agent_range, ip_tor,
+  data jsonb          headers (secrets redacted), identity reasons, edge fingerprint, IP intel
+
+client_signals       what the page script (/assets/app.js) and the ladder beacons reported
+  id PK, created_at, actor_id, session_id, visitor_id, lab_label, lab_verified,
+  page_load_id, kind ('fp' | 'behavior' | 'ladder'), path,
+  bound               the beacon's page_load_id was served to this visitor (NULL = pre-0012 row);
+                      unbound beacons are kept but never used as evidence
+  schema_version, sdk_version, data jsonb
+
+lab_runs             signed lab links minted on the dashboard (admin-api routes/lab.ts)
+  label PK, kind ('agent' | 'human'), agent, scenario, notes, created_by, created_at, expires_at
+
+visit_scores         the scoring worker's stored verdict per visit (apps/honeypot/src/scoring/)
+  visit_id PK ('s_<session>_<ms>' | 'a_<actor>_<ms>'), scorer_version, computed_at, settled,
+  actor_id, session_id, first_at, last_at, request_count, page_count, lab_label, lab_verified,
+  probability, bucket, type, agent, proven, signals text[], reasons jsonb,
+  ip inet             display only; NULL'd after RAW_IP_RETENTION_DAYS
+  summary jsonb       network, user-agent, JA4, shop summary, consistency checks, control mode
+
+visit_requests       request_id PK → visit_id (per-request tab, request → visit lookups)
+```
+
+Write access: `honeypot_role` inserts `request_signals`/`client_signals` and maintains
+`visit_scores`/`visit_requests`; `admin_api_role` reads all of them and may only insert `lab_runs`.
+
 ## 3. Partitioning strategy
 
 `requests` and `events` are Postgres native range-partitioned tables, partitioned by

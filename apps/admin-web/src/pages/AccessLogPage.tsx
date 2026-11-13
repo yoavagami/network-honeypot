@@ -95,11 +95,49 @@ export function AccessLogPage() {
           </div>
 
           <div className="panel">
+            <h2>Logins by account</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Role</th>
+                  <th>Logins OK</th>
+                  <th>Logins failed</th>
+                  <th>Last login</th>
+                  <th>Last IP</th>
+                  <th>IPs used</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.accounts ?? []).map((a) => (
+                  <tr key={a.username}>
+                    <td className="mono">{a.username}</td>
+                    <td>{a.role ?? <span className="muted">—</span>}</td>
+                    <td>{a.loginsOk > 0 ? <span className="badge low">{a.loginsOk}</span> : 0}</td>
+                    <td>{a.loginsFailed > 0 ? <span className="badge high">{a.loginsFailed}</span> : 0}</td>
+                    <td className="mono">{a.lastLogin ? new Date(a.lastLogin).toLocaleString() : <span className="muted">never</span>}</td>
+                    <td className="mono">{a.lastIp ? <>{a.lastIp} {you(a.lastIp)}</> : <span className="muted">—</span>}</td>
+                    <td className="mono">{a.ips.join(", ") || <span className="muted">—</span>}</td>
+                  </tr>
+                ))}
+                {(data.accounts ?? []).length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="muted">
+                      No logins in this window.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="panel">
             <h2>Login attempts</h2>
             <table>
               <thead>
                 <tr>
                   <th>Time</th>
+                  <th>Account</th>
                   <th>IP</th>
                   <th>Result</th>
                   <th>User-Agent</th>
@@ -109,6 +147,7 @@ export function AccessLogPage() {
                 {data.logins.map((l, i) => (
                   <tr key={i}>
                     <td className="mono">{new Date(l.time).toLocaleString()}</td>
+                    <td className="mono">{l.username ?? <span className="muted">unknown</span>}</td>
                     <td className="mono">
                       {l.ip} {you(l.ip)}
                     </td>
@@ -122,7 +161,7 @@ export function AccessLogPage() {
                 ))}
                 {data.logins.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={5} className="muted">
                       No login attempts in this window.
                     </td>
                   </tr>

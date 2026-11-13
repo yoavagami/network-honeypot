@@ -1,0 +1,46 @@
+{
+  "name": "chatgpt-agent-signed",
+  "source": "synthetic",
+  "description": "ChatGPT agent's cloud browser: Chrome user-agent from a data centre, Web Bot Auth signature verified.",
+  "expect": {
+    "bucket": "ai_agent",
+    "type": "cloud_browser_agent",
+    "proven": true,
+    "agent": "chatgpt-agent"
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "verified",
+        "agent": "chatgpt-agent",
+        "verdictMethod": "web_bot_auth",
+        "verdictReasons": [
+          "Web Bot Auth signature verified for https://chatgpt.com (keyid x)"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [],
+      "behaviors": []
+    },
+    "asn": "AS8075",
+    "organization": "Microsoft Corporation",
+    "country": "US",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z"
+  }
+}

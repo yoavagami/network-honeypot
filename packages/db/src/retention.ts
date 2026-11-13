@@ -26,6 +26,33 @@ async function redactOldRawIps(sql: postgres.Sql) {
   return result.count;
 }
 
+// Agent-sensing tables (migrations/0010_agent_sensing.sql). Reverse-DNS names can identify a
+// residential subscriber the same way a raw IP can, so they follow the raw-IP window; the rows
+// themselves follow the event window.
+async function pruneAgentSignals(sql: postgres.Sql) {
+  const rdnsRedacted = await sql`
+    UPDATE request_signals SET data = data #- '{ip,rdns}'
+    WHERE data #> '{ip,rdns}' IS NOT NULL AND data #> '{ip,rdns}' <> 'null'::jsonb
+      AND created_at < now() - make_interval(days => ${RAW_IP_RETENTION_DAYS})
+  `;
+  // Rows from signed lab runs (lab_verified) are kept past the event window: they are the
+  // ground truth the score is measured against (SDK_V2_IMPLEMENTATION_PLAN.md D6). Bare ?lab=
+  // labels don't count — any visitor can type one.
+  const requestSignals = await sql`DELETE FROM request_signals WHERE NOT lab_verified AND created_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  const clientSignals = await sql`DELETE FROM client_signals WHERE NOT lab_verified AND created_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  // Stored verdicts (migrations/0012): the display IP follows the raw-IP window, the rows the
+  // event window (lab-verified visits kept, as above).
+  const visitIps = await sql`
+    UPDATE visit_scores SET ip = NULL
+    WHERE ip IS NOT NULL AND last_at < now() - make_interval(days => ${RAW_IP_RETENTION_DAYS})`;
+  const visitScores = await sql`DELETE FROM visit_scores WHERE NOT lab_verified AND last_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  const visitRequests = await sql`DELETE FROM visit_requests WHERE created_at < now() - make_interval(days => ${EVENT_RETENTION_DAYS})`;
+  return {
+    rdnsRedacted: rdnsRedacted.count, requestSignalsDeleted: requestSignals.count, clientSignalsDeleted: clientSignals.count,
+    visitIpsRedacted: visitIps.count, visitScoresDeleted: visitScores.count, visitRequestsDeleted: visitRequests.count,
+  };
+}
+
 async function ensureFuturePartitions(sql: postgres.Sql) {
   const created: string[] = [];
   for (let i = 0; i <= FUTURE_PARTITION_MONTHS; i++) {
@@ -88,6 +115,7 @@ async function main() {
     const redactedRows = await redactOldRawIps(sql);
     const createdPartitions = await ensureFuturePartitions(sql);
     const droppedPartitions = await dropExpiredPartitions(sql);
+    const agentSignals = await pruneAgentSignals(sql);
     console.log(
       JSON.stringify(
         {
@@ -96,6 +124,7 @@ async function main() {
           redactedRows,
           createdPartitions,
           droppedPartitions,
+          agentSignals,
         },
         null,
         2

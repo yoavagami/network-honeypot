@@ -1,0 +1,50 @@
+{
+  "name": "forged-human-beacon",
+  "source": "synthetic",
+  "description": "A script posting a fake 'human' behaviour beacon for a page load it was never served. The beacon is excluded and flagged.",
+  "expect": {
+    "bucket": "not_sure",
+    "type": "script",
+    "signalsInclude": [
+      "beacon_unbound",
+      "automation_client"
+    ],
+    "signalsExclude": [
+      "human_mouse"
+    ]
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "automation",
+        "agent": "python-httpx",
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": "python-httpx",
+        "aiApp": null,
+        "browserFamily": null,
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "python-httpx/0.27",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [],
+      "behaviors": [],
+      "unboundBeacons": 1
+    },
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z"
+  }
+}

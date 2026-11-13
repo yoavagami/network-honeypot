@@ -1,0 +1,55 @@
+{
+  "name": "llm-fetch-html-only",
+  "source": "synthetic",
+  "description": "An LLM browse tool with a Chrome user-agent: fetched the HTML, never rendered CSS or ran JS.",
+  "expect": {
+    "bucket": "not_sure",
+    "type": "script",
+    "signalsInclude": [
+      "html_only"
+    ]
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [],
+      "behaviors": []
+    },
+    "asn": "AS16509",
+    "organization": "Amazon.com, Inc.",
+    "country": "US",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "plF000000000000000000001",
+          "path": "/",
+          "at": "2026-11-10T10:00:00Z"
+        }
+      ],
+      "hits": []
+    }
+  }
+}

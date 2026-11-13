@@ -20,7 +20,7 @@ export function registerApiRoutes(app: FastifyInstance) {
     request.hp.endpoint = "api.root";
     request.hp.applicationComponent = "api";
     request.hp.extraEventTypes.push("API_REQUEST");
-    reply.send({
+    return reply.send({
       name: "Meridian API",
       version: "1.4.2",
       documentation: "https://api.meridian.example/docs",
@@ -32,7 +32,7 @@ export function registerApiRoutes(app: FastifyInstance) {
     request.hp.endpoint = "api.health";
     request.hp.applicationComponent = "api";
     request.hp.extraEventTypes.push("HEALTH_ENDPOINT_ACCESS");
-    reply.send({ status: "ok", uptimeSeconds: Math.floor(process.uptime()) });
+    return reply.send({ status: "ok", uptimeSeconds: Math.floor(process.uptime()) });
   });
 
   app.get("/api/v1/config", async (request, reply) => {
@@ -40,7 +40,7 @@ export function registerApiRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "api";
     request.hp.extraEventTypes.push("API_REQUEST");
     const canaryKey = await getCanaryValueForLocation("GET /api/v1/config");
-    reply.send({
+    return reply.send({
       environment: "production",
       region: "us-east-1",
       features: { billing: true, sso: false, apiV2: false },
@@ -55,7 +55,7 @@ export function registerApiRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "api";
     request.hp.extraEventTypes.push("API_REQUEST");
     const rows = await db.select().from(schema.syntheticObjects).where(eq(schema.syntheticObjects.objectType, "user"));
-    reply.send({ data: rows.map((r) => publicUser(r.publicRef, r.data as SyntheticUserData)), total: rows.length });
+    return reply.send({ data: rows.map((r) => publicUser(r.publicRef, r.data as SyntheticUserData)), total: rows.length });
   });
 
   app.get("/api/v1/users/:id", async (request, reply) => {
@@ -71,10 +71,9 @@ export function registerApiRoutes(app: FastifyInstance) {
 
     const [row] = await db.select().from(schema.syntheticObjects).where(eq(schema.syntheticObjects.publicRef, id)).limit(1);
     if (!row || row.objectType !== "user") {
-      reply.status(404).send({ error: { code: "not_found", message: "User not found" } });
-      return;
+      return reply.status(404).send({ error: { code: "not_found", message: "User not found" } });
     }
-    reply.send(publicUser(row.publicRef, row.data as SyntheticUserData));
+    return reply.send(publicUser(row.publicRef, row.data as SyntheticUserData));
   });
 
   app.get("/api/v1/objects", async (request, reply) => {
@@ -82,7 +81,7 @@ export function registerApiRoutes(app: FastifyInstance) {
     request.hp.applicationComponent = "api";
     request.hp.extraEventTypes.push("API_REQUEST");
     const rows = await db.select().from(schema.syntheticObjects).where(eq(schema.syntheticObjects.objectType, "document"));
-    reply.send({ data: rows.map((r) => ({ id: r.publicRef, ...(r.data as object) })), total: rows.length });
+    return reply.send({ data: rows.map((r) => ({ id: r.publicRef, ...(r.data as object) })), total: rows.length });
   });
 
   app.get("/api/v1/objects/:id", async (request, reply) => {
@@ -97,10 +96,9 @@ export function registerApiRoutes(app: FastifyInstance) {
     const [row] = await db.select().from(schema.syntheticObjects).where(eq(schema.syntheticObjects.publicRef, id)).limit(1);
     if (!row) {
       request.hp.extraEventTypes.push("FILE_ACCESS_ATTEMPT");
-      reply.status(404).send({ error: { code: "not_found", message: "Object not found" } });
-      return;
+      return reply.status(404).send({ error: { code: "not_found", message: "Object not found" } });
     }
-    reply.send({ id: row.publicRef, ...(row.data as object) });
+    return reply.send({ id: row.publicRef, ...(row.data as object) });
   });
 
   app.get("/api/v1/search", async (request, reply) => {
@@ -110,12 +108,11 @@ export function registerApiRoutes(app: FastifyInstance) {
     const q = String((request.query as Record<string, string>).q ?? "");
     request.hp.canaryHaystacks.push(q);
     if (!q) {
-      reply.status(400).send({ error: { code: "invalid_parameter", message: "q is required" } });
       request.hp.paramValidationFailed = true;
-      return;
+      return reply.status(400).send({ error: { code: "invalid_parameter", message: "q is required" } });
     }
     const rows = await db.select().from(schema.syntheticObjects);
     const results = rows.filter((r) => JSON.stringify(r.data).toLowerCase().includes(q.toLowerCase())).slice(0, 20);
-    reply.send({ data: results.map((r) => ({ id: r.publicRef, type: r.objectType })), total: results.length });
+    return reply.send({ data: results.map((r) => ({ id: r.publicRef, type: r.objectType })), total: results.length });
   });
 }

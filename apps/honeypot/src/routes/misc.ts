@@ -1,20 +1,27 @@
 import type { FastifyInstance } from "fastify";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// The agent-sensing collector (see routes/rum.ts) ships under the site's ordinary bundle name.
+const APP_JS = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "static", "app.js"), "utf8");
 
 export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/robots.txt", async (request, reply) => {
     request.hp.endpoint = "site.robots";
     request.hp.applicationComponent = "site";
     request.hp.extraEventTypes.push("ROBOTS_ACCESS");
-    reply.type("text/plain").send("User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: /sitemap.xml\n");
+    return reply.type("text/plain").send("User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: /sitemap.xml\n");
   });
 
   app.get("/sitemap.xml", async (request, reply) => {
     request.hp.endpoint = "site.sitemap";
     request.hp.applicationComponent = "site";
     request.hp.extraEventTypes.push("SITEMAP_ACCESS");
-    reply.type("application/xml").send(
+    return reply.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-        ["/", "/login", "/register", "/docs", "/search", "/customers"].map((p) => `<url><loc>https://meridian.example${p}</loc></url>`).join("") +
+        ["/", "/products/wildflower-raw-honey", "/products/heather-honey", "/about", "/shipping", "/terms", "/login", "/docs"]
+          .map((p) => `<url><loc>https://${request.headers.host ?? "uhoney.shop"}${p}</loc></url>`).join("") +
         `</urlset>`
     );
   });
@@ -22,33 +29,33 @@ export function registerMiscRoutes(app: FastifyInstance) {
   app.get("/.well-known/security.txt", async (request, reply) => {
     request.hp.endpoint = "site.security_txt";
     request.hp.applicationComponent = "site";
-    reply.type("text/plain").send("Contact: mailto:security@meridian.example\nExpires: 2027-01-01T00:00:00.000Z\n");
+    return reply.type("text/plain").send("Contact: mailto:security@meridian.example\nExpires: 2027-01-01T00:00:00.000Z\n");
   });
 
   app.get("/health", async (request, reply) => {
     request.hp.endpoint = "site.health";
     request.hp.applicationComponent = "site";
     request.hp.extraEventTypes.push("HEALTH_ENDPOINT_ACCESS");
-    reply.send({ status: "ok" });
+    return reply.send({ status: "ok" });
   });
 
   app.get("/status", async (request, reply) => {
     request.hp.endpoint = "site.status";
     request.hp.applicationComponent = "site";
     request.hp.extraEventTypes.push("HEALTH_ENDPOINT_ACCESS");
-    reply.type("text/html").send("<html><body><h1>All systems operational</h1></body></html>");
+    return reply.type("text/html").send("<html><body><h1>All systems operational</h1></body></html>");
   });
 
   app.get("/assets/app.css", async (request, reply) => {
     request.hp.endpoint = "site.asset";
     request.hp.applicationComponent = "static";
-    reply.type("text/css").send(APP_CSS);
+    return reply.type("text/css").send(APP_CSS);
   });
 
   app.get("/assets/app.js", async (request, reply) => {
     request.hp.endpoint = "site.asset";
     request.hp.applicationComponent = "static";
-    reply.type("application/javascript").send("// Meridian client bundle (minimal, no telemetry SDK)\n");
+    return reply.type("application/javascript").header("Cache-Control", "no-cache").send(APP_JS);
   });
 }
 

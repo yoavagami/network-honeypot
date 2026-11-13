@@ -1,7 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { resolveClientIp } from "@honeypot/detection";
+import { and, eq, gte, inArray } from "drizzle-orm";
+import { schema } from "@honeypot/db";
+import { hashIp, resolveClientIp } from "@honeypot/detection";
+import { db } from "../db.js";
 import { config } from "../config.js";
 import { audit } from "../audit.js";
 
@@ -99,10 +102,53 @@ export function registerAccessLogRoutes(app: FastifyInstance) {
       byIp.set(l.ip, v);
     }
 
+    // Which account each login was for. Nginx's log has the IP but not the username; the login
+    // handler writes a login / login_failed audit row at the same second. Match on action + time
+    // (±3s); the hashed IP only breaks ties (older rows were hashed differently, so it can't be
+    // required).
+    const auditRows = await db
+      .select({ action: schema.adminAuditLog.action, at: schema.adminAuditLog.createdAt, ipHash: schema.adminAuditLog.ipHash, target: schema.adminAuditLog.target, username: schema.adminUsers.username, role: schema.adminUsers.role })
+      .from(schema.adminAuditLog)
+      .leftJoin(schema.adminUsers, eq(schema.adminUsers.adminUserId, schema.adminAuditLog.adminUserId))
+      .where(and(inArray(schema.adminAuditLog.action, ["login", "login_failed"]), gte(schema.adminAuditLog.createdAt, new Date(sinceMs - 5000))));
+    const used = new Set<number>();
+    const accountFor = (l: AccessLine): { username: string | null; role: string | null } => {
+      const t = Date.parse(l.time);
+      const h = hashIp(l.ip, config.ipHashSecret);
+      const want = l.status === 200 ? "login" : "login_failed";
+      let best = -1, bestScore = Infinity;
+      auditRows.forEach((r, i) => {
+        if (used.has(i) || r.action !== want) return;
+        const d = Math.abs(r.at.getTime() - t);
+        if (d > 3000) return;
+        const score = d - (r.ipHash === h ? 10_000 : 0);
+        if (score < bestScore) { best = i; bestScore = score; }
+      });
+      if (best < 0) return { username: null, role: null };
+      used.add(best);
+      const r = auditRows[best]!;
+      return { username: r.action === "login" ? r.username : r.target ?? r.username, role: r.action === "login" ? r.role : null };
+    };
+
     const logins = inWindow
       .filter((l) => l.uri === "/api/auth/login" && l.method === "POST")
-      .map((l) => ({ time: l.time, ip: l.ip, result: loginResult(l.status), userAgent: l.user_agent }))
+      .map((l) => ({ time: l.time, ip: l.ip, result: loginResult(l.status), userAgent: l.user_agent, ...accountFor(l) }))
       .reverse();
+
+    // Per-account summary (successful logins only count towards an account).
+    const accounts = new Map<string, { username: string; role: string | null; loginsOk: number; loginsFailed: number; lastLogin: string | null; lastIp: string | null; ips: Set<string> }>();
+    for (const l of [...logins].reverse()) {
+      if (!l.username) continue;
+      const a = accounts.get(l.username) ?? { username: l.username, role: l.role, loginsOk: 0, loginsFailed: 0, lastLogin: null, lastIp: null, ips: new Set<string>() };
+      if (l.result === "success") {
+        a.loginsOk += 1;
+        a.lastLogin = l.time;
+        a.lastIp = l.ip;
+        a.ips.add(l.ip);
+        a.role = l.role ?? a.role;
+      } else if (l.result === "wrong_password" || l.result === "rate_limited") a.loginsFailed += 1;
+      accounts.set(l.username, a);
+    }
 
     const recent = inWindow
       .slice(-RECENT_LIMIT)
@@ -118,6 +164,7 @@ export function registerAccessLogRoutes(app: FastifyInstance) {
       totals: { requests: inWindow.length, uniqueIps: byIp.size, loginsOk: logins.filter((l) => l.result === "success").length, loginsFailed: logins.filter((l) => l.result !== "success" && l.result !== "other").length },
       visitors: [...byIp.values()].sort((a, b) => (a.lastSeen < b.lastSeen ? 1 : -1)),
       logins,
+      accounts: [...accounts.values()].map((a) => ({ ...a, ips: [...a.ips] })).sort((a, b) => ((a.lastLogin ?? "") < (b.lastLogin ?? "") ? 1 : -1)),
       recent,
     });
   });

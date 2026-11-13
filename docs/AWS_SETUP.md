@@ -100,8 +100,12 @@ database migrations and seeds synthetic data, and brings up the full stack.
 It prints your admin dashboard login **once** — save it, it's not stored anywhere else, exactly
 like the local dev flow.
 
-Re-run this any time you change code locally and want to redeploy — it's idempotent (syncs the
-repo, re-runs migrations, which skip anything already applied, and rebuilds containers).
+Re-run this any time you want to redeploy — it's idempotent (syncs the code, re-runs migrations,
+which skip anything already applied, and rebuilds containers). It deploys **the commit you have
+checked out**, not your working folder: commit first. It refuses to run while tracked files have
+uncommitted changes (`DEPLOY_ALLOW_DIRTY=1` overrides), and untracked or git-ignored files never
+reach the server. It works from a git worktree too (it finds the SSH key in the main checkout).
+The server records what it runs in `~/network-honeypot/.deployed-commit`.
 
 **When this finishes, the honeypot is live and public.** Don't browse to it yourself if you want
 a clean "first external contact" timestamp in the dashboard.

@@ -51,10 +51,9 @@ export function registerNotFoundHandler(app: FastifyInstance) {
     request.hp.applicationComponent = "site";
 
     if (request.headers.accept?.includes("application/json") || path.startsWith("/api/")) {
-      reply.send({ error: { code: known ? "method_not_allowed" : "not_found", message: "Not found" } });
-      return;
+      return reply.send({ error: { code: known ? "method_not_allowed" : "not_found", message: "Not found" } });
     }
-    reply.type("text/html").send(notFoundPage());
+    return reply.type("text/html").send(notFoundPage());
   });
 
   app.setErrorHandler(async (err: FastifyError, request, reply) => {
@@ -66,10 +65,9 @@ export function registerNotFoundHandler(app: FastifyInstance) {
     if (path_startsWithApi(request.url)) {
       const code = statusCode < 500 ? "bad_request" : "internal_error";
       const message = statusCode < 500 ? "The request could not be processed" : "Internal server error";
-      reply.send({ error: { code, message } });
-      return;
+      return reply.send({ error: { code, message } });
     }
-    reply.type("text/html").send(serverErrorPage(statusCode));
+    return reply.type("text/html").send(serverErrorPage(statusCode));
   });
 }
 

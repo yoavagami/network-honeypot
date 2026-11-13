@@ -40,7 +40,7 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
     request.hp.routeMatched = true;
     request.hp.extraEventTypes.push("WP_SETUP_CONFIG_VIEWED");
     request.hp.extraRiskFlags.push("wpInstallViewed");
-    reply.type("text/html").send(wpSetupConfigPage());
+    return reply.type("text/html").send(wpSetupConfigPage());
   });
 
   app.post("/wp-admin/setup-config.php", async (request, reply) => {
@@ -60,7 +60,7 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
     request.hp.extraEventMetadata.submittedDbUser = uname || null;
     request.hp.extraEventMetadata.submittedDbHost = dbhost || null;
 
-    reply.redirect("/wp-admin/install.php?step=1");
+    return reply.redirect("/wp-admin/install.php?step=1");
   });
 
   app.get("/wp-admin/install.php", async (request, reply) => {
@@ -71,7 +71,7 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
     request.hp.extraRiskFlags.push("wpInstallViewed");
 
     const already = await isAlreadyInstalled();
-    reply.type("text/html").send(already ? wpInstallAlreadyPage() : wpInstallStep1Page());
+    return reply.type("text/html").send(already ? wpInstallAlreadyPage() : wpInstallStep1Page());
   });
 
   app.post("/wp-admin/install.php", async (request, reply) => {
@@ -81,8 +81,7 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
 
     const already = await isAlreadyInstalled();
     if (already) {
-      reply.type("text/html").send(wpInstallAlreadyPage());
-      return;
+      return reply.type("text/html").send(wpInstallAlreadyPage());
     }
 
     const body = (request.body ?? {}) as Record<string, string>;
@@ -94,8 +93,7 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
 
     if (!username) {
       // Real WP re-shows the form with an error rather than accepting an empty username.
-      reply.type("text/html").send(wpInstallStep1Page());
-      return;
+      return reply.type("text/html").send(wpInstallStep1Page());
     }
 
     request.hp.extraEventTypes.push("WP_INSTALL_SUBMITTED");
@@ -120,6 +118,6 @@ export function registerWpInstallRoutes(app: FastifyInstance) {
       createdAt: new Date(),
     });
 
-    reply.type("text/html").send(wpInstallSuccessPage({ username }));
+    return reply.type("text/html").send(wpInstallSuccessPage({ username }));
   });
 }

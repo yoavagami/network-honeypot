@@ -119,10 +119,9 @@ dashboard per the gap above. Confirmed via `docker compose logs nginx`, which sh
 - [x] TLS observability: Nginx passes `$ssl_protocol`/`$ssl_cipher`/`$ssl_alpn_protocol` through as
       `X-TLS-Version`/`X-TLS-Cipher`/`X-ALPN-Protocol` headers (`proxy_params_honeypot.conf`),
       captured into `requests.tls_version/tls_cipher/alpn` and shown on the event detail page.
-      Verified live against a real self-signed cert. **This is not JA3/JA4 fingerprinting** — it's
-      the negotiated protocol/cipher/ALPN as Nginx sees them, not a hash of the raw ClientHello.
-      True JA3/JA4 still needs a stream-module or TLS-terminating-sidecar approach and remains
-      unimplemented; ARCHITECTURE.md §8 was corrected to stop overclaiming this.
+      Verified live against a real self-signed cert. This alone is not JA3/JA4 fingerprinting;
+      *update:* true JA3/JA4 and HTTP/2 fingerprints have since been implemented by the edge
+      sensor in front of Nginx (`apps/honeypot/src/edge/`, docs/AGENT_SENSING.md).
 - [ ] Optional eBPF/Zeek-based connection telemetry, evaluated as an opt-in extra (see
       ARCHITECTURE.md §Network-Level Visibility trade-offs) — not required for core value. Deferred:
       meaningfully raises operational complexity (kernel privileges or a second capture process)

@@ -1,10 +1,13 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.js";
 import { Layout } from "./components/Layout.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { OverviewPage } from "./pages/OverviewPage.js";
 import { LiveStreamPage } from "./pages/LiveStreamPage.js";
 import { RequestsPage } from "./pages/RequestsPage.js";
+import { AgentsPage } from "./pages/AgentsPage.js";
+import { AgentVisitPage } from "./pages/AgentVisitPage.js";
+import { AgentSignalsPage } from "./pages/AgentSignalsPage.js";
 import { IpsBreakdownPage } from "./pages/IpsBreakdownPage.js";
 import { UserAgentsBreakdownPage } from "./pages/UserAgentsBreakdownPage.js";
 import { ActorsPage } from "./pages/ActorsPage.js";
@@ -21,8 +24,10 @@ import { AccessLogPage } from "./pages/AccessLogPage.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { username, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <p className="muted" style={{ padding: "2rem" }}>Loading…</p>;
-  if (!username) return <Navigate to="/login" replace />;
+  // Remember where the admin was going, so login can send them back there.
+  if (!username) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return <>{children}</>;
 }
 
@@ -49,6 +54,9 @@ export function App() {
           <Route index element={<OverviewPage />} />
           <Route path="live" element={<LiveStreamPage />} />
           <Route path="requests" element={<RequestsPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="agents/signals" element={<AgentSignalsPage />} />
+          <Route path="agents/:id" element={<AgentVisitPage />} />
           <Route path="overview/ips" element={<IpsBreakdownPage />} />
           <Route path="overview/user-agents" element={<UserAgentsBreakdownPage />} />
           <Route path="actors" element={<ActorsPage />} />
