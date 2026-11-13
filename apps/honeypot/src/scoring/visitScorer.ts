@@ -18,6 +18,9 @@ import { visitScoreRow } from "./rows.js";
  *   - sent a request or beacon since the last tick, or
  *   - has a visit that was scored before its rendering-ladder grace (30 s) had passed, or
  *   - has a visit that has now been quiet for the 30-minute visit gap (final, "settled" pass).
+ *   - has a visit (in the 24 h lookback) scored by a different SCORER_VERSION, settled or not.
+ * Older visits are only rescored by `pnpm rescore`, which deploy.sh runs *after* the new containers
+ * are up — while an old worker is still running it would score them back to its own version.
  * Runs inside the honeypot process: honeypot_role already reads these tables for correlation,
  * and migration 0012 grants it write access to visit_scores/visit_requests only.
  */
@@ -101,10 +104,13 @@ export async function dirtyActors(sql: postgres.Sql, watermark: Date, limit = MA
       SELECT actor_id FROM client_signals WHERE created_at > ${wm}::timestamptz
       UNION
       SELECT actor_id FROM visit_scores
-      WHERE NOT settled AND last_at > now() - make_interval(secs => ${SCORING_LOOKBACK_MS / 1000}) AND (
-        (computed_at < last_at + make_interval(secs => ${LADDER_GRACE_S}) AND now() > last_at + make_interval(secs => ${LADDER_GRACE_S}))
-        OR now() > last_at + make_interval(secs => ${VISIT_GAP_MS / 1000})
-        OR scorer_version <> ${SCORER_VERSION}
+      WHERE last_at > now() - make_interval(secs => ${SCORING_LOOKBACK_MS / 1000}) AND (
+        -- scored by another scorer version: rescore even if settled, or a stale verdict sticks
+        scorer_version <> ${SCORER_VERSION}
+        OR (NOT settled AND (
+          (computed_at < last_at + make_interval(secs => ${LADDER_GRACE_S}) AND now() > last_at + make_interval(secs => ${LADDER_GRACE_S}))
+          OR now() > last_at + make_interval(secs => ${VISIT_GAP_MS / 1000})
+        ))
       )
     ) dirty
     LIMIT ${limit}`;
