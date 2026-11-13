@@ -3,6 +3,21 @@ import { api, type AgentBucket, type LabRunCreated, type LabRunsResponse } from 
 import { BUCKET_LABEL } from "./AgentBadge.js";
 
 const BUCKETS: AgentBucket[] = ["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"];
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/** The run's expected agent (typed when the link was made) next to what the score named. */
+function DetectedCell({ expected, detected, kind }: { expected: string | null; detected: string[]; kind: "agent" | "human" }) {
+  if (!detected.length) return <span className="muted">{kind === "human" ? "none (correct)" : "not named"}</span>;
+  const match = expected ? detected.some((d) => norm(d).includes(norm(expected)) || norm(expected).includes(norm(d))) : null;
+  return (
+    <span className="mono">
+      {detected.join(", ")}
+      {kind === "human" ? <span className="check-pill mismatch" style={{ marginLeft: 6 }}>human run named an agent</span>
+        : match === true ? <span className="check-pill match" style={{ marginLeft: 6 }}>✓ matches</span>
+        : match === false ? <span className="check-pill mismatch" style={{ marginLeft: 6 }}>≠ {expected}</span> : null}
+    </span>
+  );
+}
 
 /**
  * Lab runs: mint a signed link for a controlled visit (an agent we run, or a human control run)
@@ -79,7 +94,7 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
       )}
       <table>
         <thead>
-          <tr><th>Label</th><th>Kind</th><th>Agent / scenario</th><th>Created</th><th>Expires</th><th>Visits</th><th>Verdicts</th><th>Last seen</th></tr>
+          <tr><th>Label</th><th>Kind</th><th title="What you said this run is (typed when creating the link)">Agent / scenario</th><th title="Which agent the score named in this run's visits">Detected</th><th>Created</th><th>Expires</th><th>Visits</th><th>Verdicts</th><th>Last seen</th></tr>
         </thead>
         <tbody>
           {runs?.data.map((r) => (
@@ -87,6 +102,7 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
               <td className="mono">{r.label}</td>
               <td>{r.kind === "human" ? "human control" : "agent"}</td>
               <td>{[r.agent, r.scenario].filter(Boolean).join(" · ") || "—"}</td>
+              <td>{r.visits ? <DetectedCell expected={r.agent} detected={r.detectedAgents ?? []} kind={r.kind} /> : <span className="muted">—</span>}</td>
               <td>{new Date(r.createdAt).toLocaleString()}{r.createdBy ? <span className="muted"> · {r.createdBy}</span> : null}</td>
               <td className={new Date(r.expiresAt) < new Date() ? "muted" : ""}>{new Date(r.expiresAt).toLocaleString()}</td>
               <td>{r.visits}{r.proven ? <span className="muted"> · {r.proven} proven</span> : null}</td>
@@ -95,7 +111,7 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
             </tr>
           ))}
           {runs && runs.data.length === 0 && (
-            <tr><td colSpan={8} className="muted">
+            <tr><td colSpan={9} className="muted">
               No signed runs yet. Visits opened with a typed <span className="mono">?lab=…</span> label still appear in the list below, marked
               <span className="check-pill unknown" style={{ margin: "0 4px" }}>claimed</span>— they aren't ground truth because anyone can type one.
               Create a signed link here and open it (through any proxy: only the query string matters) to record a signed run.

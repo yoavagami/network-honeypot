@@ -17,6 +17,39 @@ contradicted), `claimed` (operator publishes no way to check), `agent_ip` (no cl
 operator's IP), `automation` (HTTP library / headless), `ai_app` (Claude desktop, Atlas favicon…),
 `browser_inconsistent`, `browser`.
 
+## Named-agent probes
+
+`app.js` (SDK 1.2.0) runs a few checks that each look for one specific agent framework and send a
+`probe` beacon the moment one fires (queued high-priority). A hit is proof (`agent_probe`, names
+the agent in the score):
+
+| Probe | Agent | How |
+|---|---|---|
+| `decoy_stack` | browser-use | a hidden, non-focusable decoy field records the call stack of whoever reads its attributes (`isInteractiveElement`) |
+| `message_handshake` | Manus | the page posts an `__agentAction__` ping; Manus's content script answers |
+| `global` / `global_stagehand` / `global_skyvern` | Magnitude / Stagehand / Skyvern | the framework's own marker globals, polled for 10 s |
+| `dom_pplx` / `css_sidecar` | Perplexity / Comet | `pplx-agent-*` elements, Comet's `--sidecar-*` CSS variables |
+
+Extension agents run in an isolated JS world, so the global and stack probes only see agents
+that inject into the page itself; the message, DOM and CSS probes see extensions too. The page
+script also records the layout of anonymous elements appended to `<body>`; the score's
+`anonymous_body_overlay` signal (weak, not proof) fires when one appears on most pages — seen on
+every page of a Claude CLI lab run and on none of the human runs so far.
+
+Verified in Chrome with simulated agents (each probe fires for its own agent only, none on a clean
+page, the decoy never takes keyboard focus).
+
+## Autofill vs script-filled forms
+
+An `input` event with no `inputType` comes either from browser autofill or from a script that sets
+`field.value` and dispatches `new Event("input")`. Browsers mark the first `isTrusted`; events a page
+creates never are. From SDK 1.2.1 the page script counts the two apart (`untypedTrusted`,
+`untypedUntrusted`) and records fields in the `:autofill` / `:-webkit-autofill` state (`autofilled`).
+Only untrusted ones count toward `form_set_by_script`; autofill adds `browser_autofill` (−0.6) and
+turns off `instant_checkout`, since autofill makes a 20-second checkout normal. Snapshots from older
+SDKs keep the old rule. Found by the signed human runs of 2026-11-13, which scored "probably AI
+agent" because the person used autofill.
+
 ## Rendering ladder
 
 Tells "fetched the HTML only" from "rendered CSS, no JS" from "ran JS" on a **single** page load,

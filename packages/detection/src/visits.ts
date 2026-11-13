@@ -137,7 +137,8 @@ export function visitEvidence(v: Visit, evaluatedAt: Date = new Date()): VisitEv
       fingerprints: trusted.filter((c) => c.kind === "fp").map((c) => c.data),
       // `at` (server receive time) dates each page on one visit timeline (pageControl.ts, inputFacts).
       behaviors: trusted.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path, at: c.created_at.toISOString() })),
-      unboundBeacons: v.client.filter((c) => isUnbound(c) && (c.kind === "fp" || c.kind === "behavior")).length,
+      unboundBeacons: v.client.filter((c) => isUnbound(c) && (c.kind === "fp" || c.kind === "behavior" || c.kind === "probe")).length,
+      probes: trusted.filter((c) => c.kind === "probe").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path })),
     },
     requests: v.requests.map<RequestEvidence>((r) => ({
       at: r.created_at.toISOString(),

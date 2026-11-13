@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var ENDPOINT = "/api/v1/rum";
-  var SDK = "1.1.0";
+  var SDK = "1.2.1";
   var T0 = performance.now();
   // The server mints a page-load id per HTML response (rendering ladder). Without one we send
   // pl: null rather than inventing an id: the server only trusts ids it served to this visitor.
@@ -23,9 +23,11 @@
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
   }
   function short(s, n) { s = String(s == null ? "" : s); return s.length > n ? s.slice(0, n) : s; }
+  var probeSends = 0, MAX_PROBE_SENDS = 4;
   function send(kind, data, useBeacon) {
-    if (sends >= MAX_SENDS) return;
-    sends++;
+    // Probe beacons have their own small budget so they never starve fp/behavior (and vice versa).
+    if (kind === "probe") { if (probeSends >= MAX_PROBE_SENDS) return; probeSends++; }
+    else { if (sends >= MAX_SENDS) return; sends++; }
     var body;
     try { body = JSON.stringify({ v: 1, sdk: SDK, kind: kind, pl: PL, path: location.pathname + location.search, t: now(), data: data }); } catch (e) { return; }
     try {
@@ -52,7 +54,7 @@
     return { tag: short(el.tagName, 40), id: short(el.id, 80), cls: short(typeof el.className === "string" ? el.className : "", 120), attrs: attrs, shadow: !!el.shadowRoot, text: (el.textContent || "").length };
   }
   function checkArtifact(el, how) {
-    if (!el || el.nodeType !== 1 || el.id === "hp-probe") return;
+    if (!el || el.nodeType !== 1 || el.id === "hp-probe" || el.id === "hp-decoy") return;
     var id = el.id || "";
     var known = KNOWN_ARTIFACTS[id];
     var cls = typeof el.className === "string" ? el.className : "";
@@ -83,10 +85,11 @@
         }
         for (var j = 0; j < r.addedNodes.length; j++) {
           var n = r.addedNodes[j];
-          if (n.nodeType !== 1 || n.id === "hp-probe") continue;
+          if (n.nodeType !== 1 || n.id === "hp-probe" || n.id === "hp-decoy") continue;
           foreignCount++;
           if (foreign.length < 60) { var d = describe(n); d.t = now(); d.parent = r.target.tagName; foreign.push(d); }
           checkArtifact(n, "added");
+          if (r.target === document.body) noteBodyChild(n);
           if (n.querySelectorAll) { var kids = n.querySelectorAll("[id],[class]"); for (var k = 0; k < kids.length && k < 200; k++) checkArtifact(kids[k], "added"); }
         }
       }
@@ -100,7 +103,7 @@
     firstInteraction: null, mouseMoves: 0, mouseDistance: 0, maxSpeed: 0, moveUntrusted: 0,
     clicks: [], clickCount: 0, pointerDowns: 0, mouseDowns: 0,
     keyDowns: 0, keyUntrusted: 0, keyIntervals: [], keyKinds: { printable: 0, nav: 0, modifier: 0, enter: 0, other: 0 },
-    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, pastes: 0, copies: 0,
+    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, untypedTrusted: 0, untypedUntrusted: 0, autofilled: 0, pastes: 0, copies: 0,
     scrolls: 0, scrollUntrusted: 0, maxScrollY: 0, wheels: 0, touches: 0,
     focus: 0, blur: 0, visibility: [], resizes: 0, selections: 0, contextMenus: 0
   };
@@ -159,8 +162,21 @@
     if (/^insert/.test(type) && type !== "insertFromPaste" && performance.now() - lastKeyAt > 150) b.inputWithoutKey++;
     var tgt = e.target;
     if (tgt && tgt.type) b.inputFieldTypes[tgt.type] = (b.inputFieldTypes[tgt.type] || 0) + 1;
+    // No inputType: browser autofill (a trusted event, the browser fired it) or a value set by code
+    // followed by a dispatched Event("input") (always untrusted). The :autofill state cross-checks it.
+    if (type === "none") {
+      if (e.isTrusted) b.untypedTrusted++; else b.untypedUntrusted++;
+      if (tgt && autofillSeen && !autofillSeen.has(tgt)) setTimeout(function () {
+        if (!autofillSeen.has(tgt) && isAutofilled(tgt)) { autofillSeen.add(tgt); b.autofilled++; behaviorDirty = true; }
+      }, 50);
+    }
     touch();
   });
+  var autofillSeen = typeof WeakSet === "function" ? new WeakSet() : null;
+  function isAutofilled(el) {
+    try { if (el.matches(":autofill")) return true; } catch (_) {}
+    try { return el.matches(":-webkit-autofill"); } catch (_) { return false; }
+  }
   on(document, "paste", function () { b.pastes++; touch(); });
   on(document, "copy", function () { b.copies++; });
   on(window, "scroll", function (e) { b.scrolls++; if (!e.isTrusted) b.scrollUntrusted++; b.maxScrollY = Math.max(b.maxScrollY, Math.round(window.scrollY)); touch(); });
@@ -366,7 +382,98 @@
     });
   }
 
-  function start() { setTimeout(collect, 1200); }
+
+  // ------------------------------------------------------------------ named-agent probes
+  // Each looks for one specific agent framework and reports the moment it fires (beacon kind
+  // "probe", queued high-priority server-side). Written from public framework identifiers; see
+  // SDK_V2_IMPLEMENTATION_PLAN.md S3. Extension agents run in an isolated JS world, so only the
+  // DOM/CSS/message probes can see them; the global and stack probes see agents that inject into
+  // the page itself (page.evaluate, init scripts).
+  var probe = { hits: [], overlays: [], sent: 0 };
+  var probeSeen = {};
+  function probeHit(method, agent, detail) {
+    if (probeSeen[method]) return;
+    probeSeen[method] = true;
+    probe.hits.push({ method: method, agent: agent, t: now(), detail: detail || null });
+    send("probe", { hits: probe.hits, overlays: probe.overlays, final: false }, false);
+  }
+  // Anonymous element appended straight to <body> (no id/class/attributes): an injected container
+  // for a driving tool's overlay (often a closed shadow root the page can't see into). Recorded with
+  // its layout so the server can tell overlays from ordinary page widgets.
+  function noteBodyChild(n) {
+    safe(function () {
+      if (probe.overlays.length >= 10 || n.nodeType !== 1 || (n.attributes && n.attributes.length) || n.id === "hp-decoy") return;
+      var t = now();
+      setTimeout(function () {
+        safe(function () {
+          var cs = window.getComputedStyle(n), r = n.getBoundingClientRect();
+          probe.overlays.push({ t: t, tag: short(n.tagName, 20), attrsNow: n.attributes ? n.attributes.length : 0,
+            position: cs.position, z: cs.zIndex, pe: cs.pointerEvents, display: cs.display,
+            w: Math.round(r.width), h: Math.round(r.height), kids: n.childElementCount, openShadow: !!n.shadowRoot,
+            attached: document.body.contains(n) });
+        });
+      }, 50);
+    });
+  }
+  // browser-use reads every element's attributes from a function named isInteractiveElement; a
+  // decoy field records who reads it. Hidden from people and assistive tech, never focusable, not
+  // in a form, and kept for the page's whole life (a scan can happen at any time).
+  function armDecoy() {
+    safe(function () {
+      var d = document.createElement("input");
+      d.id = "hp-decoy"; d.type = "text"; d.name = "hp_ref"; d.tabIndex = -1; d.autocomplete = "off";
+      d.setAttribute("aria-hidden", "true"); d.setAttribute("inert", "");
+      d.style.cssText = "position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;clip-path:inset(50%)";
+      var orig = d.getAttribute;
+      d.getAttribute = function () {
+        safe(function () {
+          var st = String(new Error().stack || "");
+          var m = /isInteractiveElement|buildDomTree|highlightElement|getInteractiveElements|getClickableElements/.exec(st);
+          if (m) probeHit("decoy_stack", "browser-use", { fn: m[0] });
+        });
+        return orig.apply(this, arguments);
+      };
+      document.body.appendChild(d);
+    });
+  }
+  // Manus's content script answers this message.
+  function pingManus() {
+    safe(function () {
+      var id = "hp-" + Math.random().toString(36).slice(2, 10), n = 0;
+      window.addEventListener("message", function (e) {
+        safe(function () { var d = e.data; if (d && d.type === "__agentActionResult__" && d.actionId === id) probeHit("message_handshake", "manus", null); });
+      });
+      var iv = setInterval(function () {
+        safe(function () { window.postMessage({ type: "__agentAction__", action: "ping", actionId: id }, location.origin); });
+        if (++n >= 20) clearInterval(iv);
+      }, 150);
+    });
+  }
+  var SKYVERN_FNS = ["addHintMarkersToPage", "buildElementTree", "drawBoundingBoxes", "getCaptchaSolves", "safeScrollToTop"];
+  function pollGlobals() {
+    var w = window, n = 0;
+    var iv = setInterval(function () {
+      safe(function () {
+        if (w.__magnitudeShadowDOMAdapterInjected) probeHit("global", "magnitude", { name: "__magnitudeShadowDOMAdapterInjected" });
+        if (w.__stagehandInjected || w.__stagehand) probeHit("global_stagehand", "stagehand", { name: w.__stagehandInjected ? "__stagehandInjected" : "__stagehand" });
+        if (SKYVERN_FNS.every(function (f) { return typeof w[f] === "function"; })) probeHit("global_skyvern", "skyvern", { names: SKYVERN_FNS.length });
+        if (document.querySelector('[id^="pplx-agent-"]')) probeHit("dom_pplx", "perplexity-comet", { id: short((document.querySelector('[id^="pplx-agent-"]') || {}).id, 60) });
+        var cs = getComputedStyle(document.documentElement);
+        var sch = cs.getPropertyValue("--sidecar-content-height"), sub = cs.getPropertyValue("--sidecar-url-bar-height"), shh = cs.getPropertyValue("--sidecar-header-height");
+        if (sch || sub || shh) probeHit("css_sidecar", "perplexity-comet", { sch: short(sch, 20), sub: short(sub, 20), shh: short(shh, 20) });
+      });
+      if (++n >= 20) clearInterval(iv);
+    }, 500);
+  }
+  function startProbes() {
+    armDecoy();
+    pingManus();
+    pollGlobals();
+    // Summary at 10 s: overlays (and any hits) seen during the page's first seconds.
+    setTimeout(function () { if (probe.hits.length || probe.overlays.length) send("probe", { hits: probe.hits, overlays: probe.overlays, final: true }, false); }, 10000);
+  }
+
+  function start() { startProbes(); setTimeout(collect, 1200); }
   if (document.readyState === "complete") start();
   else window.addEventListener("load", start);
 })();

@@ -58,7 +58,7 @@ describe("page control", () => {
     expect(c.mode).toBe("human");
   });
 
-  it("doesn't call a form filled by typing, pasting or autofill script-filled", () => {
+  it("doesn't call a form filled by typing or pasting script-filled", () => {
     const typed = page("t", "2026-11-11T10:00:00Z", "/checkout", { inputs: { insertText: 40 }, keyDowns: 40 });
     const pasted = page("u", "2026-11-11T10:00:00Z", "/checkout", { inputs: { none: 3, insertFromPaste: 2 }, pastes: 2 });
     expect(pageControl([typed]).scriptFilledFields).toBe(0);
@@ -98,5 +98,49 @@ describe("score with hybrid control", () => {
     expect(s.control.mode).toBe("human");
     expect(s.reasons.find((r) => r.signal === "human_mouse")?.weight).toBeLessThan(0);
     expect(s.bucket).toBe("not_ai_agent");
+  });
+});
+
+// SDK 1.2.1 splits untyped input events: browser autofill fires trusted ones, a script's
+// dispatchEvent(new Event("input")) untrusted ones. Shaped like the human-chrome-Nov13-17 run.
+describe("browser autofill vs script-filled forms", () => {
+  const autofillCheckout = page("a1", "2026-11-13T16:06:00Z", "/checkout", {
+    mouseMoves: 120, mouseDistance: 2400, wheels: 6, clicks: [aimed(3000)],
+    inputs: { none: 7 }, untypedTrusted: 7, untypedUntrusted: 0, autofilled: 7,
+  });
+  const scriptCheckout = page("s1", "2026-11-13T16:06:00Z", "/checkout", {
+    mouseMoves: 1, clicks: [jump(3000)], inputs: { none: 7 }, untypedTrusted: 0, untypedUntrusted: 7, autofilled: 0,
+  });
+
+  it("counts trusted untyped inputs as autofill, not a script", () => {
+    const c = pageControl([autofillCheckout]);
+    expect(c.scriptFilledFields).toBe(0);
+    expect(c.autofilledFields).toBe(7);
+    expect(c.pages[0]!.driver).toBe("human");
+    expect(c.agentDriven).toBe(false);
+  });
+
+  it("still calls untrusted untyped inputs script-filled", () => {
+    const c = pageControl([scriptCheckout]);
+    expect(c.scriptFilledFields).toBe(7);
+    expect(c.autofilledFields).toBe(0);
+    expect(c.agentDriven).toBe(true);
+  });
+
+  it("keeps the old rule for snapshots from before SDK 1.2.1", () => {
+    expect(pageControl([agentCheckout]).scriptFilledFields).toBe(7);
+  });
+
+  it("scores a fast autofilled checkout as a person", () => {
+    const v = { ...visit([autofillCheckout]), shopEvents: ["SHOP_ORDER_PLACED"] };
+    const s = scoreVisit(v);
+    const ids = s.reasons.map((r) => r.signal);
+    expect(ids).toContain("browser_autofill");
+    expect(ids).not.toContain("form_set_by_script");
+    expect(ids).not.toContain("instant_checkout");
+    expect(s.bucket).toBe("not_ai_agent");
+    const scripted = scoreVisit({ ...visit([scriptCheckout]), shopEvents: ["SHOP_ORDER_PLACED"] });
+    expect(scripted.reasons.map((r) => r.signal)).toContain("form_set_by_script");
+    expect(scripted.reasons.map((r) => r.signal)).toContain("instant_checkout");
   });
 });

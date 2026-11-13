@@ -92,6 +92,8 @@ export interface ClientEvidence {
    * left out of `fingerprints`/`behaviors` so forged telemetry can't count as human evidence.
    */
   unboundBeacons?: number;
+  /** Named-agent probe beacons (app.js startProbes): { hits: [{method, agent, t, detail}], overlays }. */
+  probes?: Array<Record<string, any>>;
 }
 
 export interface VisitEvidence {
@@ -168,6 +170,16 @@ const KNOWN_ARTIFACT_AGENT: Record<string, string> = {
 const HOSTED: InfraCategory[] = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps"];
 
 const PRIOR = -1.2;
+/** Explanation per probe method (app.js startProbes). */
+const PROBE_TEXT: Record<string, string> = {
+  decoy_stack: "the page's hidden decoy field was read by an element scanner (isInteractiveElement) while it mapped the page",
+  message_handshake: "the agent's extension answered the page's __agentAction__ handshake",
+  global: "the agent framework's own marker global was present in the page",
+  global_stagehand: "Stagehand's injected marker global was present in the page",
+  global_skyvern: "all five of Skyvern's page functions were present",
+  dom_pplx: "Perplexity's agent overlay element was in the page",
+  css_sidecar: "Comet's sidebar CSS variables were set on the page",
+};
 /** Globals Stripe.js defines on our payment page (production, Nov 2026). Only ignored when Stripe itself is present. */
 const STRIPE_JS_GLOBALS = new Set(["Stripe", "webpackChunkStripeJSouter", "__SJS_PERF_STATE__", "noop"]);
 /** Signals that point at an AI agent specifically, not just automation. */
@@ -227,6 +239,11 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const agent = KNOWN_ARTIFACT_AGENT[known.known] ?? known.known;
     add("agent_dom_marker", W.agent_dom_marker, `the page contained #${known.id}, injected by ${agent} while it controlled the browser`);
     return finish(0.98, "in_browser_agent", agent, true, reasons, extras);
+  }
+  const probeHit = (v.client.probes ?? []).flatMap((p) => (Array.isArray(p?.hits) ? p.hits : [])).find((h: any) => h && typeof h.agent === "string");
+  if (probeHit) {
+    add("agent_probe", W.agent_probe, `${PROBE_TEXT[probeHit.method] ?? `named-agent probe ${probeHit.method} fired`} — ${probeHit.agent}${probeHit.t != null ? `, ${probeHit.t} ms after load` : ""}`);
+    return finish(0.98, hosted ? "cloud_browser_agent" : "in_browser_agent", probeHit.agent, true, reasons, extras);
   }
 
   // ---------------------------------------------------------------- request / network
@@ -367,6 +384,16 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (fpBad) add("fingerprint_changed", W.fingerprint_changed, `the device fingerprint changed within one visit (${fpBad.page}) — randomised or rotating browser profiles`);
     if (env.tells.length >= 2) add("vm_environment", Math.min(1.5, 0.9 + 0.3 * (env.tells.length - 2)), `looks like a virtual machine or server: ${env.tells.join(", ")}`);
   }
+  // Empty, attribute-less element appended straight to <body> on most pages (not the payment page,
+  // where Stripe adds its own): a driving tool's overlay container. Seen on every page of a Claude
+  // CLI lab run, never on the human control runs so far — weak until measured on more human runs.
+  {
+    const pages = bs.filter((b) => typeof b.path === "string" && !/^\/checkout\/pay/.test(b.path));
+    const withOverlay = pages.filter((b) => (b.foreign?.items ?? []).some((it: any) => it && it.tag === "DIV" && it.parent === "BODY" && !it.id && !it.cls && Array.isArray(it.attrs) && it.attrs.length === 0 && !it.text));
+    if (withOverlay.length >= 3 && withOverlay.length / Math.max(1, pages.length) >= 0.6) {
+      add("anonymous_body_overlay", W.anonymous_body_overlay, `on ${withOverlay.length} of ${pages.length} pages an empty, attribute-less element was appended to <body> right after load — a driving tool's overlay container`);
+    }
+  }
   const unbound = v.client.unboundBeacons ?? 0;
   if (unbound > 0) add("beacon_unbound", W.beacon_unbound, `${unbound} page-script beacon${unbound === 1 ? "" : "s"} claimed page loads this visitor was never served — forged or replayed telemetry, left out of the score`);
   const unknownArtifacts = artifacts.filter((a: any) => !a?.known);
@@ -406,6 +433,7 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (input.printableKeys >= 25 && input.correctionKeys === 0 && input.modifierKeys === 0) add("no_typing_corrections", W.no_typing_corrections, `${input.printableKeys} characters typed without a single correction, Shift or arrow key`);
     else if (input.printableKeys >= 10 && input.correctionKeys >= 2) add("typing_corrections", W.typing_corrections, `typing included ${input.correctionKeys} corrections/navigation keys — a person fixing what they typed`);
     if (input.pastes >= 2 && input.keyDowns === 0) add("paste_only_input", W.paste_only_input, `${input.pastes} pastes and no key presses — fields filled by pasting`);
+    if (control.autofilledFields) add("browser_autofill", W.browser_autofill, `${control.autofilledFields} form field${control.autofilledFields > 1 ? "s were" : " was"} filled by the browser's autofill (trusted input events in the :autofill state) — a person's saved details`);
     if (control.scriptFilledPages) add("form_set_by_script", W.form_set_by_script, `${control.scriptFilledFields} form fields were filled with no key presses or pastes (input events without an input type) — values set by script`);
     if (control.inputlessScrollPages) add("scroll_without_input", W.scroll_without_input, `scrolled on ${control.inputlessScrollPages} page${control.inputlessScrollPages > 1 ? "s" : ""} with no wheel, key, touch or mouse — scrolled by script`);
     if (inputNoKey > 0) add("text_without_keys", W.text_without_keys, `${inputNoKey} text input(s) arrived without key presses — inserted programmatically`);
@@ -429,7 +457,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   if (mg !== null && pageTimes.length >= 3 && mg < 1500) add("fast_navigation", W.fast_navigation, `moved between pages every ${(mg / 1000).toFixed(1)} s (median) — faster than reading`);
   if (v.shopEvents.includes("SHOP_ORDER_PLACED") && pageTimes.length >= 2) {
     const span = (pageTimes[pageTimes.length - 1]! - pageTimes[0]!) / 1000;
-    if (span < 30) add("instant_checkout", W.instant_checkout, `completed browse → basket → checkout → order in ${span.toFixed(0)} s`);
+    // Autofill makes a 20-second checkout normal for a person.
+    if (span < 30 && !control.autofilledFields) add("instant_checkout", W.instant_checkout, `completed browse → basket → checkout → order in ${span.toFixed(0)} s`);
   }
 
   // ---------------------------------------------------------------- type when nothing decided it

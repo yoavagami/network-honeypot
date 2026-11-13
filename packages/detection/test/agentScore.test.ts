@@ -109,4 +109,27 @@ describe("agent score", () => {
     const noStripe = { ...humanFp, globalsDiff: ["noop", "__x1", "__x2", "__x3"] };
     expect(scoreVisit(visit({ client: { fingerprints: [noStripe], behaviors: [] } })).reasons.map((r) => r.signal)).toContain("injected_globals");
   });
+
+  it("names an agent from a probe hit and treats it as proof", () => {
+    const s = scoreVisit(visit({ client: { fingerprints: [humanFp], behaviors: [], probes: [{ hits: [{ method: "decoy_stack", agent: "browser-use", t: 2300 }], overlays: [] }] } }));
+    expect(s).toMatchObject({ bucket: "ai_agent", agent: "browser-use", proven: true, type: "in_browser_agent" });
+    expect(s.reasons[0]!.text).toContain("decoy field");
+    const cloud = scoreVisit(visit({ asn: "AS16509", organization: "Amazon.com, Inc.", client: { fingerprints: [humanFp], behaviors: [], probes: [{ hits: [{ method: "message_handshake", agent: "manus" }] }] } }));
+    expect(cloud).toMatchObject({ agent: "manus", type: "cloud_browser_agent", proven: true });
+  });
+
+  it("ignores probe summaries without hits", () => {
+    const s = scoreVisit(visit({ client: { fingerprints: [humanFp], behaviors: [], probes: [{ hits: [], overlays: [{ tag: "DIV" }] }] } }));
+    expect(s.proven).toBe(false);
+  });
+
+  it("flags an anonymous <body> overlay only when it shows up on most pages", () => {
+    const overlay = { tag: "DIV", parent: "BODY", id: "", cls: "", attrs: [], text: 0 };
+    const page = (path: string, withOverlay: boolean) => ({ path, pl: path, visibility: "visible", behavior: { mouseMoves: 0 }, foreign: { count: withOverlay ? 1 : 0, items: withOverlay ? [overlay] : [] } });
+    const sig = (bs: any[]) => scoreVisit(visit({ client: { fingerprints: [humanFp], behaviors: bs } })).reasons.map((r) => r.signal);
+    expect(sig(["/", "/cart", "/checkout"].map((p) => page(p, true)))).toContain("anonymous_body_overlay");
+    expect(sig([page("/", true), page("/cart", true), page("/checkout", false), page("/about", false)])).not.toContain("anonymous_body_overlay");
+    // Stripe adds its own anonymous divs on the payment page — never counted
+    expect(sig([page("/checkout/payment", true), page("/checkout/payment?x", true), page("/", true)])).not.toContain("anonymous_body_overlay");
+  });
 });

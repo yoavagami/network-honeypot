@@ -28,6 +28,8 @@ export interface ControlSummary {
   jumpClicks: number;
   scriptFilledFields: number;
   scriptFilledPages: number;
+  /** Fields the browser autofilled (trusted, no inputType, :autofill), SDK 1.2.1+. */
+  autofilledFields: number;
   inputlessScrollPages: number;
   /** Where control changed hands (first page of the second driver). */
   handover: { at: string | null; path: string | null; from: "agent" | "human"; to: "agent" | "human" } | null;
@@ -64,6 +66,7 @@ export function pageControl(behaviors: Array<Record<string, any>>): ControlSumma
   let jumpClicks = 0;
   let scriptFilledFields = 0;
   let scriptFilledPages = 0;
+  let autofilledFields = 0;
   let inputlessScrollPages = 0;
 
   for (const b of behaviors) {
@@ -84,10 +87,18 @@ export function pageControl(behaviors: Array<Record<string, any>>): ControlSumma
       jumpClicks += jumps;
       agentSigns.push(`${jumps} jump click${jumps > 1 ? "s" : ""}`);
     }
-    // `input` events without an inputType: a value set by code followed by a dispatched
-    // Event("input") — real typing reports insertText, paste insertFromPaste, autofill
-    // insertReplacementText. Only counted when nothing on the page was typed or pasted.
-    const untyped = Number(B.inputs?.none) || 0;
+    // `input` events without an inputType come from two sources: browser autofill (Chrome and
+    // Safari fire a plain, *trusted* input event) and a value set by code followed by a dispatched
+    // Event("input") (always untrusted). SDK 1.2.1+ counts the two apart; older snapshots only have
+    // the total, so the old rule (every untyped event is a script) applies to them. Only counted
+    // when nothing on the page was typed or pasted.
+    const split = typeof B.untypedUntrusted === "number";
+    const untyped = split ? Number(B.untypedUntrusted) || 0 : Number(B.inputs?.none) || 0;
+    const autofilled = split ? Math.max(Number(B.autofilled) || 0, Number(B.untypedTrusted) || 0) : 0;
+    if (autofilled) {
+      autofilledFields += autofilled;
+      humanSigns.push(`${autofilled} field${autofilled > 1 ? "s" : ""} autofilled by the browser`);
+    }
     if (untyped >= 3 && keys === 0 && pastes === 0) {
       scriptFilledFields += untyped;
       scriptFilledPages++;
@@ -136,5 +147,5 @@ export function pageControl(behaviors: Array<Record<string, any>>): ControlSumma
   } else {
     mode = "mixed";
   }
-  return { mode, pages, jumpClicks, scriptFilledFields, scriptFilledPages, inputlessScrollPages, handover, agentDriven };
+  return { mode, pages, jumpClicks, scriptFilledFields, scriptFilledPages, autofilledFields, inputlessScrollPages, handover, agentDriven };
 }
