@@ -33,12 +33,14 @@ export function registerLabRoutes(app: FastifyInstance) {
     const rows = await client<Array<{
       label: string; kind: string; agent: string | null; scenario: string | null; notes: string | null; created_at: Date; expires_at: Date;
       created_by: string | null; visits: number; last_seen: Date | null; buckets: Record<string, number> | null; proven: number;
+      detected_agents: string[] | null;
     }>>`
       SELECT l.label, l.kind, l.agent, l.scenario, l.notes, l.created_at, l.expires_at, u.username AS created_by,
              count(v.visit_id)::int AS visits, max(v.last_at) AS last_seen,
              (SELECT jsonb_object_agg(bucket, n) FROM (SELECT bucket, count(*)::int AS n FROM visit_scores
                 WHERE lab_label = l.label AND lab_verified GROUP BY bucket) b) AS buckets,
-             count(v.visit_id) FILTER (WHERE v.proven)::int AS proven
+             count(v.visit_id) FILTER (WHERE v.proven)::int AS proven,
+             array_remove(array_agg(DISTINCT v.agent), NULL) AS detected_agents
       FROM lab_runs l
       LEFT JOIN admin_users u ON u.admin_user_id = l.created_by
       LEFT JOIN visit_scores v ON v.lab_label = l.label AND v.lab_verified
@@ -51,6 +53,7 @@ export function registerLabRoutes(app: FastifyInstance) {
       data: rows.map((r) => ({
         label: r.label, kind: r.kind, agent: r.agent, scenario: r.scenario, notes: r.notes, createdAt: r.created_at, expiresAt: r.expires_at,
         createdBy: r.created_by, visits: r.visits, lastSeen: r.last_seen, buckets: r.buckets ?? {}, proven: r.proven,
+        detectedAgents: r.detected_agents ?? [],
       })),
     };
   });

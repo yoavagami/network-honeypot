@@ -9,7 +9,8 @@
       "jump_clicks",
       "centred_clicks",
       "form_set_by_script",
-      "think_then_act"
+      "think_then_act",
+      "anonymous_body_overlay"
     ],
     "signalsExclude": [
       "injected_globals",

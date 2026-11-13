@@ -17,6 +17,28 @@ contradicted), `claimed` (operator publishes no way to check), `agent_ip` (no cl
 operator's IP), `automation` (HTTP library / headless), `ai_app` (Claude desktop, Atlas favicon…),
 `browser_inconsistent`, `browser`.
 
+## Named-agent probes
+
+`app.js` (SDK 1.2.0) runs a few checks that each look for one specific agent framework and send a
+`probe` beacon the moment one fires (queued high-priority). A hit is proof (`agent_probe`, names
+the agent in the score):
+
+| Probe | Agent | How |
+|---|---|---|
+| `decoy_stack` | browser-use | a hidden, non-focusable decoy field records the call stack of whoever reads its attributes (`isInteractiveElement`) |
+| `message_handshake` | Manus | the page posts an `__agentAction__` ping; Manus's content script answers |
+| `global` / `global_stagehand` / `global_skyvern` | Magnitude / Stagehand / Skyvern | the framework's own marker globals, polled for 10 s |
+| `dom_pplx` / `css_sidecar` | Perplexity / Comet | `pplx-agent-*` elements, Comet's `--sidecar-*` CSS variables |
+
+Extension agents run in an isolated JS world, so the global and stack probes only see agents
+that inject into the page itself; the message, DOM and CSS probes see extensions too. The page
+script also records the layout of anonymous elements appended to `<body>`; the score's
+`anonymous_body_overlay` signal (weak, not proof) fires when one appears on most pages — seen on
+every page of a Claude CLI lab run and on none of the human runs so far.
+
+Verified in Chrome with simulated agents (each probe fires for its own agent only, none on a clean
+page, the decoy never takes keyboard focus).
+
 ## Rendering ladder
 
 Tells "fetched the HTML only" from "rendered CSS, no JS" from "ran JS" on a **single** page load,

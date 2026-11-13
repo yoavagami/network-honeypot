@@ -92,6 +92,8 @@ export interface ClientEvidence {
    * left out of `fingerprints`/`behaviors` so forged telemetry can't count as human evidence.
    */
   unboundBeacons?: number;
+  /** Named-agent probe beacons (app.js startProbes): { hits: [{method, agent, t, detail}], overlays }. */
+  probes?: Array<Record<string, any>>;
 }
 
 export interface VisitEvidence {
@@ -168,6 +170,16 @@ const KNOWN_ARTIFACT_AGENT: Record<string, string> = {
 const HOSTED: InfraCategory[] = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps"];
 
 const PRIOR = -1.2;
+/** Explanation per probe method (app.js startProbes). */
+const PROBE_TEXT: Record<string, string> = {
+  decoy_stack: "the page's hidden decoy field was read by an element scanner (isInteractiveElement) while it mapped the page",
+  message_handshake: "the agent's extension answered the page's __agentAction__ handshake",
+  global: "the agent framework's own marker global was present in the page",
+  global_stagehand: "Stagehand's injected marker global was present in the page",
+  global_skyvern: "all five of Skyvern's page functions were present",
+  dom_pplx: "Perplexity's agent overlay element was in the page",
+  css_sidecar: "Comet's sidebar CSS variables were set on the page",
+};
 /** Globals Stripe.js defines on our payment page (production, Nov 2026). Only ignored when Stripe itself is present. */
 const STRIPE_JS_GLOBALS = new Set(["Stripe", "webpackChunkStripeJSouter", "__SJS_PERF_STATE__", "noop"]);
 /** Signals that point at an AI agent specifically, not just automation. */
@@ -227,6 +239,11 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const agent = KNOWN_ARTIFACT_AGENT[known.known] ?? known.known;
     add("agent_dom_marker", W.agent_dom_marker, `the page contained #${known.id}, injected by ${agent} while it controlled the browser`);
     return finish(0.98, "in_browser_agent", agent, true, reasons, extras);
+  }
+  const probeHit = (v.client.probes ?? []).flatMap((p) => (Array.isArray(p?.hits) ? p.hits : [])).find((h: any) => h && typeof h.agent === "string");
+  if (probeHit) {
+    add("agent_probe", W.agent_probe, `${PROBE_TEXT[probeHit.method] ?? `named-agent probe ${probeHit.method} fired`} — ${probeHit.agent}${probeHit.t != null ? `, ${probeHit.t} ms after load` : ""}`);
+    return finish(0.98, hosted ? "cloud_browser_agent" : "in_browser_agent", probeHit.agent, true, reasons, extras);
   }
 
   // ---------------------------------------------------------------- request / network
@@ -366,6 +383,16 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const fpBad = bad("fingerprint_stable");
     if (fpBad) add("fingerprint_changed", W.fingerprint_changed, `the device fingerprint changed within one visit (${fpBad.page}) — randomised or rotating browser profiles`);
     if (env.tells.length >= 2) add("vm_environment", Math.min(1.5, 0.9 + 0.3 * (env.tells.length - 2)), `looks like a virtual machine or server: ${env.tells.join(", ")}`);
+  }
+  // Empty, attribute-less element appended straight to <body> on most pages (not the payment page,
+  // where Stripe adds its own): a driving tool's overlay container. Seen on every page of a Claude
+  // CLI lab run, never on the human control runs so far — weak until measured on more human runs.
+  {
+    const pages = bs.filter((b) => typeof b.path === "string" && !/^\/checkout\/pay/.test(b.path));
+    const withOverlay = pages.filter((b) => (b.foreign?.items ?? []).some((it: any) => it && it.tag === "DIV" && it.parent === "BODY" && !it.id && !it.cls && Array.isArray(it.attrs) && it.attrs.length === 0 && !it.text));
+    if (withOverlay.length >= 3 && withOverlay.length / Math.max(1, pages.length) >= 0.6) {
+      add("anonymous_body_overlay", W.anonymous_body_overlay, `on ${withOverlay.length} of ${pages.length} pages an empty, attribute-less element was appended to <body> right after load — a driving tool's overlay container`);
+    }
   }
   const unbound = v.client.unboundBeacons ?? 0;
   if (unbound > 0) add("beacon_unbound", W.beacon_unbound, `${unbound} page-script beacon${unbound === 1 ? "" : "s"} claimed page loads this visitor was never served — forged or replayed telemetry, left out of the score`);

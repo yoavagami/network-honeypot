@@ -12,7 +12,9 @@
       "injected_globals",
       "jump_clicks",
       "form_set_by_script",
-      "beacon_unbound"
+      "beacon_unbound",
+      "anonymous_body_overlay",
+      "agent_probe"
     ]
   },
   "evidence": {

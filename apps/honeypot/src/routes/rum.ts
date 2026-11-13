@@ -4,7 +4,7 @@ import type { IngestionQueue } from "../ingestion/queue.js";
 import { isBoundPageLoad } from "../sensing/pageLoads.js";
 
 const MAX_BODY_CHARS = 64 * 1024;
-const KINDS = new Set(["fp", "behavior"]);
+const KINDS = new Set(["fp", "behavior", "probe"]);
 const SDK_VERSION_RE = /^[0-9A-Za-z.+-]{1,40}$/;
 
 /**
@@ -40,7 +40,7 @@ export function registerRumRoutes(app: FastifyInstance, queue: IngestionQueue) {
       const data = payload.data as Record<string, unknown>;
       queue.enqueue({
         kind: "client_signals",
-        priority: carriesKnownArtifact(data) ? "high" : "low",
+        priority: carriesKnownArtifact(data) || (payload.kind === "probe" && Array.isArray(data.hits) && data.hits.length > 0) ? "high" : "low",
         row: {
           id: randomUUID(),
           createdAt: new Date(),

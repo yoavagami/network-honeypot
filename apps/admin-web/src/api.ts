@@ -455,5 +455,7 @@ export interface LabRun {
   label: string; kind: "agent" | "human"; agent: string | null; scenario: string | null; notes: string | null;
   createdAt: string; expiresAt: string; createdBy: string | null;
   visits: number; lastSeen: string | null; buckets: Partial<Record<AgentBucket, number>>; proven: number;
+  /** Agents the score named in this run's visits (empty: caught or cleared without a name). */
+  detectedAgents: string[];
 }
 export interface LabRunsResponse { enabled: boolean; data: LabRun[] }

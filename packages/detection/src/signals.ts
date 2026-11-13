@@ -10,7 +10,7 @@
  */
 
 /** Bump when weights, signals or scoring logic change; stored with every visit_scores row. */
-export const SCORER_VERSION = "2026.11.13-3";
+export const SCORER_VERSION = "2026.11.13-4";
 
 export type SignalGroup = "proof" | "network" | "request" | "browser" | "behavior" | "journey";
 /** The three questions a verdict answers (plus the shop journey). */
@@ -35,6 +35,7 @@ export const SIGNALS = def({
   // ---- proof
   verified_identity: { group: "proof", weight: 9, question: "identity", dynamic: "+9 for an AI operator, −9 for a search crawler", summary: "Web Bot Auth signature, operator IP list or forward-confirmed rDNS proves the identity" },
   agent_dom_marker: { group: "proof", weight: 9, question: "identity", summary: "a known agent's own UI element was injected into the page" },
+  agent_probe: { group: "proof", weight: 9, question: "identity", summary: "a named-agent probe fired: browser-use's scanner read the decoy field, Manus answered the handshake, or a framework's own globals/CSS were present" },
   no_ai_evidence: { group: "proof", weight: 0, question: "identity", summary: "automated, but nothing ties it to an AI agent — probability capped at 0.69" },
 
   // ---- request / network identity
@@ -80,6 +81,7 @@ export const SIGNALS = def({
   browser_identity_mismatch: { group: "browser", weight: 1.6, question: "environment", summary: "fixed browser traits (vendor, productSub, engine objects) contradict the claimed browser" },
   fingerprint_changed: { group: "browser", weight: 1.0, question: "environment", summary: "device fingerprint changed within one visit" },
   vm_environment: { group: "browser", weight: 0.9, question: "environment", dynamic: "0.9 for 2 tells, +0.3 per extra, max 1.5", summary: "virtual-machine/server tells (cores, memory, PDF viewer)" },
+  anonymous_body_overlay: { group: "browser", weight: 0.8, question: "identity", summary: "on most pages an empty, attribute-less element was appended to <body> right after load — a driving tool's overlay container" },
   agent_like_dom: { group: "browser", weight: 1.5, question: "identity", aiSpecific: true, summary: "page elements injected with agent-like names" },
 
   // ---- driver: is a human operating the input
