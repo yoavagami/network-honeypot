@@ -220,7 +220,10 @@ which is the number that matters, not the aspiration.
   changes (`DEPLOY_ALLOW_DIRTY=1` deploys HEAD anyway). Untracked and git-ignored files (local
   notes, `SDK/`, `backups/`) can't reach the server, and the `--delete` sync leaves server-side
   state alone (`.env`, `*.pem`, `backups/`, `*.log`, rendered Nginx configs). What's running:
-  `cat ~/network-honeypot/.deployed-commit` on the host. Only one person or session should
+  `cat ~/network-honeypot/.deployed-commit` on the host. After starting the stack it clears unused
+  Docker build cache and dangling images (never volumes) and prints disk usage, warning at 85%+;
+  if the disk is already 85%+ full it clears the cache before building. *(The cache had reached
+  10 GB of the 20 GB disk on 2026-11-13; clearing it took the disk from 81% to 34%.)* Only one person or session should
   deploy at a time; deploy from a clean checkout of a pushed commit. *(Changed 2026-11-13: it used
   to rsync the working tree, which shipped an ignored third-party folder and planning notes to the
   server, and its `--delete` removed a server-side `backups/` directory.)*
