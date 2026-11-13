@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { scoreVisit, type VisitEvidence } from "../src/agentScore.js";
+import { redactFixtureEvidence } from "../src/fixtureRedaction.js";
 
 /**
  * Golden visits (SDK_V2_IMPLEMENTATION_PLAN.md E7): one JSON per known agent / human browser,
@@ -34,6 +35,11 @@ describe("golden visits", () => {
       if (f.expect.agent) expect(s.agent, why).toBe(f.expect.agent);
       for (const sig of f.expect.signalsInclude ?? []) expect(signals, why).toContain(sig);
       for (const sig of f.expect.signalsExclude ?? []) expect(signals, why).not.toContain(sig);
+    });
+    it(`${f.name}: redaction for the public repo doesn't change the verdict`, () => {
+      const s = scoreVisit(f.evidence);
+      const r = scoreVisit(redactFixtureEvidence(f.evidence));
+      expect([r.bucket, r.type, r.probability, r.reasons.map((x) => [x.signal, x.weight])]).toEqual([s.bucket, s.type, s.probability, s.reasons.map((x) => [x.signal, x.weight])]);
     });
   }
 });

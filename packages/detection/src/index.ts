@@ -27,6 +27,7 @@ export * from "./rules/correlation/scannerClassification.js";
 export * from "./signals.js";
 export * from "./agentScore.js";
 export * from "./visits.js";
+export * from "./fixtureRedaction.js";
 export * from "./labToken.js";
 export * from "./pageConsistency.js";
 export * from "./pageControl.js";

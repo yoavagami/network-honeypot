@@ -10,7 +10,7 @@
  */
 
 /** Bump when weights, signals or scoring logic change; stored with every visit_scores row. */
-export const SCORER_VERSION = "2026.11.13-2";
+export const SCORER_VERSION = "2026.11.13-3";
 
 export type SignalGroup = "proof" | "network" | "request" | "browser" | "behavior" | "journey";
 /** The three questions a verdict answers (plus the shop journey). */

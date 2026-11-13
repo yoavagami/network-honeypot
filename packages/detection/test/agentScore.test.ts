@@ -97,4 +97,16 @@ describe("agent score", () => {
     for (const r of s.reasons) expect(r.text.length).toBeGreaterThan(10);
     expect(s.calibrated).toBe(false);
   });
+
+  it("doesn't count Stripe.js's own globals on the payment page as injected scripts", () => {
+    const stripeFp = { ...humanFp, globalsDiff: ["0", "1", "2", "webpackChunkStripeJSouter", "noop", "Stripe", "__SJS_PERF_STATE__"] };
+    const s = scoreVisit(visit({ client: { fingerprints: [stripeFp], behaviors: [] } }));
+    expect(s.reasons.map((r) => r.signal)).not.toContain("injected_globals");
+    // …but other injected names next to Stripe still count
+    const agentFp = { ...humanFp, globalsDiff: ["Stripe", "noop", "__agentA", "__agentB", "__agentC", "__agentD"] };
+    expect(scoreVisit(visit({ client: { fingerprints: [agentFp], behaviors: [] } })).reasons.map((r) => r.signal)).toContain("injected_globals");
+    // and "noop" without Stripe is not exempt
+    const noStripe = { ...humanFp, globalsDiff: ["noop", "__x1", "__x2", "__x3"] };
+    expect(scoreVisit(visit({ client: { fingerprints: [noStripe], behaviors: [] } })).reasons.map((r) => r.signal)).toContain("injected_globals");
+  });
 });

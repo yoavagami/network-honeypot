@@ -48,6 +48,8 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
         Start every controlled visit from a <strong>signed link</strong>: the browser that opens it is tagged with the label until the link expires,
         and only signed runs count as ground truth. Name runs <span className="mono">&lt;agent&gt;-&lt;scenario&gt;-&lt;n&gt;</span> (e.g.{" "}
         <span className="mono">claude-chrome-checkout-1</span>), and human control runs <span className="mono">human-&lt;browser&gt;-&lt;n&gt;</span>.
+        Add <span className="mono">-proxied</span> when the run goes through your own proxy, so its network fingerprint isn't mistaken for the browser's.
+        This table lists signed links; every visit with a lab label, signed or typed, is in the list below.
       </p>
       {runs && !runs.enabled && <div className="banner warn">LAB_LINK_SECRET isn't set on admin-api, so links can't be signed. Labels typed as ?lab=… are recorded as "claimed" only.</div>}
       <form className="toolbar" onSubmit={submit}>
@@ -92,7 +94,13 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
               <td>{r.lastSeen ? new Date(r.lastSeen).toLocaleString() : "—"}</td>
             </tr>
           ))}
-          {runs && runs.data.length === 0 && <tr><td colSpan={8} className="muted">No signed runs yet.</td></tr>}
+          {runs && runs.data.length === 0 && (
+            <tr><td colSpan={8} className="muted">
+              No signed runs yet. Visits opened with a typed <span className="mono">?lab=…</span> label still appear in the list below, marked
+              <span className="check-pill unknown" style={{ margin: "0 4px" }}>claimed</span>— they aren't ground truth because anyone can type one.
+              Create a signed link here and open it (through any proxy: only the query string matters) to record a signed run.
+            </td></tr>
+          )}
         </tbody>
       </table>
     </div>
