@@ -41,7 +41,10 @@ function tag(request: FastifyRequest, endpoint: string, events: string[] = [], m
 
 function send(reply: FastifyReply, request: FastifyRequest, title: string, body: string, extra: { head?: string; scripts?: string[]; status?: number } = {}) {
   const cartCount = readCart(request).reduce((s, l) => s + l.qty, 0);
-  reply.status(extra.status ?? 200).type("text/html").send(shopLayout({ title, body, cartCount, head: extra.head, scripts: extra.scripts }));
+  // Returned so async handlers can `return send(...)`: an async handler that sends without
+  // returning the reply makes Fastify treat it as unsent, and the error handler then tries to
+  // write headers a second time ("Reply was already sent" + "Cannot write headers" per page).
+  return reply.status(extra.status ?? 200).type("text/html").send(shopLayout({ title, body, cartCount, head: extra.head, scripts: extra.scripts }));
 }
 
 function cartSnapshot(lines: ReturnType<typeof readCart>, shipping?: ShippingMethodId) {
@@ -98,7 +101,7 @@ export function registerShopRoutes(app: FastifyInstance) {
   // ---- browse
   app.get("/", async (request, reply) => {
     tag(request, "shop.home", ["SHOP_HOME_VIEW"], { offers: PRODUCTS.flatMap((p) => p.variants.map((v) => ({ sku: v.sku, priceCents: v.priceCents }))) });
-    send(reply, request, "Raw honey from our own hives", shopHomePage());
+    return send(reply, request, "Raw honey from our own hives", shopHomePage());
   });
 
   app.get<{ Params: { slug: string }; Querystring: { added?: string } }>("/products/:slug", async (request, reply) => {
@@ -111,14 +114,14 @@ export function registerShopRoutes(app: FastifyInstance) {
     }
     tag(request, "shop.product", ["SHOP_PRODUCT_VIEW"], { product: p.slug, offers: p.variants.map((v) => ({ sku: v.sku, priceCents: v.priceCents, stock: v.stock })) });
     const page = productPage(p, { added: request.query.added });
-    send(reply, request, p.name, page.body, { head: page.head });
+    return send(reply, request, p.name, page.body, { head: page.head });
   });
 
   for (const kind of ["about", "shipping", "terms"] as const) {
     app.get(`/${kind}`, async (request, reply) => {
       tag(request, `shop.${kind}`, ["SHOP_INFO_VIEW"], { page: kind });
       const page = infoPage(kind);
-      send(reply, request, page.title, page.body);
+      return send(reply, request, page.title, page.body);
     });
   }
 
@@ -141,7 +144,7 @@ export function registerShopRoutes(app: FastifyInstance) {
   app.get("/cart", async (request, reply) => {
     const lines = readCart(request);
     tag(request, "shop.cart", ["SHOP_CART_VIEW"], cartSnapshot(lines));
-    send(reply, request, "Your basket", cartPage(lines, computeTotals(lines, undefined)));
+    return send(reply, request, "Your basket", cartPage(lines, computeTotals(lines, undefined)));
   });
 
   app.post("/cart/update", async (request, reply) => {
@@ -162,7 +165,7 @@ export function registerShopRoutes(app: FastifyInstance) {
       return reply.redirect("/cart", 303);
     }
     tag(request, "shop.checkout.details.view", ["SHOP_CHECKOUT_START"], cartSnapshot(lines));
-    send(reply, request, "Checkout", checkoutDetailsPage(lines, computeTotals(lines, undefined), readCheckout(request).details ?? {}));
+    return send(reply, request, "Checkout", checkoutDetailsPage(lines, computeTotals(lines, undefined), readCheckout(request).details ?? {}));
   });
 
   app.post("/checkout/details", async (request, reply) => {
@@ -192,7 +195,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     if (!state.details) return reply.redirect("/checkout", 303);
     tag(request, "shop.checkout.shipping.view", ["SHOP_SHIPPING_VIEW"], cartSnapshot(lines, state.shipping));
     const t = computeTotals(lines, state.shipping);
-    send(reply, request, "Shipping", checkoutShippingPage(lines, t, state.details, state.shipping, t.subtotalCents));
+    return send(reply, request, "Shipping", checkoutShippingPage(lines, t, state.details, state.shipping, t.subtotalCents));
   });
 
   app.post("/checkout/shipping", async (request, reply) => {
@@ -212,7 +215,7 @@ export function registerShopRoutes(app: FastifyInstance) {
     const state = readCheckout(request);
     const providers = enabledProviders();
     const t = computeTotals(lines, state.shipping);
-    send(reply, request, "Payment", checkoutPaymentPage(lines, t, state.details!, state.shipping ?? "standard", providers, error, selected), {
+    return send(reply, request, "Payment", checkoutPaymentPage(lines, t, state.details!, state.shipping ?? "standard", providers, error, selected), {
       scripts: [...new Set(providers.flatMap((p) => p.scripts))],
       status,
     });
@@ -306,6 +309,6 @@ export function registerShopRoutes(app: FastifyInstance) {
       return reply.redirect("/", 303);
     }
     tag(request, "shop.order.confirmation", ["SHOP_ORDER_CONFIRMATION_VIEW"], { orderId: order.id, totalCents: order.totals.totalCents });
-    send(reply, request, "Order confirmed", confirmationPage(order));
+    return send(reply, request, "Order confirmed", confirmationPage(order));
   });
 }
