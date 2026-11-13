@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { ApiError } from "../api.js";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,10 @@ export function LoginPage() {
     setError(null);
     try {
       await login(username, password);
-      navigate("/", { replace: true });
+      // Back to the page that sent us here; only same-app paths, never "//host" or a full URL.
+      const from = (location.state as { from?: unknown } | null)?.from;
+      const target = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : "/";
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sign in failed");
     } finally {

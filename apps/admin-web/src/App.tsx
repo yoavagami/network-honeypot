@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.js";
 import { Layout } from "./components/Layout.js";
 import { LoginPage } from "./pages/LoginPage.js";
@@ -23,8 +23,10 @@ import { AccessLogPage } from "./pages/AccessLogPage.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { username, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <p className="muted" style={{ padding: "2rem" }}>Loading…</p>;
-  if (!username) return <Navigate to="/login" replace />;
+  // Remember where the admin was going, so login can send them back there.
+  if (!username) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return <>{children}</>;
 }
 

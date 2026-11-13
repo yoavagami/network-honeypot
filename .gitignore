@@ -13,3 +13,6 @@ infrastructure/nginx/honeypot-tls.rendered.conf
 infrastructure/nginx/admin-web-public-tls.rendered.conf
 infrastructure/aws/*.pem
 backups/
+
+# Third-party SDKs under analysis (proprietary code + decoded data) - never commit
+SDK/
