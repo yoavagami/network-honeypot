@@ -337,7 +337,6 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (any((f) => f.webgl && f.webgl.supported === false)) add("no_webgl", W.no_webgl, "no WebGL — typical of headless/server browsers");
     else if (softGpu) add("software_gpu", W.software_gpu, `software GPU renderer (${softGpu.webgl.renderer}) — a browser running on a server`);
     if (any((f) => f.screen?.outerW === 0 && f.screen?.outerH === 0)) add("zero_outer_window", W.zero_outer_window, "window has no outer size (hidden, minimised or headless window)");
-    // window["0"], window["1"]… are the page's iframes (Stripe's card form), not injected scripts.
     // Not injected scripts: window["0"], window["1"]… are the page's iframes, and Stripe.js (loaded
     // by our own payment page) adds STRIPE_JS_GLOBALS — seen on every real checkout in production.
     const injectedNames = (f: Record<string, any>): string[] => {
