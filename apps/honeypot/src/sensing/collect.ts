@@ -74,6 +74,7 @@ export async function collectRequestSignals(request: FastifyRequest, requestId: 
       wba,
       ip: { ranges: ipRanges, tor, rdns },
       edge,
+      pageLoadId: request.hp.pageLoadId ?? null,
     },
   };
 }

@@ -19,6 +19,7 @@ import { registerMiscRoutes } from "./routes/misc.js";
 import { registerNotFoundHandler } from "./routes/notFound.js";
 import { registerRumRoutes } from "./routes/rum.js";
 import { registerShopRoutes } from "./routes/shop.js";
+import { applyLadder, registerLadderRoutes } from "./sensing/ladder.js";
 import { startIpIntelRefresh } from "./sensing/ipIntel.js";
 
 async function main() {
@@ -48,6 +49,8 @@ async function main() {
     reply.removeHeader("X-Powered-By");
     return payload;
   });
+  // Rendering ladder: page-load id + CSS / noscript beacons in every HTML document.
+  app.addHook("onSend", async (request, reply, payload) => applyLadder(request, reply, payload));
 
   const queue = new IngestionQueue(logger);
   registerIngestion(app, queue);
@@ -61,6 +64,7 @@ async function main() {
   registerAdminRoutes(app);
   registerMiscRoutes(app);
   registerRumRoutes(app, queue);
+  registerLadderRoutes(app, queue);
   registerNotFoundHandler(app);
 
   app.get("/internal/metrics", async (request, reply) => {
