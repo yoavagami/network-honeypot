@@ -57,8 +57,8 @@ export function AgentsPage() {
   const [why, setWhy] = useState("");
   const [whyInput, setWhyInput] = useState("");
   const [whyScope, setWhyScope] = useState("any");
-  // Lab tab: signed runs only (ground truth), or every ?lab= label including claimed ones.
-  const [labScope, setLabScope] = useState<"verified" | "only">("verified");
+  // Lab tab: every ?lab= label by default (signed and claimed, with a badge), or signed runs only.
+  const [labScope, setLabScope] = useState<"verified" | "only">("only");
   const [visits, setVisits] = useState<AgentVisitsResponse | null>(null);
   // A run picked in the Lab runs table — shows exactly that label's visits.
   const [labPick, setLabPick] = useState<string>("");
@@ -179,8 +179,8 @@ export function AgentsPage() {
           <LabRunsPanel onPick={(label) => { setLabPick(label); setQInput(label); setQ(label); }} />
           <div className="toolbar">
             <select value={labScope} onChange={(e) => { setLabScope(e.target.value as "verified" | "only"); setLabPick(""); }} aria-label="Lab labels">
+              <option value="only">All lab labels (signed and claimed)</option>
               <option value="verified">Signed runs only (ground truth)</option>
-              <option value="only">All lab labels, including claimed</option>
             </select>
             {labPick && <button type="button" onClick={() => { setLabPick(""); setQInput(""); setQ(""); }}>Show all runs (now: {labPick})</button>}
           </div>

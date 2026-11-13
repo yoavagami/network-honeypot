@@ -4,30 +4,18 @@
  * current verdict as its expectation. Review the expectation before committing: the fixture
  * should pin the verdict the visit *ought* to get. See packages/detection/test/goldenVisits.test.ts.
  *
- * Redaction: no IPs, request/session/actor ids, cookies or lab tokens are in VisitEvidence to
- * begin with; this also drops page query strings, the referrer and root-element attributes.
+ * Redaction (packages/detection/src/fixtureRedaction.ts — the repo is public): no IPs, ids, cookies
+ * or lab tokens are in VisitEvidence to begin with; the device fingerprint is cut down to what the
+ * scorer reads, with canvas/GPU values replaced by placeholders, and query strings dropped.
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildVisits, scoreVisit, visitEvidence, type VisitEvidence } from "@honeypot/detection";
+import { buildVisits, redactFixtureEvidence, scoreVisit, visitEvidence } from "@honeypot/detection";
 import { loadVisitRows } from "@honeypot/db";
 import { client } from "../db.js";
 
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../../../packages/detection/test/fixtures/visits");
-
-function redact(ev: VisitEvidence): VisitEvidence {
-  const stripQuery = (p: unknown) => (typeof p === "string" ? p.split("?")[0] : p);
-  return {
-    ...ev,
-    client: {
-      ...ev.client,
-      fingerprints: ev.client.fingerprints.map((f) => ({ ...f, doc: f.doc ? { visibility: f.doc.visibility, hasFocus: f.doc.hasFocus } : f.doc })),
-      behaviors: ev.client.behaviors.map((b) => ({ ...b, path: stripQuery(b.path) })),
-    },
-    requests: ev.requests.map((r) => ({ ...r, path: stripQuery(r.path) as string })),
-  };
-}
 
 async function main() {
   const [id, nameArg] = process.argv.slice(2);
@@ -37,7 +25,7 @@ async function main() {
   const rows = await loadVisitRows(client, { since: new Date(start - 1000), until: new Date(start + 24 * 3600_000), ...(m[1] === "s" ? { sessionId: m[2]! } : { actorIds: [m[2]!] }) });
   const v = buildVisits(rows.requests, rows.client, rows.shop).find((x) => x.id === id);
   if (!v) throw new Error(`visit ${id} not found`);
-  const ev = redact(visitEvidence(v));
+  const ev = redactFixtureEvidence(visitEvidence(v));
   const s = scoreVisit(ev);
   const lab = v.requests.find((r) => r.lab_label)?.lab_label ?? null;
   const name = (nameArg ?? lab ?? `visit-${start}`).replace(/[^a-z0-9.-]/gi, "-").toLowerCase();

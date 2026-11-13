@@ -168,6 +168,8 @@ const KNOWN_ARTIFACT_AGENT: Record<string, string> = {
 const HOSTED: InfraCategory[] = ["cloud_aws", "cloud_azure", "cloud_gcp", "cloud_other", "hosting_vps"];
 
 const PRIOR = -1.2;
+/** Globals Stripe.js defines on our payment page (production, Nov 2026). Only ignored when Stripe itself is present. */
+const STRIPE_JS_GLOBALS = new Set(["Stripe", "webpackChunkStripeJSouter", "__SJS_PERF_STATE__", "noop"]);
 /** Signals that point at an AI agent specifically, not just automation. */
 const AI_SPECIFIC = AI_SPECIFIC_SIGNALS;
 /** Browser-group signals that actually mean "no browser ran" (scripts), so not a driven browser. */
@@ -335,8 +337,13 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (any((f) => f.webgl && f.webgl.supported === false)) add("no_webgl", W.no_webgl, "no WebGL — typical of headless/server browsers");
     else if (softGpu) add("software_gpu", W.software_gpu, `software GPU renderer (${softGpu.webgl.renderer}) — a browser running on a server`);
     if (any((f) => f.screen?.outerW === 0 && f.screen?.outerH === 0)) add("zero_outer_window", W.zero_outer_window, "window has no outer size (hidden, minimised or headless window)");
-    // window["0"], window["1"]… are the page's iframes (Stripe's card form), not injected scripts.
-    const injectedNames = (f: Record<string, any>): string[] => (Array.isArray(f.globalsDiff) ? f.globalsDiff.filter((k: unknown) => typeof k === "string" && !/^\d+$/.test(k)) : []);
+    // Not injected scripts: window["0"], window["1"]… are the page's iframes, and Stripe.js (loaded
+    // by our own payment page) adds STRIPE_JS_GLOBALS — seen on every real checkout in production.
+    const injectedNames = (f: Record<string, any>): string[] => {
+      if (!Array.isArray(f.globalsDiff)) return [];
+      const names = f.globalsDiff.filter((k: unknown): k is string => typeof k === "string" && !/^\d+$/.test(k));
+      return names.includes("Stripe") ? names.filter((k) => !STRIPE_JS_GLOBALS.has(k)) : names;
+    };
     const injected = any((f) => injectedNames(f).length > 3);
     if (injected) { const names = injectedNames(injected); add("injected_globals", W.injected_globals, `${names.length} scripts' globals injected into the page (extensions/agents): ${names.slice(0, 5).join(", ")}`); }
 
