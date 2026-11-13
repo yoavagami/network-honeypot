@@ -10,7 +10,7 @@
  */
 
 /** Bump when weights, signals or scoring logic change; stored with every visit_scores row. */
-export const SCORER_VERSION = "2026.11.13-4";
+export const SCORER_VERSION = "2026.11.13-5";
 
 export type SignalGroup = "proof" | "network" | "request" | "browser" | "behavior" | "journey";
 /** The three questions a verdict answers (plus the shop journey). */
@@ -103,6 +103,7 @@ export const SIGNALS = def({
   touch: { group: "behavior", weight: -0.8, question: "driver", summary: "touch input" },
   no_scroll: { group: "behavior", weight: 0.5, question: "driver", summary: "interacted with several pages without scrolling" },
   jump_clicks: { group: "behavior", weight: 1.2, question: "driver", dynamic: "1.2 for 2 jump clicks, 2.0 for 3 or more", summary: "the cursor appeared on the target and clicked within 50 ms, with no mouse path" },
+  browser_autofill: { group: "behavior", weight: -0.6, question: "driver", summary: "form fields filled by the browser's autofill — a person's saved details" },
   form_set_by_script: { group: "behavior", weight: 1.8, question: "driver", summary: "form fields filled with no key presses or pastes — values set by script" },
   scroll_without_input: { group: "behavior", weight: 0.8, question: "driver", summary: "scrolled with no wheel, key, touch or mouse — scrolled by script" },
 

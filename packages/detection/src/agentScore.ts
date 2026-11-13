@@ -433,6 +433,7 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (input.printableKeys >= 25 && input.correctionKeys === 0 && input.modifierKeys === 0) add("no_typing_corrections", W.no_typing_corrections, `${input.printableKeys} characters typed without a single correction, Shift or arrow key`);
     else if (input.printableKeys >= 10 && input.correctionKeys >= 2) add("typing_corrections", W.typing_corrections, `typing included ${input.correctionKeys} corrections/navigation keys — a person fixing what they typed`);
     if (input.pastes >= 2 && input.keyDowns === 0) add("paste_only_input", W.paste_only_input, `${input.pastes} pastes and no key presses — fields filled by pasting`);
+    if (control.autofilledFields) add("browser_autofill", W.browser_autofill, `${control.autofilledFields} form field${control.autofilledFields > 1 ? "s were" : " was"} filled by the browser's autofill (trusted input events in the :autofill state) — a person's saved details`);
     if (control.scriptFilledPages) add("form_set_by_script", W.form_set_by_script, `${control.scriptFilledFields} form fields were filled with no key presses or pastes (input events without an input type) — values set by script`);
     if (control.inputlessScrollPages) add("scroll_without_input", W.scroll_without_input, `scrolled on ${control.inputlessScrollPages} page${control.inputlessScrollPages > 1 ? "s" : ""} with no wheel, key, touch or mouse — scrolled by script`);
     if (inputNoKey > 0) add("text_without_keys", W.text_without_keys, `${inputNoKey} text input(s) arrived without key presses — inserted programmatically`);
@@ -456,7 +457,8 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   if (mg !== null && pageTimes.length >= 3 && mg < 1500) add("fast_navigation", W.fast_navigation, `moved between pages every ${(mg / 1000).toFixed(1)} s (median) — faster than reading`);
   if (v.shopEvents.includes("SHOP_ORDER_PLACED") && pageTimes.length >= 2) {
     const span = (pageTimes[pageTimes.length - 1]! - pageTimes[0]!) / 1000;
-    if (span < 30) add("instant_checkout", W.instant_checkout, `completed browse → basket → checkout → order in ${span.toFixed(0)} s`);
+    // Autofill makes a 20-second checkout normal for a person.
+    if (span < 30 && !control.autofilledFields) add("instant_checkout", W.instant_checkout, `completed browse → basket → checkout → order in ${span.toFixed(0)} s`);
   }
 
   // ---------------------------------------------------------------- type when nothing decided it

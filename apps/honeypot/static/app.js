@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var ENDPOINT = "/api/v1/rum";
-  var SDK = "1.2.0";
+  var SDK = "1.2.1";
   var T0 = performance.now();
   // The server mints a page-load id per HTML response (rendering ladder). Without one we send
   // pl: null rather than inventing an id: the server only trusts ids it served to this visitor.
@@ -103,7 +103,7 @@
     firstInteraction: null, mouseMoves: 0, mouseDistance: 0, maxSpeed: 0, moveUntrusted: 0,
     clicks: [], clickCount: 0, pointerDowns: 0, mouseDowns: 0,
     keyDowns: 0, keyUntrusted: 0, keyIntervals: [], keyKinds: { printable: 0, nav: 0, modifier: 0, enter: 0, other: 0 },
-    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, pastes: 0, copies: 0,
+    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, untypedTrusted: 0, untypedUntrusted: 0, autofilled: 0, pastes: 0, copies: 0,
     scrolls: 0, scrollUntrusted: 0, maxScrollY: 0, wheels: 0, touches: 0,
     focus: 0, blur: 0, visibility: [], resizes: 0, selections: 0, contextMenus: 0
   };
@@ -162,8 +162,21 @@
     if (/^insert/.test(type) && type !== "insertFromPaste" && performance.now() - lastKeyAt > 150) b.inputWithoutKey++;
     var tgt = e.target;
     if (tgt && tgt.type) b.inputFieldTypes[tgt.type] = (b.inputFieldTypes[tgt.type] || 0) + 1;
+    // No inputType: browser autofill (a trusted event, the browser fired it) or a value set by code
+    // followed by a dispatched Event("input") (always untrusted). The :autofill state cross-checks it.
+    if (type === "none") {
+      if (e.isTrusted) b.untypedTrusted++; else b.untypedUntrusted++;
+      if (tgt && autofillSeen && !autofillSeen.has(tgt)) setTimeout(function () {
+        if (!autofillSeen.has(tgt) && isAutofilled(tgt)) { autofillSeen.add(tgt); b.autofilled++; behaviorDirty = true; }
+      }, 50);
+    }
     touch();
   });
+  var autofillSeen = typeof WeakSet === "function" ? new WeakSet() : null;
+  function isAutofilled(el) {
+    try { if (el.matches(":autofill")) return true; } catch (_) {}
+    try { return el.matches(":-webkit-autofill"); } catch (_) { return false; }
+  }
   on(document, "paste", function () { b.pastes++; touch(); });
   on(document, "copy", function () { b.copies++; });
   on(window, "scroll", function (e) { b.scrolls++; if (!e.isTrusted) b.scrollUntrusted++; b.maxScrollY = Math.max(b.maxScrollY, Math.round(window.scrollY)); touch(); });
