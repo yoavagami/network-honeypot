@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, type AgentBucket, type AgentConsistencyCheck, type AgentRequestRow, type AgentVisitsResponse } from "../api.js";
+import { LabRunsPanel } from "../components/LabRunsPanel.js";
 import { AgentBadge, ControlChip, ProbabilityBar, BUCKET_LABEL, CONTROL_LABEL, TYPE_LABEL } from "../components/AgentBadge.js";
 
 const BUCKETS: AgentBucket[] = ["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"];
@@ -17,6 +18,24 @@ const SHOP_STEP_LABEL: Record<string, string> = {
 type Tab = "visits" | "requests" | "lab";
 
 /** "3 ✓" when the page agrees with the server, "1 ✗ language" when not, "—" without a page script. */
+/** Lab label with whether it came from a signed link (ground truth) or a bare ?lab= (claimed). */
+function LabCell({ lab, verified }: { lab: string | null; verified: boolean }) {
+  if (!lab) return <span className="muted">—</span>;
+  return (
+    <span className="mono">
+      {lab}{" "}
+      <span className={`check-pill ${verified ? "match" : "unknown"}`} title={verified ? "Started from a signed lab link — ground truth" : "Bare ?lab= label — anyone can type one, so it isn't used as ground truth"}>
+        {verified ? "signed" : "claimed"}
+      </span>
+    </span>
+  );
+}
+
+function ago(iso: string): string {
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  return s < 90 ? `${s} s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`;
+}
+
 function ChecksCell({ checks }: { checks: AgentConsistencyCheck[] }) {
   if (!checks?.length) return <span className="muted">—</span>;
   const bad = checks.filter((c) => c.status === "mismatch");
@@ -38,7 +57,11 @@ export function AgentsPage() {
   const [why, setWhy] = useState("");
   const [whyInput, setWhyInput] = useState("");
   const [whyScope, setWhyScope] = useState("any");
+  // Lab tab: signed runs only (ground truth), or every ?lab= label including claimed ones.
+  const [labScope, setLabScope] = useState<"verified" | "only">("verified");
   const [visits, setVisits] = useState<AgentVisitsResponse | null>(null);
+  // A run picked in the Lab runs table — shows exactly that label's visits.
+  const [labPick, setLabPick] = useState<string>("");
   const [requests, setRequests] = useState<AgentRequestRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +76,7 @@ export function AgentsPage() {
     } else {
       setVisits(null);
       const params: Record<string, string> = { range };
-      if (tab === "lab") params.lab = "only";
+      if (tab === "lab") params.lab = q && labPick === q ? q : labScope;
       if (bucket) params.bucket = bucket;
       if (type) params.type = type;
       if (shop) params.shop = shop;
@@ -62,9 +85,9 @@ export function AgentsPage() {
       if (why) Object.assign(params, { why, whyScope });
       api.agentVisits(params).then(setVisits).catch((e) => setError(String(e.message ?? e)));
     }
-  }, [tab, range, bucket, type, shop, control, q, why, whyScope]);
+  }, [tab, range, bucket, type, shop, control, q, why, whyScope, labScope, labPick]);
 
-  // Every query re-scores the whole range server-side — debounce typing.
+  // Debounce typing: each change is a new query.
   useEffect(() => {
     const t = setTimeout(() => setQ(qInput.trim()), 400);
     return () => clearTimeout(t);
@@ -81,7 +104,8 @@ export function AgentsPage() {
       <h1>Agents</h1>
       <p className="muted" style={{ marginTop: "-.5rem" }}>
         Probability that each visit was an AI agent, with the evidence. Scores are <strong>uncalibrated</strong> until tuned on labeled lab runs (<span className="mono">?lab=…</span>).
-        Proof (a verified signature, an operator IP list, a known agent's page marker) overrides the score.
+        Proof (a verified signature, an operator IP list, a known agent's page marker) overrides the score.{" "}
+        <Link to="/agents/signals">All score signals →</Link>
       </p>
 
       <div className="tabs">
@@ -146,7 +170,22 @@ export function AgentsPage() {
       </div>
 
       {error && <div className="banner error">{error}</div>}
-      {visits?.truncated && tab !== "requests" && <div className="banner warn">Only the first 25,000 requests in this range were scored — narrow the time range.</div>}
+      {visits?.truncated && tab !== "requests" && <div className="banner warn">The "why" filter only searched the newest 5,000 visits in this range — narrow the time range or add filters.</div>}
+      {visits && tab !== "requests" && (visits.lastScoredAt
+        ? <p className="muted small">Scores are stored by the scoring worker as visits happen (open visits are rescored every ~30 s) · last update {ago(visits.lastScoredAt)}{visits.data[0]?.score.scorerVersion ? ` · scorer ${visits.data[0].score.scorerVersion}` : ""}</p>
+        : <div className="banner warn">No stored scores yet. The honeypot's scoring worker fills this in as traffic arrives; to backfill history run <span className="mono">pnpm rescore --days 7</span>.</div>)}
+      {tab === "lab" && (
+        <>
+          <LabRunsPanel onPick={(label) => { setLabPick(label); setQInput(label); setQ(label); }} />
+          <div className="toolbar">
+            <select value={labScope} onChange={(e) => { setLabScope(e.target.value as "verified" | "only"); setLabPick(""); }} aria-label="Lab labels">
+              <option value="verified">Signed runs only (ground truth)</option>
+              <option value="only">All lab labels, including claimed</option>
+            </select>
+            {labPick && <button type="button" onClick={() => { setLabPick(""); setQInput(""); setQ(""); }}>Show all runs (now: {labPick})</button>}
+          </div>
+        </>
+      )}
 
       {tab !== "requests" && (
         <div className="panel">
@@ -173,7 +212,7 @@ export function AgentsPage() {
               {visits?.data.map((v) => (
                 <tr key={v.id} onClick={() => navigate(`/agents/${encodeURIComponent(v.id)}`)}>
                   <td>{new Date(v.lastAt).toLocaleString()}</td>
-                  {tab === "lab" && <td className="mono">{v.lab}</td>}
+                  {tab === "lab" && <td><LabCell lab={v.lab} verified={v.labVerified} /></td>}
                   <td><AgentBadge bucket={v.score.bucket} />{v.score.proven && <span className="muted"> ✓ proven</span>}</td>
                   <td><ProbabilityBar p={v.score.probability} /></td>
                   <td>{TYPE_LABEL[v.score.type] ?? v.score.type}</td>
@@ -181,13 +220,13 @@ export function AgentsPage() {
                   <td className="mono">{v.score.agent ?? "—"}</td>
                   <td className="cell-reason">{v.score.reasons.slice(0, 2).map((r) => r.text).join(" · ") || "no distinguishing signals"}</td>
                   <td><ChecksCell checks={v.score.checks} /></td>
-                  <td>{v.requestCount}{v.lab && tab !== "lab" ? <span className="muted"> · {v.lab}</span> : null}</td>
+                  <td>{v.requestCount}{v.lab && tab !== "lab" ? <span className="muted"> · {v.lab}{v.labVerified ? " (signed)" : ""}</span> : null}{v.unboundBeacons ? <span className="check-pill mismatch" title="Page-script beacons for page loads this visitor was never served — left out of the score"> {v.unboundBeacons} forged</span> : null}</td>
                   <td>{v.shop ? `${SHOP_STEP_LABEL[v.shop.furthestStep ?? ""] ?? "browsed"}${v.shop.orderTotalCents ? ` · €${(v.shop.orderTotalCents / 100).toFixed(2)}` : ""}` : "—"}</td>
                   <td>{v.network ?? "—"}{v.country ? ` · ${v.country}` : ""}</td>
                   <td className="ua-cell" title={v.userAgent ?? ""}>{v.userAgent ?? "—"}</td>
                 </tr>
               ))}
-              {visits && visits.data.length === 0 && <tr><td colSpan={13} className="muted">{tab === "lab" ? "No labeled runs yet — open the site with ?lab=<label>." : "No visits in this range."}</td></tr>}
+              {visits && visits.data.length === 0 && <tr><td colSpan={13} className="muted">{tab === "lab" ? "No lab visits in this range — create a signed link above and open the site with it." : "No visits in this range."}</td></tr>}
             </tbody>
           </table>
           {visits && visits.total > visits.data.length && <p className="muted">Showing {visits.data.length} of {visits.total} visits.</p>}

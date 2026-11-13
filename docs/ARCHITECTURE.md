@@ -190,11 +190,11 @@ Nginx, trusted the same way `X-Real-IP` is — see §9) and stored on `requests.
 connection in Phase 3 — the schema columns existed since Phase 1 but were unpopulated
 (`null` hardcoded in capture.ts) until this was actually wired up.
 
-JA3/JA4 (which requires seeing the raw ClientHello) is a materially bigger lift than the above —
-it needs either Nginx's stream-layer SSL preread plus a JA3-computing component (Nginx itself
-doesn't compute the fingerprint hash, `ssl_preread` only exposes SNI/ALPN/protocol) or a dedicated
-TLS-fingerprinting proxy in front of Nginx. Deferred, not attempted partially: still not
-implemented, and nothing in the data model or UI claims otherwise. Anything derived from the
+JA3/JA4 (which requires seeing the raw ClientHello) is now implemented by a dedicated edge sensor in
+front of Nginx (`apps/honeypot/src/edge/`): it parses the ClientHello (JA4, JA4_r, JA3, JA3N and the
+raw cipher/extension lists) and the HTTP/2 opening (Akamai-style fingerprint, SETTINGS, pseudo-header
+order), then hands them to Nginx in a PROXY v2 TLV (`X-HP-Edge`). They are stored per request in
+`request_signals` — see docs/AGENT_SENSING.md. Anything derived from the
 facts that *are* captured (e.g. "looks like a Python TLS stack") is always labeled `inference`,
 never `fact`.
 
@@ -217,7 +217,7 @@ IP-based logic (rate limiting, geo, actor correlation).
 | OpenTelemetry (app traces) | Cross-service request tracing | Moderate — new collector to run/secure | Deferred to Phase 3, useful once there are more than 2 services |
 | eBPF connection telemetry | Raw TCP/connection-level visibility, survives app-layer evasion | High — kernel-level tooling, needs care in a container host | Phase 3, opt-in, only if host-level visibility becomes a real gap |
 | Zeek | Rich network protocol analysis | High — separate always-on service watching the host's NIC | Not planned; overkill for an HTTP(S)-only honeypot; revisit only if we add non-HTTP services |
-| JA3/JA4 | TLS client fingerprinting | Moderate — needs stream-layer preread or sidecar | Phase 3 |
+| JA3/JA4 | TLS client fingerprinting | Moderate — needs stream-layer preread or sidecar | **Done** — edge sensor (`apps/honeypot/src/edge/`) |
 
 Phase 1 conclusion: **Nginx + application-layer events already answer the vast majority of the
 questions in the success-criteria list** (§53 of the brief). We add network-layer depth only when

@@ -257,6 +257,8 @@ export const requestSignals = pgTable("request_signals", {
   identityAgent: text("identity_agent"),
   ipAgentRange: text("ip_agent_range"),
   ipTor: boolean("ip_tor").notNull(),
+  pageLoadId: text("page_load_id"),
+  labVerified: boolean("lab_verified").notNull().default(false),
   data: jsonb("data").notNull(),
 });
 
@@ -270,5 +272,52 @@ export const clientSignals = pgTable("client_signals", {
   pageLoadId: text("page_load_id"),
   kind: text("kind").notNull(),
   path: text("path"),
+  labVerified: boolean("lab_verified").notNull().default(false),
+  /** Beacon's page-load id was served to this visitor; null = not checked (pre-0012 rows). */
+  bound: boolean("bound"),
+  schemaVersion: integer("schema_version").notNull().default(1),
+  sdkVersion: text("sdk_version"),
   data: jsonb("data").notNull(),
+});
+
+// migrations/0012_sdk_v2_foundations.sql
+export const labRuns = pgTable("lab_runs", {
+  label: text("label").primaryKey(),
+  kind: text("kind").notNull(),
+  agent: text("agent"),
+  scenario: text("scenario"),
+  notes: text("notes"),
+  createdBy: uuid("created_by"),
+  createdAt: timestamptz("created_at").notNull(),
+  expiresAt: timestamptz("expires_at").notNull(),
+});
+
+export const visitScores = pgTable("visit_scores", {
+  visitId: text("visit_id").primaryKey(),
+  scorerVersion: text("scorer_version").notNull(),
+  computedAt: timestamptz("computed_at").notNull(),
+  settled: boolean("settled").notNull().default(false),
+  actorId: uuid("actor_id").notNull(),
+  sessionId: uuid("session_id"),
+  firstAt: timestamptz("first_at").notNull(),
+  lastAt: timestamptz("last_at").notNull(),
+  requestCount: integer("request_count").notNull(),
+  pageCount: integer("page_count").notNull(),
+  labLabel: text("lab_label"),
+  labVerified: boolean("lab_verified").notNull().default(false),
+  probability: doublePrecision("probability").notNull(),
+  bucket: text("bucket").notNull(),
+  type: text("type").notNull(),
+  agent: text("agent"),
+  proven: boolean("proven").notNull(),
+  signals: text("signals").array().notNull(),
+  reasons: jsonb("reasons").notNull(),
+  ip: inet("ip"),
+  summary: jsonb("summary").notNull(),
+});
+
+export const visitRequests = pgTable("visit_requests", {
+  requestId: uuid("request_id").primaryKey(),
+  visitId: text("visit_id").notNull(),
+  createdAt: timestamptz("created_at").notNull(),
 });

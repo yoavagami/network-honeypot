@@ -57,6 +57,11 @@ services:
       WP_INSTALL_BAIT_ENABLED: ${WP_INSTALL_BAIT_ENABLED:-false}
       IP_HASH_SECRET: ${IP_HASH_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
+      # Verifies signed ?lab= links minted by admin-api (same value there). Unset: all lab labels
+      # are recorded as "claimed", none as ground truth.
+      LAB_LINK_SECRET: ${LAB_LINK_SECRET:-}
+      SCORER_ENABLED: ${SCORER_ENABLED:-true}
+      SCORER_INTERVAL_MS: ${SCORER_INTERVAL_MS:-30000}
       PORT: 8080
       HOST: 0.0.0.0
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -101,6 +106,8 @@ services:
       DATABASE_URL: postgres://admin_api_role:${ADMIN_API_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-honeypot}
       SESSION_SECRET: ${SESSION_SECRET}
       IP_HASH_SECRET: ${IP_HASH_SECRET}
+      LAB_LINK_SECRET: ${LAB_LINK_SECRET:-}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-}
       PORT: 8090
       HOST: 0.0.0.0
       ADMIN_WEB_ORIGIN: ${ADMIN_WEB_ORIGIN:-http://localhost:8081}

@@ -62,6 +62,7 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
     echo "IP_HASH_SECRET=$(openssl rand -hex 24)"
     echo "COOKIE_SECRET=$(openssl rand -hex 24)"
     echo "SESSION_SECRET=$(openssl rand -hex 24)"
+    echo "LAB_LINK_SECRET=$(openssl rand -hex 24)"
     echo "ADMIN_WEB_ORIGIN=http://localhost:8081"
     echo "ADMIN_API_PUBLIC_URL=http://localhost:8090"
     echo "SEED_ADMIN_USERNAME=admin"
@@ -81,6 +82,12 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
   echo
 else
   echo "    .env already present, leaving it alone"
+  # Secrets added after the first deploy are appended once, never rotated (rotating
+  # LAB_LINK_SECRET would invalidate every lab link already handed out).
+  if ! $SSH "grep -q '^LAB_LINK_SECRET=' $REMOTE_DIR/.env"; then
+    echo "    adding LAB_LINK_SECRET (signed lab links)"
+    $SSH "echo LAB_LINK_SECRET=\$(openssl rand -hex 24) >> $REMOTE_DIR/.env"
+  fi
 fi
 
 echo "==> Starting Postgres"
@@ -97,6 +104,16 @@ $SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
     --env-file .env -e DATABASE_URL=\"postgres://\${POSTGRES_SUPERUSER}:\${POSTGRES_SUPERUSER_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
     -e CI=true \
     -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed'"
+
+echo "==> Backfilling stored visit scores (idempotent; the honeypot's worker keeps them current)"
+# visit_scores (migrations/0012) is what the Agents list reads. Rescore the last 30 days (the
+# list's widest range) once per deploy so it's complete and reflects any weight change.
+$SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
+  docker run --rm --network container:\$(docker compose ps -q postgres) \
+    --env-file .env -e DATABASE_URL=\"postgres://honeypot_role:\${HONEYPOT_DB_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
+    -e CRM_DATABASE_URL=unused -e CI=true \
+    -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm rescore --days 30'" \
+  || echo "    WARNING: rescore failed — the Agents list fills in as the worker scores new activity"
 
 echo "==> Installing daily retention cron job (redacts old raw IPs, manages monthly partitions)"
 $SSH "chmod +x $REMOTE_DIR/infrastructure/vps/retention-cron.sh"

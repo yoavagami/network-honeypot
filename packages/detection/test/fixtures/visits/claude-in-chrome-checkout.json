@@ -1,0 +1,222 @@
+{
+  "name": "claude-in-chrome-checkout",
+  "source": "synthetic",
+  "description": "Claude in Chrome driving the user's own Chrome: DOM marker injected, tab hidden, cursor teleports.",
+  "expect": {
+    "bucket": "ai_agent",
+    "type": "in_browser_agent",
+    "proven": true,
+    "agent": "claude-in-chrome"
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:00:40Z",
+        "method": "GET",
+        "path": "/products/aurora-kettle",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:01:30Z",
+        "method": "GET",
+        "path": "/cart",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "hardwareConcurrency": 10,
+            "deviceMemory": 8,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer"
+            ],
+            "pdfViewerEnabled": true
+          },
+          "automation": {
+            "globals": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "cdpRuntime": false,
+            "chrome": {
+              "runtime": false
+            }
+          },
+          "webgl": {
+            "supported": true,
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 945,
+            "innerW": 1512,
+            "innerH": 860,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "low": {
+              "platform": "macOS",
+              "mobile": false
+            }
+          },
+          "doc": {
+            "visibility": "hidden",
+            "hasFocus": false
+          },
+          "globalsDiff": [],
+          "canvas": "a1b2c3",
+          "artifacts": []
+        }
+      ],
+      "behaviors": [
+        {
+          "pl": "plA000000000000000000001",
+          "path": "/",
+          "visibility": "hidden",
+          "focus": false,
+          "artifacts": [
+            {
+              "tag": "DIV",
+              "id": "claude-agent-stop-container",
+              "known": "claude-in-chrome"
+            }
+          ],
+          "behavior": {
+            "mouseMoves": 3,
+            "mouseDistance": 220,
+            "clicks": [
+              {
+                "t": 5200,
+                "trusted": true,
+                "movesLast1s": 1,
+                "hadMouseDown": true,
+                "dx": 0,
+                "dy": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "plA000000000000000000001",
+          "path": "/",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "path": "/products/aurora-kettle",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "path": "/cart",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ],
+      "hits": [
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "css",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "js",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "css",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "js",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "css",
+          "at": "2026-11-10T10:01:30Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "js",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ]
+    }
+  }
+}

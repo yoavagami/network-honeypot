@@ -73,7 +73,7 @@ export function AgentVisitPage() {
       <p className="muted" style={{ marginTop: "-.5rem" }}>
         {new Date(v.firstAt).toLocaleString()} → {new Date(v.lastAt).toLocaleTimeString()} · {v.requestCount} requests · {v.network.organization ?? "unknown network"}
         {v.network.country ? ` · ${v.network.city ? `${v.network.city}, ` : ""}${v.network.country}` : ""} · <Link to={`/actors/${v.actorId}`}>actor {v.actorId.slice(0, 8)}</Link>
-        {v.lab ? <> · lab label <strong className="mono">{v.lab}</strong></> : null}
+        {v.lab ? <> · lab label <strong className="mono">{v.lab}</strong> <span className={`check-pill ${v.labVerified ? "match" : "unknown"}`} title={v.labVerified ? "Started from a signed lab link — ground truth" : "Bare ?lab= label — anyone can type one, so it isn't ground truth"}>{v.labVerified ? "signed" : "claimed"}</span></> : null}
       </p>
 
       <div className="panel">
@@ -92,6 +92,8 @@ export function AgentVisitPage() {
           <div><div className="muted small">Basis</div><div>{s.proven ? "Proven identity" : `Evidence score — leans ${s.leaning}`}</div></div>
         </div>
         {!s.calibrated && !s.proven && <p className="muted small">Uncalibrated: weights are expert judgment until tuned on labeled runs.</p>}
+        {v.unboundBeacons > 0 && <div className="banner warn">{v.unboundBeacons} page-script beacon{v.unboundBeacons === 1 ? "" : "s"} claimed page loads this visitor was never served — forged or replayed, so they are left out of the score below.</div>}
+        {s.scorerVersion && <p className="muted small">Scored now with scorer {s.scorerVersion} (the Agents list shows the stored score, which can be up to ~30 s older).</p>}
       </div>
 
       <div className="panel">

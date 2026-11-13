@@ -21,6 +21,11 @@ import { registerRumRoutes } from "./routes/rum.js";
 import { registerShopRoutes } from "./routes/shop.js";
 import { applyLadder, registerLadderRoutes } from "./sensing/ladder.js";
 import { startIpIntelRefresh } from "./sensing/ipIntel.js";
+import { setPageLoadLookup } from "./sensing/pageLoads.js";
+import { startVisitScorer } from "./scoring/visitScorer.js";
+import { eq } from "drizzle-orm";
+import { schema } from "@honeypot/db";
+import { db } from "./db.js";
 
 async function main() {
   const app = Fastify({
@@ -52,6 +57,16 @@ async function main() {
   // Rendering ladder: page-load id + CSS / noscript beacons in every HTML document.
   app.addHook("onSend", async (request, reply, payload) => applyLadder(request, reply, payload));
 
+  // Beacon → served-page binding falls back to the DB for ids minted before a restart.
+  setPageLoadLookup(async (pl) => {
+    const [row] = await db
+      .select({ actorId: schema.requestSignals.actorId, sessionId: schema.requestSignals.sessionId })
+      .from(schema.requestSignals)
+      .where(eq(schema.requestSignals.pageLoadId, pl))
+      .limit(1);
+    return row ?? null;
+  });
+
   const queue = new IngestionQueue(logger);
   registerIngestion(app, queue);
 
@@ -79,6 +94,7 @@ async function main() {
   startCorrelationWorker(queue, logger);
   startHealthMonitor(queue, logger);
   startIpIntelRefresh(logger);
+  if (config.scorerEnabled) startVisitScorer(logger);
 
   await app.listen({ port: config.port, host: config.host });
   logger.info({ msg: "honeypot app listening", port: config.port });

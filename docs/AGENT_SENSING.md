@@ -9,7 +9,7 @@ detected in general and identified specifically where possible.
 |---|---|---|
 | Network | `apps/honeypot/src/edge/` (edge sensor on :443) | TLS ClientHello → JA4 / JA4_r / JA3 / JA3N + raw lists; HTTP/2 opening → Akamai fingerprint (settings, window update, priority, pseudo-header order); HTTP/1.1 raw header names in original order and case; negotiated TLS version / cipher / ALPN; handshake timing |
 | Request | `apps/honeypot/src/sensing/` → `request_signals` | Full header order and values (cookie / authorization / secret-looking values never stored); Web Bot Auth verification (RFC 9421, key fetched from the signer's directory); operator IP ranges (OpenAI, Anthropic, Google, Perplexity, Bing — refreshed every 12h); Tor; forward-confirmed rDNS; header/TLS consistency flags; **identity verdict** with reasons |
-| Browser | `apps/honeypot/static/app.js` → `POST /api/v1/rum` → `client_signals` | Device/browser fingerprint (screen, GPU, fonts, canvas/audio hash, client hints, timezone…); automation tells (webdriver, CDP, Playwright/Puppeteer/Selenium globals, injected globals); agent DOM artifacts (`claude-agent-stop-container`, `pplx-agent-overlay-stop-button`, anything added to the page); behavior (mouse path, click offset from centre, typing without key presses, scroll, focus/visibility). Never records key values or field contents. |
+| Browser | `apps/honeypot/static/app.js` → `POST /api/v1/rum` → `client_signals` | Device/browser fingerprint (screen, GPU, fonts, canvas/audio hash, client hints, timezone…); automation tells (webdriver, CDP, Playwright/Puppeteer/Selenium globals, injected globals); agent DOM artifacts (`claude-agent-stop-container`, `pplx-agent-overlay-stop-button`, anything added to the page); behavior (mouse-move counts, distance and speed — not the path itself; click offset from the target's centre; typing without key presses; scroll, focus/visibility). Never records key values or field contents. Every beacon is checked against the page it claims (`sensing/pageLoads.ts`): beacons for page loads never served to that visitor are stored as `bound = false` and left out of the score. |
 | Rendering | `apps/honeypot/src/sensing/ladder.ts` → `client_signals` (kind `ladder`) | Per HTML page load: did the client render CSS, fetch the `<noscript>` image, run JavaScript — see [Rendering ladder](#rendering-ladder). |
 
 Identity verdicts: `verified` (signature / IP list / rDNS proves the claim), `spoofed` (claim
@@ -55,9 +55,13 @@ safest mode and other JS-disabled browsers.
 
 ## Controlled runs
 
-Add `?lab=<label>` to any URL (letters, digits, `.-_`). The browser keeps the label for 30 days
-(cookie `hp_lab`) and every request and beacon is tagged with it — that's ground truth for
-analysis. Use a new label per run, e.g. `chatgpt-agent-1`.
+Create a **signed lab link** on the dashboard (Agents → Lab runs): label it
+`<agent>-<scenario>-<n>` (e.g. `claude-chrome-checkout-1`) or `human-<browser>-<n>` for human
+control runs, open the link in the browser or agent under test, and every request and beacon from
+that browser is tagged with the label until the link expires (cookie `hp_lab`). Only signed runs
+(`lab_verified`) are ground truth. A bare `?lab=<label>` still works for quick checks but is
+recorded as *claimed* — anyone can type one, so it never feeds evaluation. Links are signed with
+`LAB_LINK_SECRET` (`packages/detection/src/labToken.ts`), shared by the honeypot and admin-api.
 
 ## Report
 
@@ -107,7 +111,10 @@ score), lab runs. Visit detail shows network identity, the page-script fingerpri
 (per page: CSS rendered / `<noscript>` image / JavaScript ran), behavior, the shop journey with
 prices, and every request. Event detail pages get an "Agent analysis" panel.
 
-Scoring is `packages/detection/src/agentScore.ts`, computed on read (changing a weight re-scores
-history). Proof — verified signature / operator IP list / rDNS, or a known agent's DOM marker —
+Scoring is `packages/detection/src/agentScore.ts` with its signals in `signals.ts`. The honeypot's
+scoring worker stores each visit's verdict in `visit_scores` as the visit happens (open visits are
+rescored every ~30 s, and once more when they settle), so the list is an indexed query; the visit
+detail page rescores on read. After changing a weight, bump `SCORER_VERSION` and run
+`pnpm rescore --days N` (deploy.sh runs `--days 30`). Proof — verified signature / operator IP list / rDNS, or a known agent's DOM marker —
 overrides the sum. Automation without AI-specific evidence or a visibly driven browser is capped at
 "Not sure". Weights are judgment until tuned on lab runs, so the page marks scores uncalibrated.

@@ -1,0 +1,45 @@
+{
+  "name": "curl-from-home",
+  "source": "synthetic",
+  "description": "curl fetching one page from a home connection \u2014 a script, not shown to be an AI.",
+  "expect": {
+    "bucket": "not_sure",
+    "type": "script",
+    "signalsInclude": [
+      "automation_client"
+    ]
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "automation",
+        "agent": "curl",
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": "curl",
+        "aiApp": null,
+        "browserFamily": null,
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "curl/8.4.0",
+        "acceptLanguage": null
+      }
+    ],
+    "client": {
+      "fingerprints": [],
+      "behaviors": []
+    },
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z"
+  }
+}

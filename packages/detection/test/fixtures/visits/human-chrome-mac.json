@@ -1,0 +1,398 @@
+{
+  "name": "human-chrome-mac",
+  "source": "synthetic",
+  "description": "Person on a Mac in Chrome, home network, browsing to the cart with a mouse and typing.",
+  "expect": {
+    "bucket": "not_ai_agent",
+    "type": "human",
+    "signalsInclude": [
+      "human_mouse",
+      "residential_ip"
+    ],
+    "signalsExclude": [
+      "beacon_unbound",
+      "cursor_teleport"
+    ]
+  },
+  "evidence": {
+    "requests": [
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:00:40Z",
+        "method": "GET",
+        "path": "/products/aurora-kettle",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:01:30Z",
+        "method": "GET",
+        "path": "/cart",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-10T10:00:00Z",
+        "method": "GET",
+        "path": "/assets/shop.css",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ],
+    "client": {
+      "fingerprints": [
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "hardwareConcurrency": 10,
+            "deviceMemory": 8,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer"
+            ],
+            "pdfViewerEnabled": true
+          },
+          "automation": {
+            "globals": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "cdpRuntime": false,
+            "chrome": {
+              "runtime": false
+            }
+          },
+          "webgl": {
+            "supported": true,
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 945,
+            "innerW": 1512,
+            "innerH": 860,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "low": {
+              "platform": "macOS",
+              "mobile": false
+            }
+          },
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "canvas": "a1b2c3",
+          "artifacts": []
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "hardwareConcurrency": 10,
+            "deviceMemory": 8,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer"
+            ],
+            "pdfViewerEnabled": true
+          },
+          "automation": {
+            "globals": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "cdpRuntime": false,
+            "chrome": {
+              "runtime": false
+            }
+          },
+          "webgl": {
+            "supported": true,
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 945,
+            "innerW": 1512,
+            "innerH": 860,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "low": {
+              "platform": "macOS",
+              "mobile": false
+            }
+          },
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "canvas": "a1b2c3",
+          "artifacts": []
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "hardwareConcurrency": 10,
+            "deviceMemory": 8,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer"
+            ],
+            "pdfViewerEnabled": true
+          },
+          "automation": {
+            "globals": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "cdpRuntime": false,
+            "chrome": {
+              "runtime": false
+            }
+          },
+          "webgl": {
+            "supported": true,
+            "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 945,
+            "innerW": 1512,
+            "innerH": 860,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "low": {
+              "platform": "macOS",
+              "mobile": false
+            }
+          },
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "canvas": "a1b2c3",
+          "artifacts": []
+        }
+      ],
+      "behaviors": [
+        {
+          "pl": "plA000000000000000000002",
+          "path": "/products/aurora-kettle",
+          "visibility": "visible",
+          "focus": true,
+          "behavior": {
+            "mouseMoves": 420,
+            "mouseDistance": 15800,
+            "wheels": 14,
+            "scrolls": 30,
+            "keyDowns": 12,
+            "keyIntervals": [
+              90,
+              210,
+              130,
+              75,
+              320,
+              140,
+              95,
+              260,
+              180
+            ],
+            "keyKinds": {
+              "printable": 10,
+              "nav": 2,
+              "modifier": 1
+            },
+            "clicks": [
+              {
+                "t": 4000,
+                "x": 512,
+                "y": 388,
+                "trusted": true,
+                "movesLast1s": 24,
+                "hadMouseDown": true,
+                "dx": 0.21,
+                "dy": -0.3
+              },
+              {
+                "t": 15000,
+                "x": 700,
+                "y": 520,
+                "trusted": true,
+                "movesLast1s": 31,
+                "hadMouseDown": true,
+                "dx": -0.18,
+                "dy": 0.12
+              },
+              {
+                "t": 31000,
+                "x": 640,
+                "y": 300,
+                "trusted": true,
+                "movesLast1s": 40,
+                "hadMouseDown": true,
+                "dx": 0.05,
+                "dy": 0.27
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [],
+    "evaluatedAt": "2026-11-10T11:00:00Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "plA000000000000000000001",
+          "path": "/",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "path": "/products/aurora-kettle",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "path": "/cart",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ],
+      "hits": [
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "css",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000001",
+          "rung": "js",
+          "at": "2026-11-10T10:00:00Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "css",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000002",
+          "rung": "js",
+          "at": "2026-11-10T10:00:40Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "css",
+          "at": "2026-11-10T10:01:30Z"
+        },
+        {
+          "pl": "plA000000000000000000003",
+          "rung": "js",
+          "at": "2026-11-10T10:01:30Z"
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { IngestionQueue } from "../ingestion/queue.js";
+import { isBoundPageLoad, recordServedPageLoad } from "./pageLoads.js";
 import "../context.js";
 
 /**
@@ -54,6 +55,7 @@ export function applyLadder(request: FastifyRequest, reply: FastifyReply, payloa
   const out = injectLadder(payload, id);
   if (out === null) return payload;
   request.hp.pageLoadId = id;
+  recordServedPageLoad(id, request.hp.actorId, request.hp.sessionId);
   return out;
 }
 
@@ -65,6 +67,7 @@ export function registerLadderRoutes(app: FastifyInstance, queue: IngestionQueue
       const id = request.params.file.endsWith(`.${ext}`) ? request.params.file.slice(0, -(ext.length + 1)) : "";
       if (!LADDER_ID_RE.test(id)) return reply.status(404).send();
       if (request.hp.actorId) {
+        const bound = await isBoundPageLoad(id, request.hp.actorId, request.hp.sessionId);
         queue.enqueue({
           kind: "client_signals",
           priority: "low",
@@ -75,6 +78,8 @@ export function registerLadderRoutes(app: FastifyInstance, queue: IngestionQueue
             sessionId: request.hp.sessionId || null,
             visitorId: request.hp.visitorId || null,
             labLabel: request.hp.labLabel ?? null,
+            labVerified: request.hp.labVerified ?? false,
+            bound,
             pageLoadId: id,
             kind: "ladder",
             path: null,
@@ -82,7 +87,7 @@ export function registerLadderRoutes(app: FastifyInstance, queue: IngestionQueue
           },
         });
       }
-      reply.type(ext === "png" ? "image/png" : "image/gif").header("Cache-Control", "no-store").send(ext === "png" ? PNG : GIF);
+      return reply.type(ext === "png" ? "image/png" : "image/gif").header("Cache-Control", "no-store").send(ext === "png" ? PNG : GIF);
     });
   }
 }

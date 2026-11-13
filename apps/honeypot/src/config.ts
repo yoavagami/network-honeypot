@@ -22,6 +22,12 @@ export const config = {
   wpInstallBaitEnabled: process.env.WP_INSTALL_BAIT_ENABLED === "true",
   ipHashSecret: required("IP_HASH_SECRET"),
   cookieSecret: required("COOKIE_SECRET"),
+  // Signs/verifies ?lab= links (packages/detection/src/labToken.ts). Shared with admin-api, which
+  // mints the links. Unset: every lab label is recorded as "claimed", none as ground truth.
+  labLinkSecret: process.env.LAB_LINK_SECRET || undefined,
+  // Visit scoring worker (scoring/visitScorer.ts) — how often it rescores visits with new activity.
+  scorerIntervalMs: Number(process.env.SCORER_INTERVAL_MS ?? 30_000),
+  scorerEnabled: process.env.SCORER_ENABLED !== "false",
   rawIpRetentionDays: Number(process.env.RAW_IP_RETENTION_DAYS ?? 7),
   eventRetentionDays: Number(process.env.EVENT_RETENTION_DAYS ?? 90),
   geolocationEnabled: process.env.GEOLOCATION_ENABLED === "true",

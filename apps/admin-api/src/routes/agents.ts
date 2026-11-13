@@ -1,336 +1,159 @@
 import type { FastifyInstance } from "fastify";
-import { scoreVisit, type AgentScore, type RequestEvidence, type VisitEvidence } from "@honeypot/detection";
+import { buildVisits, scoreVisit, signalCatalogue, visitEvidence, visitSummary, VISIT_GAP_MS, type Visit } from "@honeypot/detection";
+import { loadVisitRows } from "@honeypot/db";
 import { client } from "../db.js";
 import { audit } from "../audit.js";
+import { rangeHours, toVisitListRow, whyMatcher, type StoredVisitRow } from "../agentsQuery.js";
 
 /**
  * Agents page API — "was each visit / request an AI agent, how sure, and why".
  *
- * A *visit* is a session (hp_session cookie). Clients that drop cookies get a new session per
- * request, so single-request sessions with no browser beacon are folded into one visit per
- * actor per 30 minutes of activity. Every visit is scored on read by
- * packages/detection/src/agentScore.ts over request_signals + client_signals + shop events, so
- * changing a weight re-scores all history with no migration. Only requests captured since agent
- * sensing went live (they have a request_signals row) are included.
+ * Lists read visit_scores, written by the honeypot's scoring worker
+ * (apps/honeypot/src/scoring/visitScorer.ts) as visits happen — an indexed query instead of
+ * rescoring every request per page view. The visit detail page still scores on read (one visit
+ * is cheap, and it always reflects the current weights). What a "visit" is lives in
+ * packages/detection/src/visits.ts; the rows come from packages/db/src/visitRows.ts.
  */
 
-const RANGES: Record<string, number> = { "1h": 1, "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
-const MAX_REQUESTS = 25_000;
-const FOLD_GAP_MS = 30 * 60_000;
-const PROBING_RE = /\.(env|git|aws|ssh|svn|htpasswd)\b|wp-(config|login|admin|json|content|includes)|phpinfo|xmlrpc|config\.(ya?ml|json|php)|credentials|backup|\.bak\b|docker-compose|server-status|\/\.well-known\/(?!security\.txt|http-message)/i;
-const ASSET_RE = /^\/(assets\/|favicon)/;
-const NON_PAGE_RE = /^\/(api\/|assets\/|favicon|robots\.txt|sitemap|\.well-known)/;
-const SHOP_STEPS = ["SHOP_PRODUCT_VIEW", "SHOP_ADD_TO_CART", "SHOP_CHECKOUT_START", "SHOP_CHECKOUT_DETAILS", "SHOP_CHECKOUT_SHIPPING", "SHOP_PAYMENT_ATTEMPT", "SHOP_ORDER_PLACED"];
+/** Most rows a list query returns before the "why" filter (which runs on the fetched rows). */
+const LIST_CAP = 5_000;
 
-interface ReqRow {
-  request_id: string; created_at: Date; actor_id: string; session_id: string | null; method: string; path: string; query_string: string | null;
-  status_code: number; user_agent_raw: string | null; ip: string | null; lab_label: string | null; identity_verdict: string; identity_agent: string | null;
-  ua_library: string | null; ja4: string | null; h2_fp: string | null; wba_status: string; wba_signer: string | null; ip_tor: boolean;
-  verdict_method: string | null; verdict_reasons: string[] | null; ai_app: string | null; browser_family: string | null; flags: string[] | null;
-  asn: string | null; organization: string | null; country: string | null; city: string | null; accept_language: string | null;
-  page_load_id: string | null;
-}
-interface ClientRow { session_id: string | null; actor_id: string; kind: string; created_at: Date; path: string | null; lab_label: string | null; page_load_id: string | null; data: Record<string, any> }
-interface ShopRow { session_id: string | null; actor_id: string; created_at: Date; event_type: string; request_id: string | null; shop: Record<string, any> | null }
-
-interface Visit {
-  id: string;
-  sessionId: string | null;
-  actorId: string;
-  requests: ReqRow[];
-  client: ClientRow[];
-  shop: ShopRow[];
-}
-
-async function loadVisits(sinceHours: number, filter: { sessionId?: string; actorId?: string } = {}): Promise<{ visits: Visit[]; truncated: boolean }> {
-  const since = new Date(Date.now() - sinceHours * 3600_000).toISOString();
-  const sessionFilter = filter.sessionId ? client`AND r.session_id = ${filter.sessionId}` : filter.actorId ? client`AND r.actor_id = ${filter.actorId}` : client``;
-  const rows = await client<ReqRow[]>`
-    SELECT r.request_id, r.created_at, r.actor_id, r.session_id, r.method, r.path, r.query_string, r.status_code, r.user_agent_raw,
-           host(r.ip_raw) AS ip, s.lab_label, s.identity_verdict, s.identity_agent, s.ua_library, s.ja4, s.h2_fp, s.wba_status, s.wba_signer,
-           s.ip_tor, s.data #>> '{identity,method}' AS verdict_method,
-           ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data #> '{identity,reasons}', '[]'))) AS verdict_reasons,
-           s.data #>> '{ua,aiApp}' AS ai_app, s.data #>> '{ua,browser,family}' AS browser_family,
-           ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data -> 'consistencyFlags', '[]'))) AS flags,
-           s.data #>> '{headers,values,accept-language}' AS accept_language, s.data ->> 'pageLoadId' AS page_load_id,
-           a.asn, a.organization, a.country, a.city
-    FROM requests r
-    JOIN request_signals s USING (request_id)
-    LEFT JOIN actors a ON a.actor_id = r.actor_id
-    WHERE r.created_at >= ${since}::timestamptz ${sessionFilter}
-    ORDER BY r.created_at ASC
-    LIMIT ${MAX_REQUESTS}`;
-  // This client hands timestamps back as strings (see packages/db client config).
-  for (const r of rows) r.created_at = new Date(r.created_at);
-  const truncated = rows.length >= MAX_REQUESTS;
-  const actorIds = [...new Set(rows.map((r) => r.actor_id))];
-  const clientRows = actorIds.length
-    ? await client<ClientRow[]>`
-        SELECT session_id, actor_id, kind, created_at, path, lab_label, page_load_id,
-               CASE WHEN kind = 'fp' THEN jsonb_build_object(
-                 'nav', jsonb_build_object('webdriver', data #> '{nav,webdriver}', 'languages', data #> '{nav,languages}', 'platform', data #> '{nav,platform}', 'hardwareConcurrency', data #> '{nav,hardwareConcurrency}',
-                   'ua', data #> '{nav,ua}', 'deviceMemory', data #> '{nav,deviceMemory}', 'plugins', data #> '{nav,plugins}',
-                   'vendor', data #> '{nav,vendor}', 'productSub', data #> '{nav,productSub}', 'buildID', data #> '{nav,buildID}',
-                   'pdfViewerEnabled', data #> '{nav,pdfViewerEnabled}', 'mimeTypes', data #> '{nav,mimeTypes}'),
-                 'permNotifications', data -> 'permNotifications',
-                 'voices', data -> 'voices', 'devices', data -> 'devices', 'battery', data -> 'battery',
-                 'automation', data -> 'automation', 'webgl', data -> 'webgl', 'screen', data -> 'screen', 'doc', data -> 'doc',
-                 'globalsDiff', data -> 'globalsDiff', 'artifacts', data -> 'artifacts', 'intl', data -> 'intl', 'timing', data -> 'timing',
-                 'uaData', data -> 'uaData', 'canvas', data -> 'canvas', 'audio', data -> 'audio', 'fonts', data -> 'fonts')
-               ELSE data END AS data
-        FROM client_signals WHERE created_at >= ${since}::timestamptz AND actor_id = ANY(${actorIds}::uuid[]) ORDER BY created_at`
-    : [];
-  const shopRows = actorIds.length
-    ? await client<ShopRow[]>`
-        SELECT session_id, actor_id, created_at, event_type, request_id, metadata -> 'shop' AS shop
-        FROM events WHERE created_at >= ${since}::timestamptz AND event_type LIKE 'SHOP\\_%' AND actor_id = ANY(${actorIds}::uuid[]) ORDER BY created_at`
-    : [];
-
-  for (const c of clientRows) c.created_at = new Date(c.created_at);
-  for (const e of shopRows) e.created_at = new Date(e.created_at);
-  // Sessions with more than one request or any browser beacon are real visits; the rest fold.
-  const sessionCounts = new Map<string, number>();
-  for (const r of rows) if (r.session_id) sessionCounts.set(r.session_id, (sessionCounts.get(r.session_id) ?? 0) + 1);
-  const beaconSessions = new Set(clientRows.map((c) => c.session_id).filter(Boolean) as string[]);
-  const visits = new Map<string, Visit>();
-  const foldOpen = new Map<string, { key: string; lastMs: number }>();
-  // A browser session splits into separate visits when its lab label changes or it goes quiet for
-  // 30 minutes — one Chrome profile carries a person's browsing and an in-browser agent's runs.
-  const sessionSegments = new Map<string, Array<{ key: string; startMs: number; lastMs: number; lab: string | null }>>();
-  const requestToVisit = new Map<string, string>();
-  for (const r of rows) {
-    let key: string;
-    const t = r.created_at.getTime();
-    if (r.session_id && ((sessionCounts.get(r.session_id) ?? 0) > 1 || beaconSessions.has(r.session_id))) {
-      const segs = sessionSegments.get(r.session_id) ?? [];
-      const cur = segs[segs.length - 1];
-      if (cur && cur.lab === r.lab_label && t - cur.lastMs <= FOLD_GAP_MS) {
-        cur.lastMs = t;
-        key = cur.key;
-      } else {
-        key = `s_${r.session_id}_${t}`;
-        segs.push({ key, startMs: t, lastMs: t, lab: r.lab_label });
-        sessionSegments.set(r.session_id, segs);
-      }
-    } else {
-      const open = foldOpen.get(r.actor_id);
-      if (open && t - open.lastMs <= FOLD_GAP_MS) {
-        key = open.key;
-        open.lastMs = t;
-      } else {
-        key = `a_${r.actor_id}_${t}`;
-        foldOpen.set(r.actor_id, { key, lastMs: t });
-      }
-    }
-    requestToVisit.set(r.request_id, key);
-    let v = visits.get(key);
-    if (!v) {
-      v = { id: key, sessionId: key.startsWith("s_") ? r.session_id : null, actorId: r.actor_id, requests: [], client: [], shop: [] };
-      visits.set(key, v);
-    }
-    v.requests.push(r);
+function listFilters(q: Record<string, string | undefined>, since: Date) {
+  const parts = [client`last_at >= ${since.toISOString()}::timestamptz`];
+  if (q.bucket) parts.push(client`bucket = ${q.bucket}`);
+  if (q.type) parts.push(client`type = ${q.type}`);
+  if (q.lab === "only") parts.push(client`lab_label IS NOT NULL`);
+  else if (q.lab === "verified") parts.push(client`lab_verified`);
+  else if (q.lab) parts.push(client`lab_label = ${q.lab}`);
+  if (q.shop === "checkout") parts.push(client`(summary #>> '{shop,reachedCheckout}')::boolean IS TRUE`);
+  else if (q.shop === "any") parts.push(client`jsonb_typeof(summary -> 'shop') = 'object'`);
+  // Who drove the visit (pageControl.ts): hybrid = control changed hands.
+  if (q.control === "hybrid") parts.push(client`summary #>> '{control,mode}' IN ('agent_then_human', 'human_then_agent', 'mixed')`);
+  else if (q.control) parts.push(client`summary #>> '{control,mode}' = ${q.control}`);
+  if (q.q) {
+    const like = `%${q.q.slice(0, 100).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    parts.push(client`(host(ip) ILIKE ${like} OR summary ->> 'userAgent' ILIKE ${like} OR summary ->> 'network' ILIKE ${like}
+      OR lab_label ILIKE ${like} OR agent ILIKE ${like} OR visit_id ILIKE ${like})`);
   }
-  // Beacons belong to the session's segment with the same label that was open when they arrived.
-  const segmentAt = (sessionId: string | null, t: number, lab: string | null) => {
-    const segs = sessionId ? sessionSegments.get(sessionId) : undefined;
-    if (!segs) return undefined;
-    const open = segs.filter((g) => g.startMs <= t + 5_000);
-    return (open.filter((g) => g.lab === lab).pop() ?? open.pop() ?? segs[0])!.key;
-  };
-  for (const c of clientRows) {
-    const key = segmentAt(c.session_id, c.created_at.getTime(), c.lab_label);
-    if (key) visits.get(key)!.client.push(c);
+  return parts.reduce((acc, p, i) => (i === 0 ? p : client`${acc} AND ${p}`));
+}
+
+/** Rebuilds one visit from its rows (for the detail page and request lookups). */
+async function loadVisit(id: string): Promise<Visit | null> {
+  const [stored] = await client<Array<{ session_id: string | null; actor_id: string; first_at: Date; last_at: Date }>>`
+    SELECT session_id, actor_id, first_at, last_at FROM visit_scores WHERE visit_id = ${id}`;
+  let rows;
+  if (stored) {
+    // Load exactly the visit's window (plus the gap, for requests that arrived after scoring).
+    const since = new Date(new Date(stored.first_at).getTime() - 1_000);
+    const until = new Date(new Date(stored.last_at).getTime() + VISIT_GAP_MS);
+    rows = await loadVisitRows(client, stored.session_id ? { since, until, sessionId: stored.session_id } : { since, until, actorIds: [stored.actor_id] });
+  } else {
+    // Not scored yet (or from before visit_scores existed): fall back to the id's own session/actor.
+    const m = /^([sa])_([0-9a-f-]{36})_(\d+)$/.exec(id);
+    if (!m) return null;
+    const start = Number(m[3]);
+    const since = new Date(start - 1_000);
+    const until = new Date(start + 24 * 3600_000);
+    rows = await loadVisitRows(client, m[1] === "s" ? { since, until, sessionId: m[2]! } : { since, until, actorIds: [m[2]!] });
   }
-  for (const e of shopRows) {
-    const key = (e.request_id ? requestToVisit.get(e.request_id) : undefined) ?? segmentAt(e.session_id, e.created_at.getTime(), null);
-    if (key) visits.get(key)!.shop.push(e);
-  }
-  return { visits: [...visits.values()], truncated };
-}
-
-function evidence(v: Visit): VisitEvidence {
-  const first = v.requests[0]!;
-  return {
-    asn: first.asn,
-    organization: first.organization,
-    country: first.country,
-    shopEvents: v.shop.map((e) => e.event_type),
-    evaluatedAt: new Date().toISOString(),
-    ladder: {
-      served: v.requests.filter((r) => r.page_load_id).map((r) => ({ pl: r.page_load_id!, path: r.path, at: r.created_at.toISOString() })),
-      // fp/behavior beacons carry the server's page-load id too, so they also prove JS ran.
-      hits: v.client.flatMap((c) => {
-        if (!c.page_load_id) return [];
-        const rung = c.kind === "ladder" ? c.data?.rung : c.kind === "fp" || c.kind === "behavior" ? "js" : null;
-        return rung === "css" || rung === "noscript" || rung === "js" ? [{ pl: c.page_load_id, rung, at: c.created_at.toISOString() }] : [];
-      }),
-    },
-    client: {
-      fingerprints: v.client.filter((c) => c.kind === "fp").map((c) => c.data),
-      behaviors: v.client.filter((c) => c.kind === "behavior").map((c) => ({ ...c.data, pl: c.page_load_id, path: c.path, at: c.created_at.toISOString() })),
-    },
-    requests: v.requests.map<RequestEvidence>((r) => ({
-      at: r.created_at.toISOString(),
-      method: r.method,
-      path: r.path,
-      status: r.status_code,
-      verdict: r.identity_verdict,
-      agent: r.identity_agent,
-      verdictMethod: r.verdict_method,
-      verdictReasons: r.verdict_reasons ?? [],
-      uaLibrary: r.ua_library,
-      aiApp: r.ai_app,
-      browserFamily: r.browser_family,
-      consistencyFlags: r.flags ?? [],
-      tor: r.ip_tor,
-      isHtmlPage: r.method === "GET" && r.status_code < 400 && !NON_PAGE_RE.test(r.path),
-      isAsset: ASSET_RE.test(r.path),
-      probing: PROBING_RE.test(r.path),
-      userAgent: r.user_agent_raw,
-      acceptLanguage: r.accept_language,
-    })),
-  };
-}
-
-const mostCommon = <T,>(xs: T[]): T | null => {
-  const counts = new Map<T, number>();
-  for (const x of xs) if (x !== null && x !== undefined) counts.set(x, (counts.get(x) ?? 0) + 1);
-  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-};
-
-function shopSummary(v: Visit) {
-  if (!v.shop.length) return null;
-  const types = new Set(v.shop.map((e) => e.event_type));
-  const furthest = [...SHOP_STEPS].reverse().find((s) => types.has(s)) ?? null;
-  const order = v.shop.find((e) => e.event_type === "SHOP_ORDER_PLACED");
-  return {
-    furthestStep: furthest,
-    orderPlaced: Boolean(order),
-    orderTotalCents: order?.shop?.totals?.totalCents ?? null,
-    paymentMethod: order?.shop?.method ?? v.shop.filter((e) => e.event_type === "SHOP_PAYMENT_ATTEMPT").at(-1)?.shop?.method ?? null,
-    paymentDeclines: v.shop.filter((e) => e.event_type === "SHOP_PAYMENT_DECLINED").length,
-  };
-}
-
-function summarize(v: Visit, score: AgentScore) {
-  const first = v.requests[0]!;
-  const last = v.requests[v.requests.length - 1]!;
-  return {
-    id: v.id,
-    sessionId: v.sessionId,
-    actorId: v.actorId,
-    firstAt: first.created_at,
-    lastAt: last.created_at,
-    requestCount: v.requests.length,
-    pageCount: v.requests.filter((r) => r.method === "GET" && !NON_PAGE_RE.test(r.path)).length,
-    ip: mostCommon(v.requests.map((r) => r.ip)),
-    network: first.organization,
-    asn: first.asn,
-    country: first.country,
-    userAgent: mostCommon(v.requests.map((r) => r.user_agent_raw)),
-    lab: mostCommon(v.requests.map((r) => r.lab_label)) ?? mostCommon(v.client.map((c) => c.lab_label)),
-    ja4: mostCommon(v.requests.map((r) => r.ja4)),
-    hasBrowserBeacon: v.client.length > 0,
-    shop: shopSummary(v),
-    score: { ...score, reasons: score.reasons },
-  };
-}
-
-/**
- * "Why" filter: case-insensitive, matches anywhere in a reason's text or its signal id. `*` is any
- * run of characters, `?` one character — "tab*hidden", "cursor_*", "KPN". `top` limits the match to
- * the two reasons the list shows.
- */
-function whyMatcher(pattern: string | undefined, scope: string | undefined) {
-  const p = pattern?.trim().slice(0, 200);
-  if (!p) return null;
-  const body = p.split("").map((ch) => (ch === "*" ? ".*" : ch === "?" ? "." : ch.replace(/[.+^${}()|[\]\\]/g, "\\$&"))).join("");
-  const re = new RegExp(body, "i");
-  return (reasons: Array<{ signal: string; text: string }>) =>
-    (scope === "top" ? reasons.slice(0, 2) : reasons).some((r) => re.test(r.text) || re.test(r.signal));
+  const visits = buildVisits(rows.requests, rows.client, rows.shop);
+  return visits.find((x) => x.id === id) ?? null;
 }
 
 export function registerAgentRoutes(app: FastifyInstance) {
   app.get("/api/agents/visits", async (request) => {
     const q = request.query as Record<string, string | undefined>;
-    const hours = RANGES[q.range ?? "7d"] ?? RANGES["7d"]!;
-    const { visits, truncated } = await loadVisits(hours);
-    let rows = visits.map((v) => summarize(v, scoreVisit(evidence(v))));
-    if (q.bucket) rows = rows.filter((r) => r.score.bucket === q.bucket);
-    if (q.type) rows = rows.filter((r) => r.score.type === q.type);
-    if (q.lab === "only") rows = rows.filter((r) => r.lab);
-    else if (q.lab) rows = rows.filter((r) => r.lab === q.lab);
-    if (q.shop === "checkout") rows = rows.filter((r) => r.shop && ["SHOP_CHECKOUT_START", "SHOP_CHECKOUT_DETAILS", "SHOP_CHECKOUT_SHIPPING", "SHOP_PAYMENT_ATTEMPT", "SHOP_ORDER_PLACED"].includes(r.shop.furthestStep ?? ""));
-    if (q.shop === "any") rows = rows.filter((r) => r.shop);
-    if (q.control === "hybrid") rows = rows.filter((r) => ["agent_then_human", "human_then_agent", "mixed"].includes(r.score.control.mode));
-    else if (q.control) rows = rows.filter((r) => r.score.control.mode === q.control);
+    const since = new Date(Date.now() - rangeHours(q.range, "7d") * 3600_000);
+    const where = listFilters(q, since);
+    const rows = await client<StoredVisitRow[]>`
+      SELECT visit_id, session_id, actor_id, first_at, last_at, request_count, page_count, lab_label, lab_verified, probability, bucket,
+             type, agent, proven, reasons, host(ip) AS ip, summary, scorer_version, settled, computed_at
+      FROM visit_scores WHERE ${where}
+      ORDER BY last_at DESC
+      LIMIT ${LIST_CAP}`;
     const why = whyMatcher(q.why, q.whyScope);
-    if (why) rows = rows.filter((r) => why(r.score.reasons));
-    if (q.q) {
-      const needle = q.q.toLowerCase();
-      rows = rows.filter((r) => [r.ip, r.userAgent, r.network, r.lab, r.score.agent, r.id].some((x) => x?.toLowerCase().includes(needle)));
-    }
-    rows.sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime());
-    const counts = { ai_agent: 0, probably_ai_agent: 0, not_sure: 0, not_ai_agent: 0 } as Record<string, number>;
+    const matched = why ? rows.filter((r) => why(r.reasons ?? [])) : rows;
+
+    let total: number;
+    const counts: Record<string, number> = { ai_agent: 0, probably_ai_agent: 0, not_sure: 0, not_ai_agent: 0 };
     const types: Record<string, number> = {};
-    for (const r of rows) {
-      counts[r.score.bucket] = (counts[r.score.bucket] ?? 0) + 1;
-      types[r.score.type] = (types[r.score.type] ?? 0) + 1;
+    if (why) {
+      // The why filter runs on the fetched rows, so counts come from them too.
+      total = matched.length;
+      for (const r of matched) {
+        counts[r.bucket] = (counts[r.bucket] ?? 0) + 1;
+        types[r.type] = (types[r.type] ?? 0) + 1;
+      }
+    } else {
+      const agg = await client<Array<{ bucket: string; type: string; n: number }>>`
+        SELECT bucket, type, count(*)::int AS n FROM visit_scores WHERE ${where} GROUP BY bucket, type`;
+      total = 0;
+      for (const a of agg) {
+        total += a.n;
+        counts[a.bucket] = (counts[a.bucket] ?? 0) + a.n;
+        types[a.type] = (types[a.type] ?? 0) + a.n;
+      }
     }
+    const [lag] = await client<Array<{ last: Date | null }>>`SELECT max(computed_at) AS last FROM visit_scores`;
     const limit = Math.min(1000, Number(q.limit ?? 300));
-    await audit(request.adminSession!.adminUserId, "list_agent_visits", null, null, { count: rows.length });
+    await audit(request.adminSession!.adminUserId, "list_agent_visits", null, null, { count: total });
     return {
-      // The list needs only the mode/handover; the per-page table is on the visit page.
-      data: rows.slice(0, limit).map((r) => ({ ...r, score: { ...r.score, reasons: r.score.reasons.slice(0, 4), control: { ...r.score.control, pages: [] } } })),
-      total: rows.length,
+      data: matched.slice(0, limit).map((r) => toVisitListRow(r)),
+      total,
       counts,
       types,
-      truncated,
+      // true when the why filter only saw the newest LIST_CAP visits of the range
+      truncated: Boolean(why) && rows.length >= LIST_CAP,
+      lastScoredAt: lag?.last ?? null,
     };
   });
 
   app.get("/api/agents/requests", async (request) => {
     const q = request.query as Record<string, string | undefined>;
-    const hours = RANGES[q.range ?? "24h"] ?? RANGES["24h"]!;
-    const { visits } = await loadVisits(hours);
+    const since = new Date(Date.now() - rangeHours(q.range, "24h") * 3600_000).toISOString();
+    const limit = Math.min(2000, Number(q.limit ?? 500));
+    const bucket = q.bucket ? client`AND v.bucket = ${q.bucket}` : client``;
+    const assets = q.all === "1" ? client`` : client`AND r.path <> '/api/v1/rum' AND r.path !~ '^/(assets/|favicon)'`;
+    const rows = await client<Array<{
+      request_id: string; created_at: Date; method: string; path: string; status_code: number; ip: string | null; user_agent_raw: string | null;
+      lab_label: string | null; visit_id: string; identity_verdict: string; identity_agent: string | null;
+      probability: number; bucket: string; type: string; agent: string | null; reasons: StoredVisitRow["reasons"];
+    }>>`
+      SELECT r.request_id, r.created_at, r.method, r.path, r.status_code, host(r.ip_raw) AS ip, r.user_agent_raw, s.lab_label,
+             vr.visit_id, s.identity_verdict, s.identity_agent, v.probability, v.bucket, v.type, v.agent, v.reasons
+      FROM requests r
+      JOIN request_signals s USING (request_id)
+      JOIN visit_requests vr ON vr.request_id = r.request_id
+      JOIN visit_scores v ON v.visit_id = vr.visit_id
+      WHERE r.created_at >= ${since}::timestamptz ${bucket} ${assets}
+      ORDER BY r.created_at DESC
+      LIMIT ${LIST_CAP}`;
     const why = whyMatcher(q.why, q.whyScope);
-    const out = [];
-    for (const v of visits) {
-      const s = scoreVisit(evidence(v));
-      if (q.bucket && s.bucket !== q.bucket) continue;
-      if (why && !why(s.reasons)) continue;
-      for (const r of v.requests) {
-        // Beacons and static assets drown the page requests; ?all=1 keeps them.
-        if (q.all !== "1" && (r.path === "/api/v1/rum" || ASSET_RE.test(r.path))) continue;
-        out.push({
-          requestId: r.request_id, at: r.created_at, method: r.method, path: r.path, status: r.status_code, ip: r.ip,
-          userAgent: r.user_agent_raw, lab: r.lab_label, visitId: v.id, requestVerdict: r.identity_verdict, requestAgent: r.identity_agent,
-          probability: s.probability, bucket: s.bucket, type: s.type, agent: s.agent, topReason: s.reasons[0]?.text ?? null,
-        });
-      }
-    }
-    out.sort((a, b) => b.at.getTime() - a.at.getTime());
+    const out = (why ? rows.filter((r) => why(r.reasons ?? [])) : rows).map((r) => ({
+      requestId: r.request_id, at: new Date(r.created_at), method: r.method, path: r.path, status: r.status_code, ip: r.ip,
+      userAgent: r.user_agent_raw, lab: r.lab_label, visitId: r.visit_id, requestVerdict: r.identity_verdict, requestAgent: r.identity_agent,
+      probability: r.probability, bucket: r.bucket, type: r.type, agent: r.agent, topReason: r.reasons?.[0]?.text ?? null,
+    }));
     await audit(request.adminSession!.adminUserId, "list_agent_requests", null, null, { count: out.length });
-    return { data: out.slice(0, Math.min(2000, Number(q.limit ?? 500))), total: out.length };
+    return { data: out.slice(0, limit), total: out.length };
   });
 
   app.get<{ Params: { id: string } }>("/api/agents/visits/:id", async (request, reply) => {
     const id = request.params.id;
-    let loaded;
-    if (id.startsWith("s_")) loaded = await loadVisits(24 * 90, { sessionId: id.slice(2).split("_")[0] });
-    else if (id.startsWith("a_")) loaded = await loadVisits(24 * 90, { actorId: id.split("_")[1] });
-    else return reply.status(400).send({ error: { code: "bad_id", message: "unknown visit id" } });
-    const v = loaded.visits.find((x) => x.id === id) ?? (id.startsWith("s_") ? loaded.visits[0] : undefined);
+    if (!/^[sa]_[0-9a-f-]{36}_\d+$/.test(id)) return reply.status(400).send({ error: { code: "bad_id", message: "unknown visit id" } });
+    const v = await loadVisit(id);
     if (!v) return reply.status(404).send({ error: { code: "not_found", message: "visit not found" } });
-    const score = scoreVisit(evidence(v));
-    const fp = v.client.find((c) => c.kind === "fp")?.data ?? null;
-    const behavior = v.client.filter((c) => c.kind === "behavior").map((c) => ({ at: c.created_at, path: c.path, ...c.data }));
+    const score = scoreVisit(visitEvidence(v));
+    const fp = v.client.find((c) => c.kind === "fp" && c.bound !== false)?.data ?? null;
+    const behavior = v.client.filter((c) => c.kind === "behavior").map((c) => ({ at: c.created_at, path: c.path, bound: c.bound, ...c.data }));
     const first = v.requests[0]!;
+    const summary = visitSummary(v, score);
     await audit(request.adminSession!.adminUserId, "view_agent_visit", id, null, {});
     return {
-      ...summarize(v, score),
+      ...summary,
       network: {
-        ip: mostCommon(v.requests.map((r) => r.ip)), asn: first.asn, organization: first.organization, country: first.country, city: first.city,
+        ip: summary.ip, asn: first.asn, organization: first.organization, country: first.country, city: first.city,
         ja4: [...new Set(v.requests.map((r) => r.ja4).filter(Boolean))], h2: [...new Set(v.requests.map((r) => r.h2_fp).filter(Boolean))],
         webBotAuth: [...new Set(v.requests.map((r) => (r.wba_status === "absent" ? null : `${r.wba_status}${r.wba_signer ? ` · ${r.wba_signer}` : ""}`)).filter(Boolean))],
         userAgents: [...new Set(v.requests.map((r) => r.user_agent_raw).filter(Boolean))],
@@ -348,13 +171,32 @@ export function registerAgentRoutes(app: FastifyInstance) {
 
   /** Which visit a request belongs to — for the agent panel on request/event detail pages. */
   app.get<{ Params: { requestId: string } }>("/api/agents/by-request/:requestId", async (request, reply) => {
-    const [row] = await client<Array<{ session_id: string | null; actor_id: string }>>`
-      SELECT r.session_id, r.actor_id FROM requests r JOIN request_signals s USING (request_id) WHERE r.request_id = ${request.params.requestId}`;
-    if (!row) return reply.status(404).send({ error: { code: "not_found", message: "no agent signals for this request (captured before agent sensing went live?)" } });
-    const loaded = await loadVisits(24 * 90, row.session_id ? { sessionId: row.session_id } : { actorId: row.actor_id });
-    const v = loaded.visits.find((x) => x.requests.some((r) => r.request_id === request.params.requestId));
+    if (!/^[0-9a-f-]{36}$/.test(request.params.requestId)) return reply.status(400).send({ error: { code: "bad_id", message: "bad request id" } });
+    const [row] = await client<Array<{ visit_id: string }>>`SELECT visit_id FROM visit_requests WHERE request_id = ${request.params.requestId}`;
+    if (!row) return reply.status(404).send({ error: { code: "not_found", message: "this request hasn't been scored (captured before agent sensing went live, or the scorer hasn't run yet)" } });
+    const v = await loadVisit(row.visit_id);
     if (!v) return reply.status(404).send({ error: { code: "not_found", message: "visit not found" } });
-    const s = scoreVisit(evidence(v));
+    const s = scoreVisit(visitEvidence(v));
     return { visitId: v.id, probability: s.probability, bucket: s.bucket, type: s.type, agent: s.agent, proven: s.proven, reasons: s.reasons };
   });
+
+  /** Every scoring signal (packages/detection/src/signals.ts) and how often it fired in the range. */
+  app.get("/api/agents/signals", async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const since = new Date(Date.now() - rangeHours(q.range, "7d") * 3600_000).toISOString();
+    const fired = await client<Array<{ signal: string; visits: number; lab_visits: number; human_lab_visits: number }>>`
+      SELECT sig AS signal, count(*)::int AS visits,
+             count(*) FILTER (WHERE lab_verified)::int AS lab_visits,
+             count(*) FILTER (WHERE lab_verified AND lab_label LIKE 'human-%')::int AS human_lab_visits
+      FROM visit_scores, unnest(signals) AS sig
+      WHERE last_at >= ${since}::timestamptz
+      GROUP BY sig`;
+    const [tot] = await client<Array<{ n: number }>>`SELECT count(*)::int AS n FROM visit_scores WHERE last_at >= ${since}::timestamptz`;
+    const bySignal = new Map(fired.map((f) => [f.signal, f]));
+    return {
+      totalVisits: tot?.n ?? 0,
+      data: signalCatalogue().map((s) => ({ ...s, visits: bySignal.get(s.id)?.visits ?? 0, labVisits: bySignal.get(s.id)?.lab_visits ?? 0, humanLabVisits: bySignal.get(s.id)?.human_lab_visits ?? 0 })),
+    };
+  });
 }
+

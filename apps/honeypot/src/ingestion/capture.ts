@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { schema } from "@honeypot/db";
-import { hashIp, resolveClientIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, type RiskFlag } from "@honeypot/detection";
+import { hashIp, resolveClientIp, userAgentFingerprint, evaluateInline, computeEventRiskScore, parseLabValue, type RiskFlag } from "@honeypot/detection";
 import type { EventType } from "@honeypot/types";
 import { db } from "../db.js";
 import { config } from "../config.js";
@@ -20,7 +20,6 @@ import "../context.js";
 const VISITOR_COOKIE = "hp_visitor";
 const SESSION_COOKIE = "hp_session";
 const LAB_COOKIE = "hp_lab";
-const LAB_LABEL_RE = /^[A-Za-z0-9._-]{1,64}$/;
 
 export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
   // Actor/session resolution happens on the request path (not deferred to onResponse) because
@@ -79,21 +78,25 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
     let visitorId = request.cookies[VISITOR_COOKIE];
     if (!visitorId) {
       visitorId = randomUUID();
-      reply.setCookie(VISITOR_COOKIE, visitorId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
+      // 90 days, matching EVENT_RETENTION_DAYS — a cookie shouldn't outlive the data it links.
+      reply.setCookie(VISITOR_COOKIE, visitorId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 90 });
     }
     request.hp.visitorId = visitorId;
 
-    // Controlled agent test runs: ?lab=<label> tags this browser for 30 days so every later
-    // request/beacon from it is labeled ground truth (agents that drop cookies are labeled on
-    // their first request only — analysis regroups those by IP + fingerprint).
+    // Controlled test runs: ?lab=<signed token> (minted on the dashboard's Lab page) tags this
+    // browser until the token expires, so every later request/beacon is labeled ground truth.
+    // A bare ?lab=<label> is still recorded but only as a *claimed* label — any visitor can type
+    // it, so it never counts as ground truth (packages/detection/src/labToken.ts). Agents that
+    // drop cookies are labeled on their first request only.
     const labParam = (request.query as Record<string, unknown>)?.lab;
-    if (typeof labParam === "string" && LAB_LABEL_RE.test(labParam)) {
-      request.hp.labLabel = labParam;
-      reply.setCookie(LAB_COOKIE, labParam, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
-    } else {
-      const labCookie = request.cookies[LAB_COOKIE];
-      request.hp.labLabel = labCookie && LAB_LABEL_RE.test(labCookie) ? labCookie : null;
+    const fromParam = parseLabValue(labParam, config.labLinkSecret);
+    const lab = fromParam ?? parseLabValue(request.cookies[LAB_COOKIE], config.labLinkSecret);
+    if (fromParam) {
+      const ttlS = fromParam.verified && fromParam.expiresAt ? Math.max(60, fromParam.expiresAt - Math.floor(Date.now() / 1000)) : 60 * 60 * 24 * 30;
+      reply.setCookie(LAB_COOKIE, labParam as string, { httpOnly: true, sameSite: "lax", path: "/", maxAge: ttlS });
     }
+    request.hp.labLabel = lab?.label ?? null;
+    request.hp.labVerified = lab?.verified ?? false;
 
     const ip = resolveClientIp(request.ip, request.headers["cf-connecting-ip"], config.trustCfConnectingIp);
     const ipHash = hashIp(ip, config.ipHashSecret);

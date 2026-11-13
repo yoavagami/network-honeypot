@@ -54,6 +54,8 @@ export async function collectRequestSignals(request: FastifyRequest, requestId: 
     actorId,
     sessionId,
     labLabel: labLabel ?? null,
+    labVerified: request.hp.labVerified ?? false,
+    pageLoadId: request.hp.pageLoadId ?? null,
     ja4: edge?.ja4 ?? null,
     ja3nHash: edge?.ja3n_hash ?? null,
     h2Fp: edge?.h2?.fp ?? null,

@@ -2,10 +2,12 @@
 (function () {
   "use strict";
   var ENDPOINT = "/api/v1/rum";
+  var SDK = "1.1.0";
   var T0 = performance.now();
-  // The server mints a page-load id per HTML response (rendering ladder); fall back to our own.
+  // The server mints a page-load id per HTML response (rendering ladder). Without one we send
+  // pl: null rather than inventing an id: the server only trusts ids it served to this visitor.
   var SERVER_PL = (function () { try { var m = document.querySelector('meta[name="request-id"]'); var c = m && m.getAttribute("content"); return c && /^[A-Za-z0-9_-]{16,40}$/.test(c) ? c : null; } catch (e) { return null; } })();
-  var PL = SERVER_PL || Math.random().toString(36).slice(2) + Date.now().toString(36);
+  var PL = SERVER_PL;
   // "JavaScript ran" rung: as early as possible, as an image so it survives blocked fetch/beacon APIs.
   if (SERVER_PL) { try { new Image(1, 1).src = "/assets/img/sp/" + SERVER_PL + ".gif"; } catch (e) {} }
   var MAX_SENDS = 15;
@@ -25,7 +27,7 @@
     if (sends >= MAX_SENDS) return;
     sends++;
     var body;
-    try { body = JSON.stringify({ v: 1, kind: kind, pl: PL, path: location.pathname + location.search, t: now(), data: data }); } catch (e) { return; }
+    try { body = JSON.stringify({ v: 1, sdk: SDK, kind: kind, pl: PL, path: location.pathname + location.search, t: now(), data: data }); } catch (e) { return; }
     try {
       if (useBeacon && navigator.sendBeacon && navigator.sendBeacon(ENDPOINT, body)) return;
       fetch(ENDPOINT, { method: "POST", body: body, keepalive: true, credentials: "same-origin", headers: { "Content-Type": "text/plain" } }).catch(function () {});

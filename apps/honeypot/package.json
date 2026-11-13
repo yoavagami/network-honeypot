@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "rescore": "tsx src/scoring/rescore.ts",
+    "export-fixture": "tsx src/scoring/exportFixture.ts"
   },
   "dependencies": {
     "@honeypot/types": "workspace:*",

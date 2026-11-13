@@ -110,6 +110,9 @@ export const api = {
   agentVisit: (id: string) => request<AgentVisitDetail>(`/api/agents/visits/${encodeURIComponent(id)}`),
   agentRequests: (params: Record<string, string> = {}) => request<{ data: AgentRequestRow[]; total: number }>(`/api/agents/requests?${new URLSearchParams(params)}`),
   agentByRequest: (requestId: string) => request<AgentRequestScore>(`/api/agents/by-request/${requestId}`),
+  agentSignals: (range: string) => request<AgentSignalsResponse>(`/api/agents/signals?${new URLSearchParams({ range })}`),
+  labRuns: () => request<LabRunsResponse>("/api/lab/runs"),
+  createLabRun: (body: LabRunInput) => request<LabRunCreated>("/api/lab/runs", { method: "POST", body: JSON.stringify(body) }),
 
   health: () => request<{ status: string; components: Record<string, boolean> }>("/api/system/health"),
   ingestion: () => request<IngestionHealth>("/api/system/ingestion"),
@@ -350,7 +353,7 @@ export { BASE as API_BASE };
 
 // ---- Agents page (admin-api routes/agents.ts, scoring in packages/detection/src/agentScore.ts)
 export type AgentBucket = "ai_agent" | "probably_ai_agent" | "not_sure" | "not_ai_agent";
-export interface AgentReason { signal: string; group: string; weight: number; text: string }
+export interface AgentReason { signal: string; group: string; question?: "identity" | "driver" | "environment" | "journey"; weight: number; text: string }
 export interface AgentScore {
   probability: number;
   bucket: AgentBucket;
@@ -360,6 +363,8 @@ export interface AgentScore {
   leaning: "agent" | "human";
   reasons: AgentReason[];
   calibrated: boolean;
+  /** packages/detection/src/signals.ts SCORER_VERSION that produced the score. */
+  scorerVersion?: string;
   checks: AgentConsistencyCheck[];
   control: AgentControl;
   environment: { tells: string[]; utcTimezone: boolean };
@@ -399,13 +404,26 @@ export interface AgentVisitRow {
   country: string | null;
   userAgent: string | null;
   lab: string | null;
+  /** The lab label came from a signed link (ground truth), not a bare ?lab= anyone can type. */
+  labVerified: boolean;
   ja4: string | null;
   hasBrowserBeacon: boolean;
+  /** Page-script beacons for page loads this visitor was never served (left out of the score). */
+  unboundBeacons: number;
   shop: AgentShopSummary | null;
-  score: AgentScore;
+  score: AgentListScore;
 }
-export interface AgentVisitsResponse { data: AgentVisitRow[]; total: number; counts: Record<AgentBucket, number>; types: Record<string, number>; truncated: boolean }
-export interface AgentVisitDetail extends Omit<AgentVisitRow, "network"> {
+/** Stored list rows (visit_scores) carry the verdict, not the per-page detail. */
+export type AgentListScore = Omit<AgentScore, "environment" | "input" | "ladder"> & { settled?: boolean; computedAt?: string };
+export interface AgentVisitsResponse {
+  data: AgentVisitRow[]; total: number; counts: Record<AgentBucket, number>; types: Record<string, number>;
+  /** true when the "why" filter only saw the newest 5,000 visits of the range */
+  truncated: boolean;
+  /** When the scoring worker last stored a score (null: nothing scored yet). */
+  lastScoredAt: string | null;
+}
+export interface AgentVisitDetail extends Omit<AgentVisitRow, "network" | "score"> {
+  score: AgentScore;
   network: AgentNetwork;
   requests: Array<{ requestId: string; at: string; method: string; path: string; query: string | null; status: number; verdict: string; agent: string | null; reason: string | null; flags: string[] }>;
   fingerprint: Record<string, any> | null;
@@ -420,3 +438,22 @@ export interface AgentRequestRow {
   visitId: string; requestVerdict: string; requestAgent: string | null; probability: number; bucket: AgentBucket; type: string; agent: string | null; topReason: string | null;
 }
 export interface AgentRequestScore { visitId: string; probability: number; bucket: AgentBucket; type: string; agent: string | null; proven: boolean; reasons: AgentReason[] }
+
+// ---- Signal catalogue (admin-api /api/agents/signals, packages/detection/src/signals.ts)
+export interface AgentSignal {
+  id: string; group: string; question: "identity" | "driver" | "environment" | "journey"; weight: number; dynamic?: string;
+  aiSpecific?: boolean; scriptOnly?: boolean; summary: string;
+  /** Visits in the range where it fired / of them signed lab runs / of them human control runs. */
+  visits: number; labVisits: number; humanLabVisits: number;
+}
+export interface AgentSignalsResponse { totalVisits: number; data: AgentSignal[] }
+
+// ---- Lab runs (admin-api routes/lab.ts)
+export interface LabRunInput { label: string; kind: "agent" | "human"; agent?: string; scenario?: string; notes?: string; ttlDays?: number }
+export interface LabRunCreated { label: string; kind: "agent" | "human"; expiresAt: string; query: string; url: string | null }
+export interface LabRun {
+  label: string; kind: "agent" | "human"; agent: string | null; scenario: string | null; notes: string | null;
+  createdAt: string; expiresAt: string; createdBy: string | null;
+  visits: number; lastSeen: string | null; buckets: Partial<Record<AgentBucket, number>>; proven: number;
+}
+export interface LabRunsResponse { enabled: boolean; data: LabRun[] }
