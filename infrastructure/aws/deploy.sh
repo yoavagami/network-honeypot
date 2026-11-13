@@ -152,15 +152,6 @@ $SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
     -e CI=true \
     -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed'"
 
-echo "==> Backfilling stored visit scores (idempotent; the honeypot's worker keeps them current)"
-# visit_scores (migrations/0012) is what the Agents list reads. Rescore the last 30 days (the
-# list's widest range) once per deploy so it's complete and reflects any weight change.
-$SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
-  docker run --rm --network container:\$(docker compose ps -q postgres) \
-    --env-file .env -e DATABASE_URL=\"postgres://honeypot_role:\${HONEYPOT_DB_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
-    -e CRM_DATABASE_URL=unused -e CI=true \
-    -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm rescore --days 30'" \
-  || echo "    WARNING: rescore failed — the Agents list fills in as the worker scores new activity"
 
 echo "==> Installing daily cron jobs (retention 03:00, database backup 02:30)"
 $SSH "chmod +x $REMOTE_DIR/infrastructure/vps/retention-cron.sh $REMOTE_DIR/infrastructure/vps/backup-cron.sh"
@@ -205,6 +196,18 @@ $SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
 $SSH "cd $REMOTE_DIR && $COMPOSE restart nginx"
 
 echo
+echo "==> Backfilling stored visit scores (idempotent; the honeypot's worker keeps them current)"
+# visit_scores (migrations/0012) is what the Agents list reads. Rescore the last 30 days (the
+# list's widest range) once per deploy so it's complete and reflects any weight change. This runs
+# after the new containers are up: run earlier, the previous release's scoring worker is still
+# live and scores recent visits straight back to its own SCORER_VERSION (seen 2026-11-13).
+$SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
+  docker run --rm --network container:\$(docker compose ps -q postgres) \
+    --env-file .env -e DATABASE_URL=\"postgres://honeypot_role:\${HONEYPOT_DB_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
+    -e CRM_DATABASE_URL=unused -e CI=true \
+    -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm rescore --days 30'" \
+  || echo "    WARNING: rescore failed — the Agents list fills in as the worker scores new activity"
+
 echo "==> Verifying"
 VERIFY_URL="http://localhost/"
 [ -n "$TLS_DOMAIN" ] && VERIFY_URL="https://localhost/ -k --resolve $TLS_DOMAIN:443:127.0.0.1"
