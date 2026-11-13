@@ -159,6 +159,8 @@ const PRIOR = -1.2;
 const AI_SPECIFIC = new Set(["ai_operator_ip", "unverifiable_claim", "ai_app_user_agent", "agent_like_dom", "instant_checkout", "think_then_act"]);
 /** Browser-group signals that actually mean "no browser ran" (scripts), so not a driven browser. */
 const SCRIPT_ONLY = new Set(["no_javascript", "no_subresources", "html_only", "html_parser_images", "css_no_js", "js_without_css"]);
+/** The ladder's own beacon images (apps/honeypot/src/sensing/ladder.ts) — not "real" subresources. */
+const LADDER_BEACON_RE = /^\/assets\/img\/(bg|px|sp)\//;
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 const median = (xs: number[]) => {
   if (!xs.length) return null;
@@ -281,7 +283,10 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   const claimsBrowser = reqs.some((r) => r.browserFamily);
   const n = (k: number, word: string) => `${k} page load${k === 1 ? "" : "s"}${word}`;
   if (judged.length && !judged.some((p) => p.js)) {
-    if (ladder.summary === "html_only") {
+    // A client that fetched our real subresources (app.js, CSS…) but none of the beacons is a
+    // browser with images blocked, not an HTML-only fetcher — no verdict from the ladder then.
+    const fetchedAssets = reqs.some((r) => r.isAsset && !LADDER_BEACON_RE.test(r.path));
+    if (ladder.summary === "html_only" && !fetchedAssets) {
       add("html_only", "browser", claimsBrowser ? 1.6 : 1.0, `${n(judged.length, "")} fetched as HTML only — no CSS rendered, no images, no JavaScript${claimsBrowser ? ", despite a browser user-agent" : ""} (a fetcher or LLM browse tool, not a browser)`);
       type ??= "script";
     } else if (ladder.summary === "images_only") {

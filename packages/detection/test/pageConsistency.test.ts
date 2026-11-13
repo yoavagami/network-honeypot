@@ -75,9 +75,9 @@ describe("page consistency checks", () => {
   });
 
   it("needs two virtual-machine tells together", () => {
-    expect(environmentFacts([fp({ voices: 0 })]).tells).toHaveLength(1);
-    expect(signals(visit({ client: { fingerprints: [fp({ voices: 0 })], behaviors: [] } }))).not.toContain("vm_environment");
-    const vm = fp({ voices: 0, devices: {}, nav: { ...fp().nav, hardwareConcurrency: 2 } });
+    expect(environmentFacts([fp({ voices: 0, devices: {} })]).tells).toHaveLength(0); // unreliable in real Chrome
+    expect(signals(visit({ client: { fingerprints: [fp({ nav: { ...fp().nav, hardwareConcurrency: 2 } })], behaviors: [] } }))).not.toContain("vm_environment");
+    const vm = fp({ nav: { ...fp().nav, hardwareConcurrency: 2, deviceMemory: 1 } });
     expect(signals(visit({ client: { fingerprints: [vm], behaviors: [] } }))).toContain("vm_environment");
   });
 });
@@ -139,9 +139,9 @@ describe("browser identity, headless signs and think-then-act", () => {
     expect(signals(v)).toContain("browser_identity_mismatch");
   });
 
-  it("counts a self-contradicting notification permission and a disabled PDF viewer as headless signs", () => {
+  it("counts a disabled PDF viewer as a headless sign, but not the notification permission", () => {
     const tells = environmentFacts([chromeFp({ pdfViewerEnabled: false }, { permNotifications: "prompt", automation: { ...fp().automation, chrome: {}, notificationPermission: "denied" } })]).tells;
-    expect(tells.join(" ")).toMatch(/notification permission contradicts/);
+    expect(tells.join(" ")).not.toMatch(/notification/);
     expect(tells.join(" ")).toMatch(/PDF viewer disabled/);
     expect(environmentFacts([chromeFp()]).tells).toEqual([]);
   });

@@ -60,6 +60,16 @@ describe("ladder in the agent score", () => {
     expect(s.ladder.summary).toBe("html_only");
   });
 
+  it("does not call a browser with images blocked HTML-only (it fetched app.js)", () => {
+    const v = visit([], { requests: [req(), req({ path: "/assets/app.js", isHtmlPage: false, isAsset: true })] });
+    expect(signals(v)).not.toContain("html_only");
+  });
+
+  it("does not count the ladder's own beacons as subresources", () => {
+    const v = visit([hit("a", "noscript")], { requests: [req(), req({ path: "/assets/img/px/a.gif", isHtmlPage: false, isAsset: true })] });
+    expect(signals(v)).toContain("html_parser_images");
+  });
+
   it("stays capped at 'not sure' without AI-specific evidence", () => {
     expect(scoreVisit(visit([])).probability).toBeLessThanOrEqual(0.69);
   });

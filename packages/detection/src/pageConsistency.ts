@@ -209,20 +209,13 @@ export function environmentFacts(fps: Array<Record<string, any>>): EnvironmentFa
   let utc = false;
   for (const fp of fps) {
     if (isUtcZone(fp.intl?.tz)) utc = true;
-    if (fp.voices === 0) tells.add("no speech voices");
-    const d = fp.devices;
-    if (d && typeof d === "object") {
-      const total = Object.values(d).reduce<number>((a, b) => a + (Number(b) || 0), 0);
-      if (total === 0) tells.add("no media devices (camera, mic, speakers)");
-    }
+    // Not used, checked against live data (2026-11-13): voices are 0 for everyone (Chrome fills
+    // getVoices() asynchronously), and "no media devices" and the notification-permission
+    // contradiction show up on most real Chrome visitors too.
     const cores = Number(fp.nav?.hardwareConcurrency);
     if (Number.isFinite(cores) && cores > 0 && cores <= 2) tells.add(`${cores} CPU core${cores === 1 ? "" : "s"}`);
     const mem = Number(fp.nav?.deviceMemory);
     if (Number.isFinite(mem) && mem > 0 && mem < 2) tells.add(`${mem} GB device memory`);
-    const permQuery = fp.permNotifications;
-    const permApi = fp.automation?.notificationPermission;
-    if (typeof permQuery === "string" && typeof permApi === "string" && (permApi === "default" ? "prompt" : permApi) !== permQuery)
-      tells.add(`notification permission contradicts itself (${permApi} vs. ${permQuery}) — a known headless-Chrome sign`);
     if (fp.nav?.pdfViewerEnabled === false && claimedEngine(fp.nav?.ua) === "chromium" && !/Mobile|Android/.test(String(fp.nav?.ua ?? ""))) tells.add("PDF viewer disabled in desktop Chrome");
     if (Array.isArray(fp.nav?.plugins) && fp.nav.plugins.length === 0 && /Chrome\//.test(String(fp.nav?.ua ?? "")) && !/Mobile|Android/.test(String(fp.nav?.ua ?? ""))) tells.add("desktop Chrome with no PDF plugins");
   }
