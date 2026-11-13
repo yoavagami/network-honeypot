@@ -241,7 +241,7 @@ which is the number that matters, not the aspiration.
     them — and the last 14 days are kept (`BACKUP_KEEP_DAYS`). Log: `~/backups/backup.log`; the job
     exits non-zero if the newest dump is missing or under 10 KB.
   - **Off-host copy**: `infrastructure/aws/pull-backups.sh [local-dir]` from your laptop copies any
-    new dumps to `./backups` (git-ignored); it never deletes. Run it by hand or schedule it locally
+    new dumps to the main checkout's `backups/` (git-ignored, also when run from a worktree); it never deletes. Run it by hand or schedule it locally
     (cron/launchd) — the host has no credentials to push anywhere itself.
 - **Restore**: `scripts/restore.sh <dump-file>`, after `docker compose up -d postgres` (fresh
   volume) and `pnpm migrate` (recreates schema + `honeypot_role`/`admin_api_role`). The script
