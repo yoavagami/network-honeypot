@@ -335,3 +335,9 @@ which is the number that matters, not the aspiration.
     `pnpm typecheck` both still pass.
 - **Investigate an actor**: admin dashboard → Actors → search/filter → profile → timeline; or
   `GET /api/actors/:id/timeline` directly for scripting.
+
+## Merchant platform
+
+`deploy.sh` also deploys the merchant platform (`apps/merchant-api`, its own `merchant` database, merchant
+paths on the main domain, and the merchant portal at the public dashboard's `/m`). Secrets, migrations,
+backups, optional `api.` hostname and local development: [docs/merchant/OPERATIONS.md](merchant/OPERATIONS.md).

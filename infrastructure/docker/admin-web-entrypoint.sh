@@ -30,6 +30,12 @@ else
   connect_src="${Q}self${Q} http://localhost:8090"
 fi
 
+# Merchant portal API base (apps/admin-web/src/merchantApi.ts): "" = same origin via this nginx.
+if [ "${MERCHANT_API_URL+is_set}" = "is_set" ]; then
+  mescaped=$(printf '%s' "$MERCHANT_API_URL" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  printf 'window.__MERCHANT_API_URL__ = "%s";\n' "$mescaped" >> "$CONFIG_JS"
+fi
+
 csp="default-src ${Q}self${Q}; connect-src ${connect_src}; script-src ${Q}self${Q}; style-src ${Q}self${Q} ${Q}unsafe-inline${Q}; frame-ancestors ${Q}none${Q}"
 printf 'add_header Content-Security-Policy "%s" always;\n' "$csp" > "$CSP_CONF"
 

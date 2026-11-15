@@ -104,6 +104,11 @@ if ! $SSH "test -f $REMOTE_DIR/.env"; then
     echo "COOKIE_SECRET=$(openssl rand -hex 24)"
     echo "SESSION_SECRET=$(openssl rand -hex 24)"
     echo "LAB_LINK_SECRET=$(openssl rand -hex 24)"
+    echo "MERCHANT_APP_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "MERCHANT_ADMIN_DB_PASSWORD=$(openssl rand -hex 24)"
+    echo "MERCHANT_TOKEN_SECRET=$(openssl rand -hex 32)"
+    echo "MERCHANT_ENCRYPTION_KEY=$(openssl rand -hex 32)"
+    echo "MERCHANT_INTERNAL_TOKEN=$(openssl rand -hex 32)"
     echo "ADMIN_WEB_ORIGIN=http://localhost:8081"
     echo "ADMIN_API_PUBLIC_URL=http://localhost:8090"
     echo "SEED_ADMIN_USERNAME=admin"
@@ -129,11 +134,32 @@ else
     echo "    adding LAB_LINK_SECRET (signed lab links)"
     $SSH "echo LAB_LINK_SECRET=\$(openssl rand -hex 24) >> $REMOTE_DIR/.env"
   fi
+  # Merchant platform (docs/merchant/OPERATIONS.md). Generated once, never rotated here:
+  # rotating MERCHANT_ENCRYPTION_KEY would make stored webhook secrets unreadable, and rotating
+  # MERCHANT_TOKEN_SECRET would invalidate every visitor's session token.
+  for VAR in MERCHANT_APP_DB_PASSWORD:24 MERCHANT_ADMIN_DB_PASSWORD:24 MERCHANT_TOKEN_SECRET:32 MERCHANT_ENCRYPTION_KEY:32 MERCHANT_INTERNAL_TOKEN:32; do
+    NAME=${VAR%%:*}; BYTES=${VAR##*:}
+    if ! $SSH "grep -q '^$NAME=' $REMOTE_DIR/.env"; then
+      echo "    adding $NAME (merchant platform)"
+      $SSH "echo $NAME=\$(openssl rand -hex $BYTES) >> $REMOTE_DIR/.env"
+    fi
+  done
   # Minted lab links are full URLs only when the site's public URL is known.
   TLS_FOR_URL=$($SSH "grep '^TLS_DOMAIN=' $REMOTE_DIR/.env 2>/dev/null | cut -d= -f2" || echo "")
   if [ -n "$TLS_FOR_URL" ] && ! $SSH "grep -q '^PUBLIC_SITE_URL=' $REMOTE_DIR/.env"; then
     echo "    adding PUBLIC_SITE_URL=https://$TLS_FOR_URL (clickable lab links)"
     $SSH "echo PUBLIC_SITE_URL=https://$TLS_FOR_URL >> $REMOTE_DIR/.env"
+  fi
+  # Merchant platform public URLs. Defaults to the main domain's merchant paths (no extra DNS
+  # needed); switch MERCHANT_PUBLIC_API_URL to https://api.<domain> once that name resolves and the
+  # certificate covers it. The merchant portal is the public dashboard's /m.
+  if [ -n "$TLS_FOR_URL" ]; then
+    $SSH "grep -q '^MERCHANT_PUBLIC_API_URL=' $REMOTE_DIR/.env" || $SSH "echo MERCHANT_PUBLIC_API_URL=https://$TLS_FOR_URL >> $REMOTE_DIR/.env"
+    $SSH "grep -q '^MERCHANT_TAG_BASE_URL=' $REMOTE_DIR/.env" || $SSH "echo MERCHANT_TAG_BASE_URL=https://$TLS_FOR_URL >> $REMOTE_DIR/.env"
+    ADMIN_FOR_URL=$($SSH "grep '^PUBLIC_ADMIN_DOMAIN=' $REMOTE_DIR/.env 2>/dev/null | cut -d= -f2" || echo "")
+    if [ -n "$ADMIN_FOR_URL" ]; then
+      $SSH "grep -q '^MERCHANT_DASHBOARD_URL=' $REMOTE_DIR/.env" || $SSH "echo MERCHANT_DASHBOARD_URL=https://$ADMIN_FOR_URL:8443 >> $REMOTE_DIR/.env"
+    fi
   fi
 fi
 
@@ -151,6 +177,13 @@ $SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
     --env-file .env -e DATABASE_URL=\"postgres://\${POSTGRES_SUPERUSER}:\${POSTGRES_SUPERUSER_PASSWORD}@localhost:5432/\${POSTGRES_DB}\" \
     -e CI=true \
     -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm migrate && pnpm seed'"
+
+echo "==> Merchant database migrations (creates the 'merchant' database and its roles if missing)"
+$SSH "cd $REMOTE_DIR && set -a && source .env && set +a && \
+  docker run --rm --network container:\$(docker compose ps -q postgres) \
+    --env-file .env -e MERCHANT_MIGRATE_URL=\"postgres://\${POSTGRES_SUPERUSER}:\${POSTGRES_SUPERUSER_PASSWORD}@localhost:5432/merchant\" \
+    -e CI=true \
+    -v \$PWD:/app -w /app node:22-bookworm-slim bash -c 'corepack enable && pnpm install --frozen-lockfile && pnpm --filter @honeypot/merchant-db migrate'"
 
 
 echo "==> Installing daily cron jobs (retention 03:00, database backup 02:30)"
@@ -195,7 +228,12 @@ if [ "${DISK_PCT:-0}" -ge 85 ]; then
   echo "    disk ${DISK_PCT}% full — clearing unused Docker build cache before building"
   $SSH "docker builder prune -af >/dev/null"
 fi
-$SSH "cd $REMOTE_DIR && $COMPOSE up -d --build"
+$SSH "cd $REMOTE_DIR && $COMPOSE build"
+# Check the nginx config against the new files before anything is recreated: a broken config
+# would otherwise take the public site down on restart.
+echo "    checking nginx config"
+$SSH "cd $REMOTE_DIR && $COMPOSE run --rm --no-deps -T nginx nginx -t" || { echo "!! nginx config test failed — nothing restarted"; exit 1; }
+$SSH "cd $REMOTE_DIR && $COMPOSE up -d"
 # Nginx's config files are single-file bind mounts. rsync replaces each changed file with a new
 # inode, but a running container keeps the old one mounted, so a changed proxy_params_*.conf
 # silently doesn't apply (`nginx -s reload` re-reads the stale copy). Found live: the

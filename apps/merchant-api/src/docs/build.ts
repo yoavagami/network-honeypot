@@ -39,7 +39,8 @@ export function buildDocs(): Record<string, string> {
     "**Using a coding agent?** Put your test keys in `.env` and tell it: `Integrate uHoney using {{AGENT_URL}}`. It follows the same steps as this page.",
   ].join("\n\n");
   const { html, headings } = toHtml(`${intro}\n\n${shared}`);
-  const toc = headings.filter((h) => h.level === 2 || (h.level === 3 && STACKS.some(([, n]) => h.text.startsWith(n)))).map((h) => `<a class="l${h.level}" href="#${h.id}">${h.text.replace(/`/g, "")}</a>`).join("");
+  const recipeTitles = new Set(recipes.map((r) => r.match(/^###\s+(.*)$/m)?.[1]?.trim()));
+  const toc = headings.filter((h) => h.level === 2 || (h.level === 3 && recipeTitles.has(h.text))).map((h) => `<a class="l${h.level}" href="#${h.id}">${h.text.replace(/`/g, "")}</a>`).join("");
 
   const developer = `<!doctype html>
 <html lang="en">
