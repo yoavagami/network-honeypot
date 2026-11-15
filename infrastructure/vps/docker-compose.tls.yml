@@ -11,6 +11,9 @@ services:
       - ./infrastructure/nginx/honeypot-tls.rendered.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infrastructure/nginx/proxy_params_honeypot.conf:/etc/nginx/proxy_params_honeypot.conf:ro
+      - ./infrastructure/nginx/proxy_params_merchant.conf:/etc/nginx/proxy_params_merchant.conf:ro
+      - ./infrastructure/nginx/merchant_locations.conf:/etc/nginx/merchant_locations.conf:ro
+      - ./infrastructure/nginx/merchant_api_host.conf:/etc/nginx/merchant_api_host.conf:ro
       - type: tmpfs
         target: /var/cache/nginx
         tmpfs:

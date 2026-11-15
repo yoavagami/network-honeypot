@@ -19,6 +19,6 @@ LOCAL_DIR="${1:-$MAIN_ROOT/backups}"
 PUBLIC_IP=$(aws ec2 describe-addresses --region "$REGION" --filters "Name=tag:Name,Values=$NAME" --query 'Addresses[0].PublicIp' --output text)
 mkdir -p "$LOCAL_DIR"
 rsync -az --ignore-existing -e "ssh -i $KEY_FILE -o StrictHostKeyChecking=accept-new" \
-  "ubuntu@$PUBLIC_IP:backups/honeypot-*.dump*" "$LOCAL_DIR/"
+  "ubuntu@$PUBLIC_IP:backups/*-*.dump*" "$LOCAL_DIR/"
 echo "==> Local copies in $LOCAL_DIR:"
 ls -lh "$LOCAL_DIR" | tail -n +2

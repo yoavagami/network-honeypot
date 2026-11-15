@@ -14,6 +14,8 @@ const NAV = [
   { to: "/geography", label: "Geography" },
   { to: "/first-contact", label: "First Contact" },
   { to: "/search", label: "Search" },
+  { to: "/merchants", label: "Merchants" },
+  { to: "/merchant-traffic", label: "Merchant traffic" },
 ];
 
 // Only rendered for superadmins. Hiding the link is convenience; the real gate is the API's 404.

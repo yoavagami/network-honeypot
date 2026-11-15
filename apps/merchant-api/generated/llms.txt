@@ -1,0 +1,10 @@
+# uHoney
+
+> Detects AI agents on merchant websites and returns a verdict (human, agent, or agent→human handover) when someone presses Pay.
+
+## Integration
+
+- [Agent integration instructions]({{AGENT_URL}}): step-by-step procedure for coding agents integrating uHoney into a merchant site
+- [Developer guide]({{DOCS_URL}}): the same steps for people
+- [OpenAPI contract]({{API_URL}}/integrate/v1/openapi.json)
+- [Changelog]({{TAG_BASE}}/integrate/changelog.md)

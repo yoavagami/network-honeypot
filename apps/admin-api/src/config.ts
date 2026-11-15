@@ -47,6 +47,9 @@ export const config = {
   // Public base URL of the site, so minted lab links are clickable (e.g. https://uhoney.shop).
   publicSiteUrl: (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, ""),
   honeypotInternalUrl: normalizeInternalUrl(process.env.HONEYPOT_INTERNAL_URL ?? "http://localhost:8080"),
+  // Merchant platform (apps/merchant-api internal API). Unset: the Merchants pages say it is off.
+  merchantInternalUrl: (process.env.MERCHANT_INTERNAL_URL || "").replace(/\/+$/, ""),
+  merchantInternalToken: process.env.MERCHANT_INTERNAL_TOKEN || "",
   sessionIdleTimeoutMs: Number(process.env.ADMIN_SESSION_IDLE_MS ?? 30 * 60 * 1000),
   sessionAbsoluteTimeoutMs: Number(process.env.ADMIN_SESSION_ABSOLUTE_MS ?? 12 * 60 * 60 * 1000),
 } as const;

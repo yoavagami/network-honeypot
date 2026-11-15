@@ -27,5 +27,5 @@ if [ -z "$LATEST" ] || [ "$(stat -c %s "$LATEST")" -lt 10240 ]; then
   exit 1
 fi
 
-find "$BACKUP_DIR" -maxdepth 1 -name 'honeypot-*.dump*' -mtime +"$KEEP_DAYS" -print -delete
+find "$BACKUP_DIR" -maxdepth 1 \( -name 'honeypot-*.dump*' -o -name 'merchant-*.dump*' \) -mtime +"$KEEP_DAYS" -print -delete
 echo "==> backup done: $LATEST ($(du -h "$LATEST" | cut -f1)); kept $(ls "$BACKUP_DIR"/honeypot-*.dump* | wc -l) dumps"

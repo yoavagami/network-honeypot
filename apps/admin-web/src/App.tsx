@@ -21,6 +21,11 @@ import { FirstContactPage } from "./pages/FirstContactPage.js";
 import { SearchPage } from "./pages/SearchPage.js";
 import { EventDetailPage } from "./pages/EventDetailPage.js";
 import { AccessLogPage } from "./pages/AccessLogPage.js";
+import { MerchantsPage, MerchantTrafficPage, MerchantTrafficVisitPage, MerchantTrafficOrderPage } from "./pages/MerchantsAdmin.js";
+import {
+  MerchantAuthProvider, RequireMerchant, MerchantLayout, MerchantLoginPage, MerchantInvitePage, MerchantOverviewPage, MerchantLivePage,
+  MerchantVisitsPage, MerchantVisitPage, MerchantOrdersPage, MerchantOrderPage, MerchantIntegrationPage, MerchantSettingsPage,
+} from "./pages/MerchantPortal.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { username, loading } = useAuth();
@@ -38,7 +43,38 @@ function RequireSuperadmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Merchant portal (/m/*): its own sign-in against merchant-api, never the SOC admin session. */
+function MerchantRoutes() {
+  return (
+    <MerchantAuthProvider>
+      <Routes>
+        <Route path="login" element={<MerchantLoginPage />} />
+        <Route path="invite/:token" element={<MerchantInvitePage />} />
+        <Route element={<RequireMerchant><MerchantLayout /></RequireMerchant>}>
+          <Route index element={<MerchantOverviewPage />} />
+          <Route path="live" element={<MerchantLivePage />} />
+          <Route path="visits" element={<MerchantVisitsPage />} />
+          <Route path="visits/:id" element={<MerchantVisitPage />} />
+          <Route path="orders" element={<MerchantOrdersPage />} />
+          <Route path="orders/:id" element={<MerchantOrderPage />} />
+          <Route path="integration" element={<MerchantIntegrationPage />} />
+          <Route path="settings" element={<MerchantSettingsPage />} />
+        </Route>
+      </Routes>
+    </MerchantAuthProvider>
+  );
+}
+
 export function App() {
+  return (
+    <Routes>
+      <Route path="/m/*" element={<MerchantRoutes />} />
+      <Route path="*" element={<AdminApp />} />
+    </Routes>
+  );
+}
+
+function AdminApp() {
   return (
     <AuthProvider>
       <Routes>
@@ -69,6 +105,10 @@ export function App() {
           <Route path="first-contact" element={<FirstContactPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
+          <Route path="merchants" element={<MerchantsPage />} />
+          <Route path="merchant-traffic" element={<MerchantTrafficPage />} />
+          <Route path="merchant-traffic/visits/:id" element={<MerchantTrafficVisitPage />} />
+          <Route path="merchant-traffic/orders/:id" element={<MerchantTrafficOrderPage />} />
           <Route
             path="access-log"
             element={

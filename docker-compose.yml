@@ -112,6 +112,8 @@ services:
       HOST: 0.0.0.0
       ADMIN_WEB_ORIGIN: ${ADMIN_WEB_ORIGIN:-http://localhost:8081}
       HONEYPOT_INTERNAL_URL: http://honeypot:8080
+      MERCHANT_INTERNAL_URL: http://merchant-api:8095
+      MERCHANT_INTERNAL_TOKEN: ${MERCHANT_INTERNAL_TOKEN:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:
@@ -129,6 +131,46 @@ services:
     mem_limit: 512m
     cpus: 1
 
+  # Merchant platform API — apps/merchant-api, docs/merchant/OPERATIONS.md. Its own database
+  # ("merchant", same Postgres server) and roles; reached by nginx (public merchant paths),
+  # admin-web (/m/api for the merchant portal) and admin-api (/internal, admin views).
+  merchant-api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/merchant-api.Dockerfile
+    restart: unless-stopped
+    environment:
+      MERCHANT_APP_DATABASE_URL: postgres://merchant_app:${MERCHANT_APP_DB_PASSWORD}@postgres:5432/merchant
+      MERCHANT_ADMIN_DATABASE_URL: postgres://merchant_admin:${MERCHANT_ADMIN_DB_PASSWORD}@postgres:5432/merchant
+      MERCHANT_TOKEN_SECRET: ${MERCHANT_TOKEN_SECRET}
+      MERCHANT_ENCRYPTION_KEY: ${MERCHANT_ENCRYPTION_KEY}
+      MERCHANT_INTERNAL_TOKEN: ${MERCHANT_INTERNAL_TOKEN}
+      IP_HASH_SECRET: ${IP_HASH_SECRET}
+      MERCHANT_PUBLIC_API_URL: ${MERCHANT_PUBLIC_API_URL:-http://localhost:8095}
+      MERCHANT_TAG_BASE_URL: ${MERCHANT_TAG_BASE_URL:-http://localhost:8095}
+      MERCHANT_DASHBOARD_URL: ${MERCHANT_DASHBOARD_URL:-http://localhost:8081}
+      MERCHANT_DASHBOARD_ORIGINS: ${MERCHANT_DASHBOARD_ORIGINS:-}
+      MERCHANT_COOKIE_SECURE: ${MERCHANT_COOKIE_SECURE:-true}
+      IPINFO_TOKEN: ${IPINFO_TOKEN:-}
+      TRUST_PROXY_HOPS: 1
+      PORT: 8095
+      HOST: 0.0.0.0
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [public, internal, admin]
+    # Dev-only convenience port, loopback only (production reaches it through nginx).
+    ports:
+      - "127.0.0.1:8095:8095"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    user: "10003:10003"
+    mem_limit: 384m
+    cpus: 1
+
   admin-web:
     build:
       context: .
@@ -137,6 +179,9 @@ services:
         VITE_ADMIN_API_URL: ${ADMIN_API_PUBLIC_URL:-http://localhost:8090}
     restart: unless-stopped
     depends_on: [admin-api]
+    environment:
+      # "" = the merchant portal calls /m/api on its own origin; admin-web's nginx proxies it.
+      MERCHANT_API_URL: ""
     networks: [admin]
     ports:
       - "127.0.0.1:8081:80"
@@ -169,11 +214,14 @@ services:
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
-    depends_on: [honeypot]
+    depends_on: [honeypot, merchant-api]
     volumes:
       - ./infrastructure/nginx/honeypot.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infrastructure/nginx/proxy_params_honeypot.conf:/etc/nginx/proxy_params_honeypot.conf:ro
+      - ./infrastructure/nginx/proxy_params_merchant.conf:/etc/nginx/proxy_params_merchant.conf:ro
+      - ./infrastructure/nginx/merchant_locations.conf:/etc/nginx/merchant_locations.conf:ro
+      - ./infrastructure/nginx/merchant_api_host.conf:/etc/nginx/merchant_api_host.conf:ro
       - type: tmpfs
         target: /var/cache/nginx
         tmpfs:
