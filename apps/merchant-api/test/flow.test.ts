@@ -243,6 +243,21 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect((await dash(s, "GET", "/m/api/auth/me")).statusCode).toBe(401);
   });
 
+  it("the documented Node helper works against the real API", async () => {
+    process.env.UHONEY_SECRET_KEY = A.sk;
+    process.env.UHONEY_API_URL = "https://api.example.test";
+    const helper: any = await import("../../../docs/integrate/snippets/node/uhoney.mjs");
+    const viaInject = async (url: string, init: any) => {
+      const r = await app.inject({ method: init.method, url: new URL(url).pathname, payload: init.body, headers: init.headers });
+      return new Response(r.body, { status: r.statusCode, headers: { "content-type": "application/json" } });
+    };
+    const a = await helper.assessOrder({ sessionToken: A.token, order: { id: "ord_helper", amount: 2500, currency: "eur" }, ip: "203.0.113.8", headers: { "user-agent": CHROME, accept: "text/html", "accept-language": "en", "sec-fetch-site": "same-origin", cookie: "x=1" }, method: "POST", path: "/checkout", host: "localhost:3000", fetchImpl: viaInject });
+    expect(matches("Assessment", a)).toBe(true);
+    expect(a.order).toEqual({ id: "ord_helper", amount: 2500, currency: "EUR" });
+    const status = (await server(A, "GET", "/v1/integration/status")).json();
+    expect(status.checks.find((c: any) => c.id === "assess_headers").status).toBe("pass");
+  });
+
   it("suspending a merchant revokes its keys and sessions", async () => {
     expect((await internal("POST", `/internal/merchants/${B.id}/status`, { status: "suspended" })).statusCode).toBe(200);
     expect((await server(B, "GET", "/v1/integration/status")).json().error.code).toBe("key_revoked");

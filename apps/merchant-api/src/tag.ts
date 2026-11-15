@@ -44,6 +44,8 @@ export function patchAppJs(source: string): string {
 const loader = (apiBase: string) => `
   var __UH = (function () {
     var cs = document.currentScript;
+    // Frameworks that inject scripts (next/script, tag managers) may not set currentScript.
+    if (!cs || !cs.getAttribute || !cs.getAttribute("data-site-key")) cs = document.querySelector('script[data-site-key][src*="/v1/tag.js"]');
     var KEY = cs && cs.getAttribute("data-site-key");
     if (!KEY || !/^pk_(test|live)_[A-Za-z0-9]{24}$/.test(KEY) || window.__uhoneyLoaded) return null;
     window.__uhoneyLoaded = true;

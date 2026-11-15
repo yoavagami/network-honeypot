@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrate uHoney</title>
+<meta name="description" content="Step-by-step integration guide for the uHoney merchant API.">
+<style>
+:root { --bg:#fbfaf7; --ink:#1d1b16; --muted:#5d594f; --line:#e2ddd1; --code:#f3f0e8; --accent:#a35d08; }
+@media (prefers-color-scheme: dark) { :root { --bg:#16150f; --ink:#eeeadf; --muted:#a8a293; --line:#34312a; --code:#211f19; --accent:#f0a742; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap { display:grid; grid-template-columns: 240px minmax(0, 1fr); gap:40px; max-width:1120px; margin:0 auto; padding:40px 16px 80px; }
+nav { position:sticky; top:24px; align-self:start; font-size:14px; }
+nav a { display:block; color:var(--muted); text-decoration:none; padding:3px 0; }
+nav a.l3 { padding-left:14px; }
+nav a:hover { color:var(--accent); }
+main { min-width:0; }
+h1 { font-size:34px; line-height:1.2; margin:0 0 16px; }
+h2 { font-size:24px; margin:48px 0 12px; padding-top:8px; border-top:1px solid var(--line); }
+h3 { font-size:18px; margin:28px 0 8px; }
+p, li { max-width:72ch; }
+a { color:var(--accent); }
+code { font:13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--code); padding:1px 5px; border-radius:4px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow-x:auto; }
+pre code { background:none; padding:0; font-size:13px; }
+.table { overflow-x:auto; }
+table { border-collapse:collapse; font-size:14px; margin:12px 0; }
+th, td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line); padding:8px 10px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav { position:static; border-bottom:1px solid var(--line); padding-bottom:12px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Contents"><a class="l2" href="#1-before-you-start">1. Before you start</a><a class="l2" href="#2-store-the-keys">2. Store the keys</a><a class="l2" href="#3-add-the-tag-to-every-page">3. Add the tag to every page</a><a class="l2" href="#4-mark-the-pay-button-and-send-the-session-token">4. Mark the Pay button and send the session token</a><a class="l2" href="#5-call-assess-on-your-server-before-the-charge">5. Call Assess on your server, before the charge</a><a class="l2" href="#6-receive-the-final-verdict-by-webhook">6. Receive the final verdict by webhook</a><a class="l2" href="#7-verify">7. Verify</a><a class="l2" href="#8-go-live">8. Go live</a><a class="l2" href="#stack-recipes">Stack recipes</a><a class="l3" href="#next-js-app-router">Next.js (App Router)</a><a class="l3" href="#php-plain-php-laravel-symfony-woocommerce-custom-code">PHP (plain PHP, Laravel, Symfony, WooCommerce custom code)</a><a class="l3" href="#anything-else">Anything else</a><a class="l2" href="#troubleshooting">Troubleshooting</a><a href="{{AGENT_URL}}">Agent file</a><a href="{{API_URL}}/integrate/v1/openapi.json">OpenAPI contract</a></nav>
+<main>
+<h1 id="integrate-uhoney">Integrate uHoney</h1>
+<p>Detect AI agents on your store and get a verdict when someone presses Pay. Three pieces: a tag on every page, one server call before the charge, and a webhook. About 30 minutes.</p>
+<p><strong>Using a coding agent?</strong> Put your test keys in <code>.env</code> and tell it: <code>Integrate uHoney using {{AGENT_URL}}</code>. It follows the same steps as this page.</p>
+<h2 id="1-before-you-start">1. Before you start</h2>
+<p>You need:</p>
+<ul><li>An approved uHoney account. No account yet? Request access at <code>{{TAG_BASE}}/merchants</code>.</li><li>Your <strong>test keys</strong> from the dashboard (<code>{{DASHBOARD_URL}}/m/settings</code> → Keys): the public site key <code>pk_test_…</code> and a secret key <code>sk_test_…</code> (shown once when you create it).</li><li>Access to your site's shared page layout and to the server code that creates the charge.</li></ul>
+<p>Supported in v1: any site with its own backend. Recipes below for <strong>Next.js</strong>, <strong>Node.js with Express</strong> and <strong>PHP</strong>, plus a generic recipe for anything else. Stripe is covered; other payment providers work the same way without the Stripe metadata.</p>
+<p>Two rules hold for every integration:</p>
+<ul><li><strong>Fail open.</strong> The checkout never waits more than 300 ms for uHoney and never fails because of it.</li><li><strong>Advisory only.</strong> Save the verdict on the order. Acting on it (review, challenge) is your decision.</li></ul>
+<h2 id="2-store-the-keys">2. Store the keys</h2>
+<p>Add the keys to your server environment (for local development, the project's <code>.env</code>, which must stay out of git):</p>
+<pre><code class="language-bash">UHONEY_SITE_KEY=pk_test_...        # public: used in the page tag
+UHONEY_SECRET_KEY=sk_test_...      # secret: server only
+UHONEY_WEBHOOK_SECRET=whsec_...    # from step 6</code></pre>
+<p>Frameworks that expose public variables need a public copy of the site key (Next.js: <code>NEXT_PUBLIC_UHONEY_SITE_KEY</code>). The secret key must never reach browser code, logs, commits or test fixtures.</p>
+<p><strong>Check:</strong></p>
+<pre><code class="language-bash">curl -s {{API_URL}}/v1/integration/status -H &quot;Authorization: Bearer $UHONEY_SECRET_KEY&quot;</code></pre>
+<p>returns JSON with your <code>merchant_id</code> and <code>key_valid: pass</code>.</p>
+<h2 id="3-add-the-tag-to-every-page">3. Add the tag to every page</h2>
+<p>Put the tag in the shared layout, so it loads on every page including checkout:</p>
+<pre><code class="language-html">&lt;!-- uHoney: in the shared layout's &lt;head&gt;, on every page --&gt;
+&lt;script&gt;window.uhoney=window.uhoney||{q:[],track:function(){this.q.push([&quot;track&quot;].concat([].slice.call(arguments)))},consent:function(){this.q.push([&quot;consent&quot;].concat([].slice.call(arguments)))}};&lt;/script&gt;
+&lt;script async src=&quot;{{TAG_URL}}&quot; data-site-key=&quot;YOUR_UHONEY_SITE_KEY&quot;&gt;&lt;/script&gt;</code></pre>
+<ul><li>The first line is a tiny stub so <code>uhoney.track()</code> calls made before the tag loads are not lost.</li><li>With test keys the tag works on <code>localhost</code> and <code>127.0.0.1</code>. For any other domain, add it in the dashboard (Settings → Domains) first.</li><li><strong>Content Security Policy:</strong> if your site sends one, allow <code>{{TAG_HOST}}</code> in <code>script-src</code> and <code>{{API_HOST}}</code> in <code>connect-src</code>. A blocked tag fails silently; this is the most common integration problem.</li><li><strong>Consent:</strong> if you need consent before analytics, add <code>data-consent=&quot;pending&quot;</code> to the script tag and call <code>uhoney.consent(true)</code> when the visitor agrees. Nothing is sent before that.</li></ul>
+<p><strong>Check:</strong> open any page of your site, then run the status call from step 2: <code>tag_seen</code> and <code>token_issued</code> pass.</p>
+<h2 id="4-mark-the-pay-button-and-send-the-session-token">4. Mark the Pay button and send the session token</h2>
+<p>Tell uHoney when Pay is pressed, and make sure your checkout request carries the session token:</p>
+<pre><code class="language-js">// When the visitor presses Pay (before your own submit/redirect logic):
+payButton.addEventListener(&quot;click&quot;, () =&gt; {
+  window.uhoney.track(&quot;pay_clicked&quot;, { orderId: currentOrderId });
+});
+
+// Classic &lt;form method=&quot;post&quot;&gt; checkouts get a hidden uhoney_token field automatically.
+// Custom (fetch/JSON) checkouts: send the token yourself.
+const sessionToken = window.uhoney.token ? window.uhoney.token() : null;
+await fetch(&quot;/api/checkout&quot;, {
+  method: &quot;POST&quot;,
+  headers: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+  body: JSON.stringify({ ...checkoutData, uhoney_token: sessionToken }),
+});</code></pre>
+<ul><li>Classic <code>&lt;form method=&quot;post&quot;&gt;</code> checkouts get a hidden <code>uhoney_token</code> field automatically — nothing to do.</li><li>Custom checkouts (fetch, JSON, SPA) send <code>uhoney.token()</code> as <code>uhoney_token</code> with the checkout request.</li><li>Other events you may send the same way: <code>checkout_started</code>, <code>add_to_cart</code>, <code>product_viewed</code>.</li></ul>
+<p><strong>Check:</strong> press Pay once in test mode: <code>pay_event_seen</code> passes.</p>
+<h2 id="5-call-assess-on-your-server-before-the-charge">5. Call Assess on your server, before the charge</h2>
+<p>In the server code that creates or confirms the payment, call <code>POST /v1/assess</code> with the session token, the order, and the visitor's request. Use the helper for your stack (recipes below); for Node.js it is:</p>
+<pre><code class="language-js">// uhoney.mjs — server helper for the uHoney merchant API (Node 18+, no dependencies).
+// Reads UHONEY_SECRET_KEY and UHONEY_WEBHOOK_SECRET from the environment. Never import this
+// file into browser code.
+import { createHmac, timingSafeEqual } from &quot;node:crypto&quot;;
+
+const API_URL = process.env.UHONEY_API_URL || &quot;{{API_URL}}&quot;;
+
+// Visitor request headers worth forwarding. Never cookie or authorization.
+const FORWARD_HEADERS = [
+  &quot;accept&quot;, &quot;accept-language&quot;, &quot;accept-encoding&quot;,
+  &quot;sec-ch-ua&quot;, &quot;sec-ch-ua-mobile&quot;, &quot;sec-ch-ua-platform&quot;,
+  &quot;sec-fetch-site&quot;, &quot;sec-fetch-mode&quot;, &quot;sec-fetch-dest&quot;,
+  &quot;signature&quot;, &quot;signature-input&quot;, &quot;signature-agent&quot;,
+];
+
+function readHeader(headers, name) {
+  if (!headers) return undefined;
+  if (typeof headers.get === &quot;function&quot;) return headers.get(name) ?? undefined; // Fetch API Headers
+  const v = headers[name]; // Node / Express: lower-case keys
+  return Array.isArray(v) ? v.join(&quot;, &quot;) : v;
+}
+
+/**
+ * Ask uHoney for a verdict before charging. Fails open: returns null on any error or after
+ * `timeoutMs` (300 ms by default), so the checkout always continues.
+ *
+ * @param {object} p
+ * @param {string|undefined|null} p.sessionToken  the uhoney_token the checkout form sent
+ * @param {{id: string, amount: number, currency: string}} p.order  amount in minor units (cents)
+ * @param {string} p.ip  the visitor's IP address
+ * @param {object} p.headers  the visitor's request headers (Express req.headers or Fetch Headers)
+ * @param {string} [p.method]  @param {string} [p.path]  @param {string} [p.host]
+ */
+export async function assessOrder({ sessionToken, order, ip, headers, method, path, host, timeoutMs = 300, fetchImpl = fetch }) {
+  const secret = process.env.UHONEY_SECRET_KEY;
+  if (!secret || !order || !ip) return null;
+  const forwarded = {};
+  for (const name of FORWARD_HEADERS) {
+    const value = readHeader(headers, name);
+    if (value) forwarded[name] = String(value).slice(0, 4096);
+  }
+  const body = {
+    session_token: typeof sessionToken === &quot;string&quot; &amp;&amp; sessionToken.startsWith(&quot;st_&quot;) ? sessionToken : undefined,
+    stage: &quot;pay&quot;,
+    order: { id: String(order.id), amount: Math.round(order.amount), currency: String(order.currency).toUpperCase() },
+    request: { ip, user_agent: readHeader(headers, &quot;user-agent&quot;) ?? null, method, path, host, headers: forwarded },
+  };
+  try {
+    const res = await fetchImpl(`${API_URL}/v1/assess`, {
+      method: &quot;POST&quot;,
+      headers: { authorization: `Bearer ${secret}`, &quot;content-type&quot;: &quot;application/json&quot;, &quot;idempotency-key&quot;: String(order.id) },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null; // timeout, network error, bad JSON: let the payment continue
+  }
+}
+
+/** The fields worth keeping on your order record. */
+export function verdictFields(assessment) {
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null };
+  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_action: assessment.suggested_action };
+}
+
+/** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
+export function stripeMetadata(assessment) {
+  if (!assessment) return {};
+  return {
+    uhoney_assessment_id: assessment.assessment_id,
+    uhoney_driver: assessment.driver,
+    uhoney_action: assessment.suggested_action,
+    uhoney_agent: assessment.agent ? assessment.agent.id : &quot;none&quot;,
+    uhoney_agent_verified: String(Boolean(assessment.agent &amp;&amp; assessment.agent.verified)),
+    uhoney_score: String(assessment.score),
+  };
+}
+
+/**
+ * Check a webhook's Uhoney-Signature header (&quot;t=&lt;unix&gt;,v1=&lt;hex&gt;&quot;) against the raw request body.
+ * Use the body exactly as received, before any JSON parsing.
+ */
+export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHONEY_WEBHOOK_SECRET, toleranceSec = 300) {
+  if (!secret || typeof signatureHeader !== &quot;string&quot;) return false;
+  const m = signatureHeader.match(/^t=(\d+),v1=([0-9a-f]{64})$/);
+  if (!m) return false;
+  const t = Number(m[1]);
+  if (Math.abs(Math.floor(Date.now() / 1000) - t) &gt; toleranceSec) return false;
+  const expected = createHmac(&quot;sha256&quot;, secret).update(`${t}.${rawBody}`).digest(&quot;hex&quot;);
+  const a = Buffer.from(expected);
+  const b = Buffer.from(m[2]);
+  return a.length === b.length &amp;&amp; timingSafeEqual(a, b);
+}</code></pre>
+<p>What the helper guarantees, and any hand-written version must too:</p>
+<ul><li>a <strong>300 ms timeout</strong>; on timeout or any error it returns <code>null</code> and <strong>the payment continues unchanged</strong>;</li><li>the visitor's IP, user agent and the listed headers are forwarded — <strong>never</strong> <code>cookie</code> or <code>authorization</code>;</li><li><code>Idempotency-Key</code> is the order id, so a retried checkout gets the same assessment.</li></ul>
+<p>Save <code>assessment_id</code>, <code>driver</code> and <code>suggested_action</code> on the order. With Stripe, also put <code>stripeMetadata(assessment)</code> into the PaymentIntent's <code>metadata</code>, so Radar rules can use it (for example: review if <code>uhoney_action</code> is <code>review</code>).</p>
+<p>The response looks like this (full contract: <code>{{API_URL}}/integrate/v1/openapi.json</code>):</p>
+<pre><code class="language-json">{
+  &quot;assessment_id&quot;: &quot;as_9fK2aB7cD1eF3gH5iJ6k&quot;,
+  &quot;driver&quot;: &quot;agent_then_human&quot;,
+  &quot;handover&quot;: { &quot;page&quot;: &quot;/checkout/payment&quot;, &quot;at&quot;: &quot;2026-11-15T10:42:07Z&quot; },
+  &quot;agent&quot;: { &quot;id&quot;: &quot;claude-in-chrome&quot;, &quot;operator&quot;: &quot;Anthropic&quot;, &quot;verified&quot;: false, &quot;verification&quot;: null },
+  &quot;score&quot;: 0.97,
+  &quot;confidence&quot;: &quot;high&quot;,
+  &quot;suggested_action&quot;: &quot;allow&quot;,
+  &quot;final&quot;: false
+}</code></pre>
+<p><strong>Check:</strong> place a test order: <code>assess_called</code>, <code>assess_headers</code> and <code>assess_latency</code> pass.</p>
+<h2 id="6-receive-the-final-verdict-by-webhook">6. Receive the final verdict by webhook</h2>
+<p>The verdict at Pay is preliminary (<code>final: false</code>). When the visit ends — or if the verdict changes after Pay — uHoney sends <code>assessment.updated</code> to your webhook endpoint. <code>checkout.agent_started</code> tells you an agent-driven visit reached checkout.</p>
+<ol><li>Add an endpoint in the dashboard (Settings → Webhooks), for example <code>https://shop.example.com/webhooks/uhoney</code>. Copy the signing secret (shown once) into <code>UHONEY_WEBHOOK_SECRET</code>.</li><li>In the handler, verify <code>Uhoney-Signature</code> against the <strong>raw</strong> body with <code>verifyWebhook()</code>, then update the saved verdict. Answer 2xx within 5 seconds. Deliveries retry for 24 hours, so the same event <code>id</code> can arrive twice — handle it idempotently.</li><li>Press <strong>Send test webhook</strong> in the dashboard.</li></ol>
+<p>Webhooks need a public HTTPS URL. On localhost, implement and unit-test the handler; <code>webhook_delivered</code> passes once the endpoint is deployed (or exposed with a tunnel).</p>
+<p><strong>Check:</strong> <code>webhook_delivered</code> passes.</p>
+<h2 id="7-verify">7. Verify</h2>
+<pre><code class="language-bash">curl -s {{API_URL}}/v1/integration/status -H &quot;Authorization: Bearer $UHONEY_SECRET_KEY&quot;</code></pre>
+<p>Every check is <code>pass</code> or <code>not_applicable</code> (<code>all_passed: true</code>). Each failing check's <code>detail</code> says exactly what to fix, and <code>recent_events</code> shows the last five things uHoney received from you. The same checklist is in the dashboard under Integration.</p>
+<p>On localhost it is normal for <code>webhook_delivered</code> to fail until the webhook endpoint is reachable over HTTPS.</p>
+<h2 id="8-go-live">8. Go live</h2>
+<ol><li>Add your production domain (Settings → Domains) and verify it with the DNS TXT record or the meta tag shown there. Live keys require a verified domain.</li><li>Create a live secret key, and copy the live site key.</li><li>Swap the environment variables in production to <code>pk_live_…</code> / <code>sk_live_…</code>, add a live webhook endpoint, and deploy.</li><li>Run the status call with the live secret key until it passes, and switch the dashboard to <strong>Live data</strong>.</li></ol>
+<h2 id="stack-recipes">Stack recipes</h2>
+<h3 id="next-js-app-router">Next.js (App Router)</h3>
+<ol><li>Copy the Node helper (step 5) to <code>lib/uhoney.mjs</code>.</li><li>Add <code>NEXT_PUBLIC_UHONEY_SITE_KEY</code> (the <code>pk_</code> key) and <code>UHONEY_SECRET_KEY</code> to <code>.env.local</code>.</li><li>Tag in the root layout:</li></ol>
+<pre><code class="language-tsx">// app/layout.tsx — add the tag once, in the root layout.
+import Script from &quot;next/script&quot;;
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;html lang=&quot;en&quot;&gt;
+      &lt;body&gt;
+        {children}
+        &lt;Script
+          src=&quot;{{TAG_URL}}&quot;
+          data-site-key={process.env.NEXT_PUBLIC_UHONEY_SITE_KEY}
+          strategy=&quot;afterInteractive&quot;
+        /&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}</code></pre>
+<ol><li>Assess in the checkout route handler (or server action) before the payment is created:</li></ol>
+<pre><code class="language-ts">// app/api/checkout/route.ts — add the assess call to your existing checkout handler.
+import { NextRequest, NextResponse } from &quot;next/server&quot;;
+import { assessOrder, verdictFields, stripeMetadata } from &quot;@/lib/uhoney.mjs&quot;;
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const order = await createOrder(body); // your existing code
+
+  const assessment = await assessOrder({
+    sessionToken: body.uhoney_token,
+    order: { id: order.id, amount: order.totalCents, currency: order.currency },
+    ip: (req.headers.get(&quot;x-forwarded-for&quot;) ?? &quot;&quot;).split(&quot;,&quot;)[0]!.trim() || &quot;0.0.0.0&quot;,
+    headers: req.headers,
+    method: req.method,
+    path: req.nextUrl.pathname,
+    host: req.headers.get(&quot;host&quot;) ?? undefined,
+  });
+  await saveOrderFields(order.id, verdictFields(assessment)); // your existing code
+  // Stripe: metadata: { order_id: order.id, ...stripeMetadata(assessment) }
+
+  return NextResponse.json({ orderId: order.id }); // your existing response, unchanged
+}</code></pre>
+<ol><li>Webhook route:</li></ol>
+<pre><code class="language-ts">// app/api/webhooks/uhoney/route.ts
+import { NextRequest, NextResponse } from &quot;next/server&quot;;
+import { verifyWebhook, verdictFields } from &quot;@/lib/uhoney.mjs&quot;;
+
+export async function POST(req: NextRequest) {
+  const raw = await req.text(); // raw body: needed for the signature
+  if (!verifyWebhook(raw, req.headers.get(&quot;uhoney-signature&quot;) ?? undefined)) {
+    return new NextResponse(&quot;bad signature&quot;, { status: 400 });
+  }
+  const event = JSON.parse(raw);
+  if (event.type === &quot;assessment.updated&quot;) {
+    const a = event.data.assessment;
+    await updateOrderFieldsByAssessment(a.assessment_id, verdictFields(a)); // your existing code
+  }
+  return new NextResponse(&quot;ok&quot;);
+}</code></pre>
+<p>Pages Router: put the tag in <code>pages/_document.tsx</code> and use the same helper in <code>pages/api/checkout.ts</code>.</p>
+<h3 id="node-js-with-express">Node.js with Express</h3>
+<ol><li>Copy the Node helper (step 5) next to your server code as <code>uhoney.mjs</code> (CommonJS projects: rename to <code>.mjs</code> and <code>import()</code> it, or convert the exports).</li><li>Add the tag (step 3) to your layout template.</li><li>Assess in the checkout route and add the webhook route:</li></ol>
+<pre><code class="language-js">// Express: add the assess call to your existing checkout route, and a webhook route.
+import express from &quot;express&quot;;
+import { assessOrder, verdictFields, stripeMetadata, verifyWebhook } from &quot;./uhoney.mjs&quot;;
+
+const app = express();
+app.set(&quot;trust proxy&quot;, 1); // so req.ip is the visitor's IP behind your load balancer
+
+app.post(&quot;/checkout&quot;, express.urlencoded({ extended: false }), async (req, res) =&gt; {
+  const order = await createOrder(req.body); // your existing code
+
+  // uHoney: before the charge. Never throws; null means &quot;no verdict&quot; and the payment continues.
+  const assessment = await assessOrder({
+    sessionToken: req.body.uhoney_token,
+    order: { id: order.id, amount: order.totalCents, currency: order.currency },
+    ip: req.ip,
+    headers: req.headers,
+    method: req.method,
+    path: req.originalUrl,
+    host: req.get(&quot;host&quot;),
+  });
+  await saveOrderFields(order.id, verdictFields(assessment)); // your existing code
+
+  // With Stripe: add the verdict to the PaymentIntent so Radar rules can use it.
+  // await stripe.paymentIntents.create({ amount: order.totalCents, currency: order.currency, metadata: { order_id: order.id, ...stripeMetadata(assessment) } });
+
+  res.redirect(303, `/orders/${order.id}`); // your existing flow, unchanged
+});
+
+// Webhooks need the raw body for the signature check.
+app.post(&quot;/webhooks/uhoney&quot;, express.raw({ type: &quot;application/json&quot; }), async (req, res) =&gt; {
+  const raw = req.body.toString(&quot;utf8&quot;);
+  if (!verifyWebhook(raw, req.get(&quot;uhoney-signature&quot;))) return res.status(400).send(&quot;bad signature&quot;);
+  const event = JSON.parse(raw);
+  if (event.type === &quot;assessment.updated&quot;) {
+    const a = event.data.assessment;
+    await updateOrderFieldsByAssessment(a.assessment_id, verdictFields(a)); // your existing code
+  }
+  res.status(200).send(&quot;ok&quot;);
+});</code></pre>
+<h3 id="php-plain-php-laravel-symfony-woocommerce-custom-code">PHP (plain PHP, Laravel, Symfony, WooCommerce custom code)</h3>
+<ol><li>Add the tag (step 3) to your layout template (<code>header.php</code>, Blade layout, Twig base template).</li><li>Add this helper and call <code>uhoney_assess()</code> before charging:</li></ol>
+<pre><code class="language-php">&lt;?php
+// uhoney.php — server helper for the uHoney merchant API (PHP 7.4+, curl).
+// Reads UHONEY_SECRET_KEY and UHONEY_WEBHOOK_SECRET from the environment.
+
+const UHONEY_FORWARD_HEADERS = [
+    'accept', 'accept-language', 'accept-encoding',
+    'sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform',
+    'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest',
+    'signature', 'signature-input', 'signature-agent',
+];
+
+/**
+ * Verdict before charging. Fails open: returns null on any error or after 300 ms.
+ * $order = ['id' =&gt; 'ord_1', 'amount' =&gt; 12900, 'currency' =&gt; 'EUR'] (amount in cents).
+ */
+function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300): ?array
+{
+    $secret = getenv('UHONEY_SECRET_KEY');
+    if (!$secret) return null;
+    $api = getenv('UHONEY_API_URL') ?: '{{API_URL}}';
+    $headers = [];
+    foreach (UHONEY_FORWARD_HEADERS as $name) {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        if (!empty($_SERVER[$key])) $headers[$name] = substr((string) $_SERVER[$key], 0, 4096);
+    }
+    $body = [
+        'stage' =&gt; 'pay',
+        'order' =&gt; ['id' =&gt; (string) $order['id'], 'amount' =&gt; (int) $order['amount'], 'currency' =&gt; strtoupper($order['currency'])],
+        'request' =&gt; [
+            'ip' =&gt; $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+            'user_agent' =&gt; $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'method' =&gt; $_SERVER['REQUEST_METHOD'] ?? null,
+            'path' =&gt; strtok($_SERVER['REQUEST_URI'] ?? '/', '?'),
+            'host' =&gt; $_SERVER['HTTP_HOST'] ?? null,
+            'headers' =&gt; (object) $headers,
+        ],
+    ];
+    if (is_string($sessionToken) &amp;&amp; strpos($sessionToken, 'st_') === 0) $body['session_token'] = $sessionToken;
+
+    $ch = curl_init($api . '/v1/assess');
+    curl_setopt_array($ch, [
+        CURLOPT_POST =&gt; true,
+        CURLOPT_RETURNTRANSFER =&gt; true,
+        CURLOPT_TIMEOUT_MS =&gt; $timeoutMs,
+        CURLOPT_CONNECTTIMEOUT_MS =&gt; $timeoutMs,
+        CURLOPT_HTTPHEADER =&gt; [
+            'Authorization: Bearer ' . $secret,
+            'Content-Type: application/json',
+            'Idempotency-Key: ' . $order['id'],
+        ],
+        CURLOPT_POSTFIELDS =&gt; json_encode($body),
+    ]);
+    $response = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($response === false || $status &lt; 200 || $status &gt;= 300) return null;
+    $data = json_decode($response, true);
+    return is_array($data) ? $data : null;
+}
+
+/** Check a webhook's Uhoney-Signature header against the raw body (file_get_contents('php://input')). */
+function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $toleranceSec = 300): bool
+{
+    $secret = getenv('UHONEY_WEBHOOK_SECRET');
+    if (!$secret || !$signatureHeader || !preg_match('/^t=(\d+),v1=([0-9a-f]{64})$/', $signatureHeader, $m)) return false;
+    if (abs(time() - (int) $m[1]) &gt; $toleranceSec) return false;
+    return hash_equals(hash_hmac('sha256', $m[1] . '.' . $rawBody, $secret), $m[2]);
+}
+
+// In your checkout handler, before charging:
+//   $assessment = uhoney_assess(['id' =&gt; $orderId, 'amount' =&gt; $totalCents, 'currency' =&gt; 'EUR'], $_POST['uhoney_token'] ?? null);
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'] on the order (if not null)
+//   ...continue the payment exactly as before.</code></pre>
+<p>Behind a load balancer, make sure <code>REMOTE_ADDR</code> is the visitor's IP (trusted proxy settings).</p>
+<h3 id="anything-else">Anything else</h3>
+<p>The integration is the same three pieces in any language:</p>
+<ol><li>The tag (step 3) in the shared layout, and <code>uhoney.track(&quot;pay_clicked&quot;, { orderId })</code> on Pay (step 4).</li><li>One HTTPS call from your server before the charge: <code>POST {{API_URL}}/v1/assess</code> with <code>Authorization: Bearer &lt;secret key&gt;</code>, <code>Idempotency-Key: &lt;order id&gt;</code>, a 300 ms timeout, and the body from step 5 — continue the payment on any error.</li><li>A webhook endpoint that verifies <code>Uhoney-Signature</code> (<code>t=&lt;unix&gt;,v1=&lt;hex HMAC-SHA256 of &quot;&lt;t&gt;.&lt;raw body&gt;&quot;&gt;</code> with your <code>whsec_</code> secret) and updates the order.</li></ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<div class="table"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td><code>tag_seen</code> fails, no errors visible</td><td>Content Security Policy blocks the tag</td><td>Allow <code>{{TAG_HOST}}</code> in <code>script-src</code> and <code>{{API_HOST}}</code> in <code>connect-src</code></td></tr><tr><td>Beacons answer 403 <code>origin_not_allowed</code></td><td>Domain not registered (test) or not verified (live)</td><td>Settings → Domains</td></tr><tr><td><code>wrong_key_type</code></td><td>A <code>pk_</code> key on the server, or an <code>sk_</code> key in the browser</td><td>Site key in the tag, secret key on the server</td></tr><tr><td><code>assess_called</code> fails with &quot;without a valid session token&quot;</td><td>The checkout request doesn't carry <code>uhoney_token</code></td><td>Classic forms: check the form is <code>method=&quot;post&quot;</code>; custom checkouts: send <code>uhoney.token()</code></td></tr><tr><td><code>token_issued</code> fails</td><td><code>data-consent=&quot;pending&quot;</code> and consent never given</td><td>Call <code>uhoney.consent(true)</code> after consent</td></tr><tr><td>Assess often returns <code>null</code> in your logs</td><td>Network latency over 300 ms to the API</td><td>Check the server region; never raise the timeout above 1 s</td></tr><tr><td><code>webhook_delivered</code> fails</td><td>Endpoint not public HTTPS, slow, or signature check fails</td><td>Use the raw body; answer 2xx within 5 s</td></tr></tbody></table></div>
+</main>
+</div>
+</body>
+</html>

@@ -16,7 +16,10 @@ function render(file: string, deps: Deps): string | null {
     .replaceAll("{{TAG_URL}}", `${deps.config.tagBaseUrl}/v1/tag.js`)
     .replaceAll("{{DASHBOARD_URL}}", deps.config.dashboardUrl)
     .replaceAll("{{DOCS_URL}}", `${deps.config.tagBaseUrl}/docs/integrate`)
-    .replaceAll("{{AGENT_URL}}", `${deps.config.tagBaseUrl}/integrate/v1/agent.md`);
+    .replaceAll("{{AGENT_URL}}", `${deps.config.tagBaseUrl}/integrate/v1/agent.md`)
+    .replaceAll("{{TAG_BASE}}", deps.config.tagBaseUrl)
+    .replaceAll("{{TAG_HOST}}", new URL(deps.config.tagBaseUrl).host)
+    .replaceAll("{{API_HOST}}", new URL(deps.config.publicApiUrl).host);
 }
 
 export function registerStatic(app: FastifyInstance, deps: Deps) {

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "migrate": "pnpm --filter @honeypot/merchant-db run migrate"
+    "migrate": "pnpm --filter @honeypot/merchant-db run migrate",
+    "build:docs": "tsx src/docs/build.ts"
   },
   "dependencies": {
     "@honeypot/detection": "workspace:*",
