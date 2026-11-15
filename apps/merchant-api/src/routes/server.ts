@@ -25,7 +25,17 @@ async function serverAuth(deps: Deps, request: FastifyRequest): Promise<KeyIdent
   const claimed = request.headers["uhoney-merchant"];
   if (claimed !== undefined && claimed !== key.merchantId) throw new ApiFailure("merchant_mismatch", "Uhoney-Merchant does not match the merchant this key belongs to.");
   if (perKey.hit(key.keyId) < 0) throw new ApiFailure("rate_limited", "Too many requests for this key.");
+  markKeyUsed(deps, key);
   return key;
+}
+
+/** Settings → Keys "last used": at most one write per key per minute, never on the request path. */
+const lastMarked = new Map<string, number>();
+function markKeyUsed(deps: Deps, key: KeyIdentity) {
+  const now = Date.now();
+  if (now - (lastMarked.get(key.keyId) ?? 0) < 60_000) return;
+  lastMarked.set(key.keyId, now);
+  void withMerchant(deps.app, key.merchantId, (tx) => tx`UPDATE api_keys SET last_used_at = now() WHERE key_id = ${key.keyId}`).catch(() => lastMarked.delete(key.keyId));
 }
 
 const stableJson = (v: unknown): string =>

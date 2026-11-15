@@ -82,7 +82,8 @@ export function MerchantsPage() {
 export function MerchantTrafficPage() {
   const [params, setParams] = useSearchParams();
   const merchantId = params.get("merchant_id") ?? "";
-  const mode = (params.get("mode") as Mode) ?? "live";
+  // Test data until merchants go live: today every merchant integrates with test keys first.
+  const mode = (params.get("mode") as Mode) ?? "test";
   const [merchants, setMerchants] = useState<MerchantRow[]>([]);
   const [data, setData] = useState<{ overview: Overview; visits: VisitRow[]; orders: OrderRow[] } | null>(null);
   const [tab, setTab] = useState<"visits" | "orders">("visits");
@@ -128,7 +129,8 @@ export function MerchantTrafficPage() {
 export function MerchantTrafficVisitPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
-  const mode = (params.get("mode") as Mode) ?? "live";
+  // Test data until merchants go live: today every merchant integrates with test keys first.
+  const mode = (params.get("mode") as Mode) ?? "test";
   const [d, setD] = useState<VisitDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { adminMerchants.visit(id!, mode).then(setD).catch((e) => setError(errText(e))); }, [id, mode]);
@@ -144,7 +146,8 @@ export function MerchantTrafficVisitPage() {
 export function MerchantTrafficOrderPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
-  const mode = (params.get("mode") as Mode) ?? "live";
+  // Test data until merchants go live: today every merchant integrates with test keys first.
+  const mode = (params.get("mode") as Mode) ?? "test";
   const [d, setD] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { adminMerchants.order(id!, mode).then(setD).catch((e) => setError(errText(e))); }, [id, mode]);

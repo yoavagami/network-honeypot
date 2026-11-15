@@ -144,6 +144,12 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(matches("Error", mismatch.json())).toBe(true);
   });
 
+  it("server calls record when the secret key was last used", async () => {
+    await new Promise((r) => setTimeout(r, 100));
+    const [k] = await db.admin`SELECT last_used_at FROM api_keys WHERE merchant_id = ${A.id} AND kind = 'secret' AND revoked_at IS NULL ORDER BY created_at LIMIT 1`;
+    expect(k!.last_used_at).not.toBeNull();
+  });
+
   it("feedback attaches to the order's assessment", async () => {
     const r = await server(A, "POST", "/v1/feedback", { order_id: "ord_1", outcome: "confirmed_human" });
     expect(r.statusCode).toBe(202);
