@@ -12,13 +12,16 @@ These steps belong to the human. If one is needed, stop and ask the developer:
 - create, view or rotate keys in the dashboard, or verify domains;
 - switch to live keys (`pk_live_` / `sk_live_`) or deploy to production.
 
-## Preconditions
+## Preconditions: pick your mode
 
-Check before changing anything:
+Check whether the keys are available to you:
 
-1. `UHONEY_SITE_KEY` and `UHONEY_SECRET_KEY` are set in the project's environment file (for example `.env` or `.env.local`), and start with `pk_test_` and `sk_test_`. If missing, stop and ask the developer to copy them from `{{DASHBOARD_URL}}/m/settings`.
-2. The environment file is ignored by git. If it isn't, tell the developer before continuing.
-3. Run the status call (section 2 below). It must return the developer's `merchant_id` with `key_valid: pass`.
+- **With keys** — `UHONEY_SITE_KEY` and `UHONEY_SECRET_KEY` are set in the project's environment file (for example `.env` or `.env.local`) and start with `pk_test_` and `sk_test_`. Then:
+  1. Confirm the environment file is ignored by git. If it isn't, tell the developer before continuing.
+  2. Run the status call (step 2 below). It must return the developer's `merchant_id` with `key_valid: pass`.
+- **Without keys** — you run somewhere the keys aren't available (a cloud or CI agent, a fresh clone). Don't stop and don't ask for the secret key. Implement everything against the environment variable names, add them to the project's example environment file with placeholder values (`pk_test_REPLACE_ME`, `sk_test_REPLACE_ME`, `whsec_REPLACE_ME`), run the unit tests, and skip the live status checks. The developer verifies after deploying (see "Done means").
+
+Never ask the developer to paste a secret key into the chat, an issue or a pull request.
 
 ## Hard rules
 
@@ -41,8 +44,9 @@ Check before changing anything:
 3. **Show the developer a plan** — the files you will change or add and one line on why — and wait for approval.
 4. **Implement** steps 3 to 6 below with the recipe's code, adapted to the project's conventions.
 5. **Add tests**: one that the checkout still succeeds when the uHoney call times out or fails, and one for the webhook signature check (valid and invalid).
-6. **Verify** (step 7) and fix until every check passes, except the ones the notes say can't pass locally.
-7. **Report** (end of this file).
+6. **Verify** (step 7) and fix until every check passes, except the ones the notes say can't pass locally. Without keys: run the unit tests only.
+7. **Deliver as a pull request** when the developer asked for one or the project works with pull requests: create a branch `uhoney-integration`, commit only the integration changes (never an environment file with real values), push, and open a pull request titled "Integrate uHoney" whose description is the report below. Never merge it yourself. Otherwise, leave the changes uncommitted for the developer to review.
+8. **Report** (end of this file).
 
 The steps below are the same ones the developer guide shows (`{{DOCS_URL}}`).
 
@@ -511,7 +515,9 @@ The integration is the same three pieces in any language:
 
 ## Done means
 
-Run the status call and read every check:
+**Without keys:** done means the code from steps 3–6 is in place, the example environment file lists the variables, the unit tests pass (checkout still succeeds when uHoney times out or fails; webhook signatures accepted and rejected correctly), and the report contains the after-deploy checklist below for the developer.
+
+**With keys:** run the status call and read every check:
 
 ```bash
 curl -s {{API_URL}}/v1/integration/status -H "Authorization: Bearer $UHONEY_SECRET_KEY"
@@ -524,13 +530,18 @@ curl -s {{API_URL}}/v1/integration/status -H "Authorization: Bearer $UHONEY_SECR
 
 ## Report
 
-Write `UHONEY_INTEGRATION.md` in the repository root containing:
+Write `UHONEY_INTEGRATION.md` in the repository root (and use the same text as the pull request description) containing:
 
 1. The stack and recipe used.
 2. Every file changed or added, with one line each.
 3. How to roll back (the files to revert).
 4. The final status output, with the secret key not shown.
-5. What the developer still has to do: webhook endpoint in the dashboard, domain verification, live keys at go-live.
+5. What the developer still has to do, as a checklist:
+   - [ ] Set `UHONEY_SITE_KEY` (and the framework's public copy, e.g. `NEXT_PUBLIC_UHONEY_SITE_KEY`), `UHONEY_SECRET_KEY` and `UHONEY_WEBHOOK_SECRET` in each environment where the site runs.
+   - [ ] Register the site's domain in the dashboard (Settings → Domains); test keys accept any registered domain.
+   - [ ] Deploy, open a page, place one test order, and run the status call until every check passes.
+   - [ ] Add the webhook endpoint in the dashboard and press **Send test webhook**.
+   - [ ] At go-live: verify the domain, create live keys, swap the environment variables.
 
 Then give the developer a short summary and the list of remaining human steps.
 

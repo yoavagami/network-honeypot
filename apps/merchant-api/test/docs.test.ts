@@ -34,7 +34,7 @@ describe("integration docs", () => {
 
   it("the agent file states the hard rules", () => {
     const agent = built["agent.md"]!;
-    for (const rule of ["Secret key on the server only", "Fail open", "Never change payment behaviour", "Only add code", "Never forward `cookie` or `authorization`", "Test keys only", "UHONEY_INTEGRATION.md"]) expect(agent).toContain(rule);
+    for (const rule of ["Secret key on the server only", "Fail open", "Never change payment behaviour", "Only add code", "Never forward `cookie` or `authorization`", "Test keys only", "UHONEY_INTEGRATION.md", "Without keys", "Never ask the developer to paste a secret key", "uhoney-integration", "Never merge it yourself"]) expect(agent).toContain(rule);
   });
 
   it("the developer page escapes code (no live script tags from the source)", () => {

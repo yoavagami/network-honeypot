@@ -1,6 +1,8 @@
 ## Done means
 
-Run the status call and read every check:
+**Without keys:** done means the code from steps 3–6 is in place, the example environment file lists the variables, the unit tests pass (checkout still succeeds when uHoney times out or fails; webhook signatures accepted and rejected correctly), and the report contains the after-deploy checklist below for the developer.
+
+**With keys:** run the status call and read every check:
 
 ```bash
 curl -s {{API_URL}}/v1/integration/status -H "Authorization: Bearer $UHONEY_SECRET_KEY"
@@ -13,13 +15,18 @@ curl -s {{API_URL}}/v1/integration/status -H "Authorization: Bearer $UHONEY_SECR
 
 ## Report
 
-Write `UHONEY_INTEGRATION.md` in the repository root containing:
+Write `UHONEY_INTEGRATION.md` in the repository root (and use the same text as the pull request description) containing:
 
 1. The stack and recipe used.
 2. Every file changed or added, with one line each.
 3. How to roll back (the files to revert).
 4. The final status output, with the secret key not shown.
-5. What the developer still has to do: webhook endpoint in the dashboard, domain verification, live keys at go-live.
+5. What the developer still has to do, as a checklist:
+   - [ ] Set `UHONEY_SITE_KEY` (and the framework's public copy, e.g. `NEXT_PUBLIC_UHONEY_SITE_KEY`), `UHONEY_SECRET_KEY` and `UHONEY_WEBHOOK_SECRET` in each environment where the site runs.
+   - [ ] Register the site's domain in the dashboard (Settings → Domains); test keys accept any registered domain.
+   - [ ] Deploy, open a page, place one test order, and run the status call until every check passes.
+   - [ ] Add the webhook endpoint in the dashboard and press **Send test webhook**.
+   - [ ] At go-live: verify the domain, create live keys, swap the environment variables.
 
 Then give the developer a short summary and the list of remaining human steps.
 
