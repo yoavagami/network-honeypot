@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { adminMerchants, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type VisitDetail, type OrderDetail } from "../merchantApi.js";
+import { adminMerchants, type PageHits, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type VisitDetail, type OrderDetail } from "../merchantApi.js";
 import { ApiError } from "../api.js";
 import { fmtTime, ModeToggle, OverviewPanels, OrdersTable, VisitsTable, VisitDetailView, ActionBadge, fmtMoney } from "../components/MerchantViews.js";
 
@@ -74,6 +74,72 @@ export function MerchantsPage() {
           </table>
         )}
       </div>
+      <PageHitsPanel />
+    </div>
+  );
+}
+
+const PAGE_LABEL: Record<string, string> = {
+  "/merchants": "Request access",
+  "/docs/integrate": "Developer guide",
+  "/integrate/v1/agent.md": "Agent file",
+  "/llms.txt": "llms.txt",
+};
+
+/** Who opened the public merchant pages: request access, developer guide, agent file. */
+function PageHitsPanel() {
+  const [days, setDays] = useState(7);
+  const [path, setPath] = useState("");
+  const [data, setData] = useState<PageHits | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setData(null);
+    adminMerchants.pageHits({ days, path: path || undefined }).then(setData).catch((e) => setError(errText(e)));
+  }, [days, path]);
+  return (
+    <div className="panel">
+      <div className="toolbar">
+        <h2 style={{ marginRight: "auto", marginBottom: 0 }}>Who opened the merchant pages</h2>
+        <select value={path} onChange={(e) => setPath(e.target.value)} aria-label="Page">
+          <option value="">All pages</option>
+          {Object.entries(PAGE_LABEL).map(([p, l]) => <option key={p} value={p}>{l}</option>)}
+        </select>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Range">
+          {[1, 7, 30, 90].map((d) => <option key={d} value={d}>Last {d} day{d > 1 ? "s" : ""}</option>)}
+        </select>
+      </div>
+      {error && <div className="banner warn">{error}</div>}
+      {!data ? !error && <p className="muted">Loading…</p> : (
+        <>
+          <div className="grid-3">
+            <div>
+              <h3>Pages</h3>
+              {data.by_page.length === 0 ? <p className="muted">No hits.</p> : <ul>{data.by_page.map((p) => <li key={p.path}>{PAGE_LABEL[p.path] ?? p.path}: {p.hits} hits, {p.visitors} visitors <span className="muted small">(last {fmtTime(p.last_at)})</span></li>)}</ul>}
+            </div>
+            <div>
+              <h3>Countries</h3>
+              {data.by_country.length === 0 ? <p className="muted">—</p> : <ul>{data.by_country.map((c) => <li key={c.country}>{c.country}: {c.hits}</li>)}</ul>}
+            </div>
+            <div>
+              <h3>Agents and tools</h3>
+              {data.agents.length === 0 ? <p className="muted">Only browsers so far.</p> : <ul>{data.agents.map((a) => <li key={a.agent}>{a.agent}: {a.hits} <span className="muted small">(last {fmtTime(a.last_at)})</span></li>)}</ul>}
+            </div>
+          </div>
+          {data.hits.length > 0 && (
+            <table style={{ marginTop: "1rem" }}>
+              <thead><tr><th>Time</th><th>Page</th><th>IP</th><th>Country</th><th>Network</th><th>Agent / tool</th><th>User agent</th><th>Referrer</th></tr></thead>
+              <tbody>{data.hits.map((h, i) => (
+                <tr key={i}>
+                  <td>{fmtTime(h.created_at)}</td><td>{PAGE_LABEL[h.path] ?? h.path}{h.status !== 200 ? ` (${h.status})` : ""}</td>
+                  <td>{h.ip ?? <span className="muted">cleared</span>}</td><td>{h.country ?? "—"}</td><td className="truncate">{h.network ?? "—"}</td>
+                  <td>{h.agent ?? <span className="muted">browser</span>}</td><td className="truncate" title={h.user_agent ?? ""}>{h.user_agent ?? "—"}</td><td className="truncate">{h.referrer ?? "—"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+          <p className="muted small" style={{ marginTop: ".5rem" }}>IP addresses are kept for 30 days. Recording started with this release; earlier visits are not included.</p>
+        </>
+      )}
     </div>
   );
 }

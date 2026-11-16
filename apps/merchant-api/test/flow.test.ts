@@ -270,6 +270,23 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect((await dash(B, "GET", "/m/api/auth/me")).statusCode).toBe(401);
   });
 
+  it("records who opened the public merchant pages, visible to admins only", async () => {
+    await app.inject({ method: "GET", url: "/merchants", headers: { "user-agent": CHROME, referer: "https://wa.me/" }, remoteAddress: "198.51.100.23" });
+    await app.inject({ method: "GET", url: "/integrate/v1/agent.md", headers: { "user-agent": "Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://openai.com/bot)" }, remoteAddress: "198.51.100.24" });
+    await app.inject({ method: "GET", url: "/v1/tag.js" });
+    await new Promise((r) => setTimeout(r, 200));
+    const r = await internal("GET", "/internal/page-hits?days=1");
+    expect(r.statusCode).toBe(200);
+    const d = r.json();
+    expect(d.hits.map((h: any) => h.path).sort()).toEqual(["/integrate/v1/agent.md", "/merchants"]);
+    const guide = d.hits.find((h: any) => h.path === "/merchants");
+    expect(guide).toMatchObject({ ip: "198.51.100.23", agent: null, referrer: "https://wa.me/" });
+    expect(d.hits.find((h: any) => h.path === "/integrate/v1/agent.md").agent).toBe("chatgpt-user");
+    expect(d.agents.map((a: any) => a.agent)).toContain("chatgpt-user");
+    await expect(db.app`SELECT * FROM public_page_hits`).rejects.toThrow(/permission denied/);
+    expect((await app.inject({ method: "GET", url: "/internal/page-hits" })).statusCode).toBe(404);
+  });
+
   it("serves the tag", async () => {
     const r = await app.inject({ method: "GET", url: "/v1/tag.js" });
     expect(r.statusCode).toBe(200);

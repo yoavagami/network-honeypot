@@ -145,6 +145,8 @@ export async function runRetention(sql: MerchantSql) {
   await sql`DELETE FROM webhook_deliveries WHERE created_at < now() - interval '30 days'`;
   await sql`DELETE FROM merchant_user_sessions WHERE expires_at < now()`;
   await sql`DELETE FROM merchant_invites WHERE expires_at < now() - interval '30 days'`;
+  await sql`UPDATE public_page_hits SET ip = NULL WHERE ip IS NOT NULL AND created_at < now() - interval '30 days'`;
+  await sql`DELETE FROM public_page_hits WHERE created_at < now() - interval '365 days'`;
 }
 
 export function startWorkers(sql: MerchantSql, opts: { scorerIntervalMs: number; webhookIntervalMs: number; dispatch: () => Promise<unknown>; log: (o: object) => void }) {
