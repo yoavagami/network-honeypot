@@ -4,7 +4,7 @@ import type { AgentReason } from "../api.js";
 export function ReasonList({ reasons, directionOnly }: { reasons: AgentReason[]; directionOnly?: boolean }) {
   if (reasons.length === 0) return <p className="muted">No distinguishing signals — the score is the prior (an ordinary visit).</p>;
   return (
-    <ul className="reason-list">
+    <ul className={`reason-list${directionOnly ? " direction" : ""}`}>
       {reasons.map((r, i) => (
         <li key={i}>
           {directionOnly

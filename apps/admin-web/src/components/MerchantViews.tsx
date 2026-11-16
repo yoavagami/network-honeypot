@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AgentBadge, ControlChip, TYPE_LABEL } from "./AgentBadge.js";
 import { BarList } from "./BarList.js";
 import { StatCard } from "./StatCard.js";
@@ -100,7 +100,23 @@ export function OverviewPanels({ data }: { data: Overview }) {
   );
 }
 
+/** Row props that open `to` on click or Enter, like the Agents list (the first cell stays a real link). */
+function useRowLink() {
+  const navigate = useNavigate();
+  return (to: string) => ({
+    className: "row-link",
+    tabIndex: 0,
+    onClick: (e: React.MouseEvent) => {
+      if ((e.target as HTMLElement).closest("a, button, input, select")) return;
+      if (e.metaKey || e.ctrlKey) window.open(to, "_blank");
+      else navigate(to);
+    },
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter") navigate(to); },
+  });
+}
+
 export function VisitsTable({ visits, base, showMerchant, showLab, mode }: { visits: VisitRow[]; base: string; showMerchant?: boolean; showLab?: boolean; mode: Mode }) {
+  const rowLink = useRowLink();
   if (!visits.length) return <p className="muted">No visits yet.</p>;
   return (
     <table>
@@ -112,7 +128,7 @@ export function VisitsTable({ visits, base, showMerchant, showLab, mode }: { vis
       </thead>
       <tbody>
         {visits.map((v) => (
-          <tr key={v.visit_id}>
+          <tr key={v.visit_id} {...rowLink(`${base}/visits/${v.visit_id}?mode=${mode}`)}>
             {showMerchant && <td><span title={v.merchant_id}>{v.company}</span></td>}
             <td><Link to={`${base}/visits/${v.visit_id}?mode=${mode}`}>{fmtTime(v.last_at)}</Link></td>
             {showLab && <td className="mono small">{v.lab_label ? `${v.lab_label}${v.lab_verified ? "" : " (claimed)"}` : ""}</td>}
@@ -148,6 +164,7 @@ export function MerchantVisitHeader({ v, showLab }: { v: import("../api.js").Age
 }
 
 export function OrdersTable({ orders, base, showMerchant, mode }: { orders: OrderRow[]; base: string; showMerchant?: boolean; mode: Mode }) {
+  const rowLink = useRowLink();
   if (!orders.length) return <p className="muted">No assessed orders yet.</p>;
   return (
     <table>
@@ -156,7 +173,7 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
       </thead>
       <tbody>
         {orders.map((o) => (
-          <tr key={o.assessment_id}>
+          <tr key={o.assessment_id} {...rowLink(`${base}/orders/${o.assessment_id}?mode=${mode}`)}>
             {showMerchant && <td><span title={o.merchant_id}>{o.company}</span></td>}
             <td><Link to={`${base}/orders/${o.assessment_id}?mode=${mode}`}>{fmtTime(o.created_at)}</Link></td>
             <td>{o.order_id}</td>
