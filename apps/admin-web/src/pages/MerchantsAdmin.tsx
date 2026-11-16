@@ -251,7 +251,7 @@ export function OrderDetailView({ d, base, mode }: { d: OrderDetail; base: strin
       </div>
       <div className="panel">
         <h2>Why</h2>
-        <ul className="reason-list">{(r.reasons as Array<{ code: string; text: string }>).map((x) => <li key={x.code}><strong>{x.code}</strong> — {x.text}</li>)}</ul>
+        <ul className="reason-list coded">{(r.reasons as Array<{ code: string; text: string }>).map((x) => <li key={x.code}><span className="code">{x.code}</span><span>{x.text}</span></li>)}</ul>
       </div>
       {d.feedback.length > 0 && (
         <div className="panel"><h2>Outcome reported</h2><ul>{d.feedback.map((f, i) => <li key={i}>{fmtTime(f.created_at)} — {f.outcome}{f.note ? `: ${f.note}` : ""}</li>)}</ul></div>
