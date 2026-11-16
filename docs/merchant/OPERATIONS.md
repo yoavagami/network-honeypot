@@ -34,6 +34,10 @@ textual patches (`apps/merchant-api/src/tag.ts`); a test fails if a patch target
   admin-api writes `view_merchant_data` to the admin audit log for each merchant-specific view, and
   `merchant_approve` / `merchant_decline` / `merchant_status` / `merchant_invite` for actions.
 - `/internal/*` answers only with `MERCHANT_INTERNAL_TOKEN` and is never routed by nginx.
+- **Public page hits** (`/merchants`, `/docs/integrate`, `/integrate/*`, `/llms.txt`) are recorded in
+  `public_page_hits` (time, page, IP, country, network, user agent, referrer, detected agent or tool) and shown
+  to admins on **Merchants → Who opened the merchant pages**. Only `merchant_admin` can read the table; each
+  admin view is audit-logged as `view_merchant_page_hits`. IPs are cleared after 30 days, rows deleted after 365.
 
 ## Onboarding a merchant
 

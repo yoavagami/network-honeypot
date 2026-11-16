@@ -56,7 +56,16 @@ export interface OrderDetail {
 export interface StatusCheck { id: string; status: "pass" | "fail" | "pending" | "not_applicable"; detail: string; checked_at: string }
 export interface IntegrationStatus { merchant_id: string; livemode: boolean; all_passed: boolean; checks: StatusCheck[]; recent_events: Array<{ type: string; at: string; origin: string | null }> }
 
+export interface PageHits {
+  days: number;
+  by_page: Array<{ path: string; hits: number; visitors: number; last_at: string }>;
+  by_country: Array<{ country: string; hits: number }>;
+  agents: Array<{ agent: string; hits: number; last_at: string }>;
+  hits: Array<{ created_at: string; path: string; status: number; ip: string | null; country: string | null; network: string | null; user_agent: string | null; referrer: string | null; agent: string | null }>;
+}
+
 export const adminMerchants = {
+  pageHits: (p: { days?: number; path?: string }) => request<PageHits>(`/api/merchant-site/hits${qs(p)}`),
   list: (status?: string) => request<{ merchants: MerchantRow[] }>(`/api/merchants${qs({ status })}`),
   get: (id: string) => request<Record<string, any>>(`/api/merchants/${id}`),
   approve: (id: string) => request<{ merchant_id: string; invite_url: string; invite_email: string }>(`/api/merchants/${id}/approve`, { method: "POST", body: "{}" }),

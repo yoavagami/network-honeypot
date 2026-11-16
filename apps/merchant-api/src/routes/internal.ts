@@ -147,6 +147,25 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     return reply.send(out);
   });
 
+  // Who opened the public merchant pages (pageHits.ts).
+  app.get("/internal/page-hits", async (request, reply) => {
+    const q = request.query as Record<string, string>;
+    const days = Math.min(Math.max(Number(q.days) || 7, 1), 365);
+    const since = new Date(Date.now() - days * 86400_000);
+    const path = q.path && /^\/[a-z0-9/._-]{1,100}$/.test(q.path) ? q.path : null;
+    const out = await tx(async (t) => {
+      const scope = path ? t`AND path = ${path}` : t``;
+      return {
+        days,
+        by_page: await t`SELECT path, count(*)::int AS hits, count(DISTINCT coalesce(host(ip), user_agent))::int AS visitors, max(created_at) AS last_at FROM public_page_hits WHERE created_at >= ${since} ${scope} GROUP BY path ORDER BY hits DESC`,
+        by_country: await t`SELECT coalesce(country, '?') AS country, count(*)::int AS hits FROM public_page_hits WHERE created_at >= ${since} ${scope} GROUP BY 1 ORDER BY hits DESC LIMIT 30`,
+        agents: await t`SELECT agent, count(*)::int AS hits, max(created_at) AS last_at FROM public_page_hits WHERE created_at >= ${since} AND agent IS NOT NULL ${scope} GROUP BY agent ORDER BY hits DESC LIMIT 30`,
+        hits: await t`SELECT created_at, path, status, host(ip) AS ip, country, network, user_agent, referrer, agent FROM public_page_hits WHERE created_at >= ${since} ${scope} ORDER BY created_at DESC LIMIT 300`,
+      };
+    });
+    return reply.send(out);
+  });
+
   // Cross-merchant data, optionally filtered to one merchant.
   app.get("/internal/overview", async (request, reply) => {
     const s = scopeOf(request);

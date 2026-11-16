@@ -9,7 +9,7 @@ import { audit } from "../audit.js";
  * can filter by one; merchants themselves only ever see their own data, in their own dashboard.
  */
 const MERCHANT_RE = /^mer_[0-9A-HJKMNP-TV-Z]{8}$/;
-const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "action"]);
+const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "action", "path"]);
 
 async function forward(request: FastifyRequest, reply: FastifyReply, method: "GET" | "POST", path: string, body?: unknown) {
   if (!config.merchantInternalUrl || !config.merchantInternalToken) {
@@ -39,6 +39,11 @@ export function registerMerchantRoutes(app: FastifyInstance) {
     merchantId ? audit(r.adminSession!.adminUserId, "view_merchant_data", merchantId, null, { what }) : Promise.resolve();
 
   app.get("/api/merchants", async (request, reply) => forward(request, reply, "GET", "merchants"));
+  // Who opened the public merchant pages (raw IPs, 30 days): logged like any other data view.
+  app.get("/api/merchant-site/hits", async (request, reply) => {
+    await audit(request.adminSession!.adminUserId, "view_merchant_page_hits", null, null, {});
+    return forward(request, reply, "GET", "page-hits");
+  });
 
   app.get("/api/merchants/:id", async (request, reply) => {
     if (!MERCHANT_RE.test(id(request))) return reply.status(404).send({ error: { code: "not_found", message: "Not found" } });

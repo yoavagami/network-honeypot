@@ -7,6 +7,7 @@ import { registerDashboard } from "./routes/dashboard.js";
 import { registerInternal } from "./routes/internal.js";
 import { registerStatic } from "./routes/static.js";
 import { sendError } from "./errors.js";
+import { registerPageHits } from "./pageHits.js";
 
 /** Builds the merchant API (tests call this with their own database and config). */
 export async function buildApp(deps: Deps, opts: { logger?: boolean | object } = {}): Promise<FastifyInstance> {
@@ -39,6 +40,7 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean | object } =
   });
   app.setNotFoundHandler((request, reply) => sendError(request, reply, "not_found", "No such endpoint."));
 
+  registerPageHits(app, deps);
   registerInternal(app, deps);
   registerDashboard(app, deps);
   registerCollect(app, deps);
