@@ -26,6 +26,8 @@ export interface MerchantConfig {
   workersEnabled: boolean;
   scorerIntervalMs: number;
   webhookIntervalMs: number;
+  /** Verifies signed ?lab= tokens (same secret as the honeypot). Unset: lab labels count as claimed only. */
+  labLinkSecret: string | undefined;
   /** Test only: allow webhook delivery to private addresses (local mock servers). */
   allowPrivateWebhookTargets: boolean;
 }
@@ -59,6 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): MerchantConfig
     workersEnabled: env.MERCHANT_WORKERS_ENABLED !== "false",
     scorerIntervalMs: Number(env.MERCHANT_SCORER_INTERVAL_MS ?? 3000),
     webhookIntervalMs: Number(env.MERCHANT_WEBHOOK_INTERVAL_MS ?? 5000),
+    labLinkSecret: env.LAB_LINK_SECRET || undefined,
     allowPrivateWebhookTargets: false,
   };
 }

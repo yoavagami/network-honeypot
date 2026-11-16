@@ -1,4 +1,4 @@
-import { ApiError, request } from "./api.js";
+import { ApiError, request, type AgentBucket, type AgentVisitDetail } from "./api.js";
 
 /**
  * Two clients for the merchant platform:
@@ -25,7 +25,8 @@ export interface MerchantRow {
   created_at: string; reviewed_at: string | null; reviewed_by: string | null; users: number; verified_domains: number; visits_7d: number; assessments_7d: number; last_event_at: string | null;
 }
 export interface VisitRow {
-  visit_id: string; merchant_id: string; company: string; first_at: string; last_at: string; settled: boolean; probability: number; bucket: string; type: string;
+  visit_id: string; merchant_id: string; company: string; first_at: string; last_at: string; settled: boolean; probability: number; bucket: AgentBucket; type: string;
+  checks_failed: number; checks_compared: number; lab_label?: string | null; lab_verified?: boolean;
   agent: string | null; proven: boolean; driver: string; handover: { page: string | null; at: string | null } | null; page_count: number;
   reached_checkout: boolean; reached_pay: boolean; network: { asn: string | null; organization: string | null; country: string | null } | null;
   user_agent: string | null; paths: string[] | null; assessments: number;
@@ -42,12 +43,6 @@ export interface Overview {
   funnel: Array<{ driver: string; visits: number; reached_checkout: number; reached_pay: number; assessed: number }>;
   daily: Array<{ day: string; visits: number; agent_visits: number }>;
   orders: { assessed: number; review: number; challenge: number };
-}
-export interface VisitDetail {
-  visit: VisitRow & { reasons: Array<{ code: string; text: string }>; summary: Record<string, any>; session_id: string };
-  pages: Array<{ pl: string | null; path: string | null; at: string | null; driver: string; agentSigns: string[]; humanSigns: string[] }>;
-  timeline: Array<{ kind: string; name: string | null; path: string | null; at: string }>;
-  assessments: Array<{ assessment_id: string; order_id: string; amount: number; currency: string; suggested_action: string; driver: string; final: boolean; created_at: string }>;
 }
 export interface OrderDetail {
   assessment_id: string; merchant_id: string; company: string; visit_id: string | null; token_status: string; header_count: number; server_ms: number; final: boolean; created_at: string;
@@ -73,8 +68,8 @@ export const adminMerchants = {
   setStatus: (id: string, status: "approved" | "suspended") => request<{ ok: true }>(`/api/merchants/${id}/status`, { method: "POST", body: JSON.stringify({ status }) }),
   invite: (id: string, email?: string, role = "owner") => request<{ invite_url: string; invite_email: string }>(`/api/merchants/${id}/invite`, { method: "POST", body: JSON.stringify({ email: email || undefined, role }) }),
   overview: (p: { merchant_id?: string; mode: Mode; days?: number }) => request<Overview>(`/api/merchant-data/overview${qs(p)}`),
-  visits: (p: { merchant_id?: string; mode: Mode; driver?: string; agents?: string }) => request<{ visits: VisitRow[] }>(`/api/merchant-data/visits${qs(p)}`),
-  visit: (id: string, mode: Mode) => request<VisitDetail>(`/api/merchant-data/visits/${id}${qs({ mode })}`),
+  visits: (p: { merchant_id?: string; mode: Mode; driver?: string; agents?: string; bucket?: string; lab?: string }) => request<{ visits: VisitRow[] }>(`/api/merchant-data/visits${qs(p)}`),
+  visit: (id: string, mode: Mode) => request<AgentVisitDetail>(`/api/merchant-data/visits/${id}${qs({ mode })}`),
   orders: (p: { merchant_id?: string; mode: Mode; action?: string }) => request<{ orders: OrderRow[] }>(`/api/merchant-data/orders${qs(p)}`),
   order: (id: string, mode: Mode) => request<OrderDetail>(`/api/merchant-data/orders/${id}${qs({ mode })}`),
 };
@@ -125,8 +120,8 @@ export const merchant = {
   invite: (token: string) => mreq<{ company: string; email: string; role: string; expires_at: string }>(`/m/api/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string, name: string, password: string) => mreq<{ ok: true }>(`/m/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST", body: JSON.stringify({ name, password, accept_terms: true }) }),
   overview: (mode: Mode, days = 7) => mreq<Overview>(`/m/api/overview${qs({ mode, days })}`),
-  visits: (p: { mode: Mode; driver?: string; agents?: string }) => mreq<{ visits: VisitRow[] }>(`/m/api/visits${qs(p)}`),
-  visit: (id: string, mode: Mode) => mreq<VisitDetail>(`/m/api/visits/${id}${qs({ mode })}`),
+  visits: (p: { mode: Mode; driver?: string; agents?: string; bucket?: string }) => mreq<{ visits: VisitRow[] }>(`/m/api/visits${qs(p)}`),
+  visit: (id: string, mode: Mode) => mreq<AgentVisitDetail>(`/m/api/visits/${id}${qs({ mode })}`),
   orders: (p: { mode: Mode; action?: string }) => mreq<{ orders: OrderRow[] }>(`/m/api/orders${qs(p)}`),
   order: (id: string, mode: Mode) => mreq<OrderDetail>(`/m/api/orders/${id}${qs({ mode })}`),
   live: (mode: Mode) => mreq<{ visits: VisitRow[]; pay_events: Array<{ session_id: string; name: string | null; path: string | null; created_at: string; visit_id: string | null }>; at: string }>(`/m/api/live${qs({ mode })}`),

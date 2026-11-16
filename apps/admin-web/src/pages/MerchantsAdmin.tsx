@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { adminMerchants, type PageHits, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type VisitDetail, type OrderDetail } from "../merchantApi.js";
+import { adminMerchants, type PageHits, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type OrderDetail } from "../merchantApi.js";
+import type { AgentVisitDetail } from "../api.js";
+import { VisitDetailBody } from "../components/VisitDetail.js";
 import { ApiError } from "../api.js";
-import { fmtTime, ModeToggle, OverviewPanels, OrdersTable, VisitsTable, VisitDetailView, ActionBadge, fmtMoney } from "../components/MerchantViews.js";
+import { fmtTime, ModeToggle, OverviewPanels, OrdersTable, VisitsTable, ActionBadge, fmtMoney, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
 
 const errText = (e: unknown) => (e instanceof ApiError ? e.message : "Request failed");
 
@@ -150,6 +152,8 @@ export function MerchantTrafficPage() {
   const merchantId = params.get("merchant_id") ?? "";
   // Test data until merchants go live: today every merchant integrates with test keys first.
   const mode = (params.get("mode") as Mode) ?? "test";
+  const bucket = params.get("bucket") ?? "";
+  const labOnly = params.get("lab") === "1";
   const [merchants, setMerchants] = useState<MerchantRow[]>([]);
   const [data, setData] = useState<{ overview: Overview; visits: VisitRow[]; orders: OrderRow[] } | null>(null);
   const [tab, setTab] = useState<"visits" | "orders">("visits");
@@ -160,10 +164,10 @@ export function MerchantTrafficPage() {
   useEffect(() => {
     setData(null); setError(null);
     const p = { merchant_id: merchantId || undefined, mode };
-    Promise.all([adminMerchants.overview(p), adminMerchants.visits(p), adminMerchants.orders(p)])
+    Promise.all([adminMerchants.overview(p), adminMerchants.visits({ ...p, bucket: bucket || undefined, lab: labOnly ? "1" : undefined }), adminMerchants.orders(p)])
       .then(([overview, v, o]) => setData({ overview, visits: v.visits, orders: o.orders }))
       .catch((e) => setError(errText(e)));
-  }, [merchantId, mode]);
+  }, [merchantId, mode, bucket, labOnly]);
 
   return (
     <div>
@@ -173,6 +177,8 @@ export function MerchantTrafficPage() {
           <option value="">All merchants</option>
           {merchants.map((m) => <option key={m.merchant_id} value={m.merchant_id}>{m.company} ({m.merchant_id})</option>)}
         </select>
+        <select value={bucket} onChange={(e) => set("bucket", e.target.value)} aria-label="Recommendation">{BUCKET_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+        <label className="small"><input type="checkbox" checked={labOnly} onChange={(e) => set("lab", e.target.checked ? "1" : "")} /> Lab runs only</label>
         <ModeToggle mode={mode} onChange={(m) => set("mode", m)} />
       </div>
       {error && <div className="banner warn">{error}</div>}
@@ -184,7 +190,7 @@ export function MerchantTrafficPage() {
         </div>
         <div className="panel">
           {tab === "visits"
-            ? <VisitsTable visits={data.visits} base="/merchant-traffic" showMerchant={!merchantId} mode={mode} />
+            ? <VisitsTable visits={data.visits} base="/merchant-traffic" showMerchant={!merchantId} showLab mode={mode} />
             : <OrdersTable orders={data.orders} base="/merchant-traffic" showMerchant={!merchantId} mode={mode} />}
         </div>
       </>}
@@ -197,14 +203,15 @@ export function MerchantTrafficVisitPage() {
   const [params] = useSearchParams();
   // Test data until merchants go live: today every merchant integrates with test keys first.
   const mode = (params.get("mode") as Mode) ?? "test";
-  const [d, setD] = useState<VisitDetail | null>(null);
+  const [d, setD] = useState<AgentVisitDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { adminMerchants.visit(id!, mode).then(setD).catch((e) => setError(errText(e))); }, [id, mode]);
   return (
     <div>
-      <div className="toolbar"><h1 style={{ marginRight: "auto" }}>Visit {d ? `· ${d.visit.company}` : ""}</h1><Link to={`/merchant-traffic?mode=${mode}`}>← Merchant traffic</Link></div>
+      <div className="toolbar"><h1 style={{ marginRight: "auto" }}>Visit {d?.merchant ? `· ${d.merchant.company}` : ""}</h1><Link to={`/merchant-traffic?mode=${mode}`}>← Merchant traffic</Link></div>
       {error && <div className="banner warn">{error}</div>}
-      {d ? <VisitDetailView d={d} base="/merchant-traffic" mode={mode} /> : !error && <p className="muted">Loading…</p>}
+      {d && <MerchantVisitHeader v={d} showLab />}
+      {d ? <VisitDetailBody v={d} variant="merchant-admin" orderLink={(a) => `/merchant-traffic/orders/${a}?mode=${mode}`} /> : !error && <p className="muted">Loading…</p>}
     </div>
   );
 }

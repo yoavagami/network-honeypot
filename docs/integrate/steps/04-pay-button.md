@@ -6,6 +6,6 @@ Tell uHoney when Pay is pressed, and make sure your checkout request carries the
 
 - Classic `<form method="post">` checkouts get a hidden `uhoney_token` field automatically — nothing to do.
 - Custom checkouts (fetch, JSON, SPA) send `uhoney.token()` as `uhoney_token` with the checkout request.
-- Other events you may send the same way: `checkout_started`, `add_to_cart`, `product_viewed`.
+- **Recommended:** send the shopping steps the same way — `uhoney.track("product_viewed")` on product pages, `uhoney.track("add_to_cart")`, and `uhoney.track("checkout_started")` when checkout opens. They're optional, but they fill in the visit's shop journey in the dashboard and help tell browsing agents from shoppers (for example, a cart-to-payment run in seconds).
 
 **Check:** press Pay once in test mode: `pay_event_seen` passes.

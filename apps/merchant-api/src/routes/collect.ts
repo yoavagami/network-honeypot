@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { collectRequest, TAG_EVENTS } from "@honeypot/merchant-contract";
+import { parseLabValue } from "@honeypot/detection";
 import { withMerchant } from "@honeypot/merchant-db";
 import type { Deps } from "../context.js";
 import { authenticateKey } from "../keys.js";
@@ -75,9 +76,11 @@ export function registerCollect(app: FastifyInstance, deps: Deps) {
       const userAgent = (request.headers["user-agent"] as string | undefined)?.slice(0, 1024) ?? null;
       const acceptLanguage = (request.headers["accept-language"] as string | undefined)?.slice(0, 256) ?? null;
       const network = b.kind === "page" ? await deps.network.lookup(ip, 300) : null;
-      const identity = b.kind === "page" ? await identifyRequest({ ip, userAgent, network }) : null;
+      const identity = b.kind === "page" ? await identifyRequest({ ip, userAgent, network, rdnsTimeoutMs: 500 }) : null;
+      const lab = parseLabValue(b.lab, deps.config.labLinkSecret);
 
-      return await withMerchant(deps.app, key.merchantId, async (tx) => {
+      // Answer only after the transaction commits, so the beacon is stored before the tag moves on.
+      const out = await withMerchant(deps.app, key.merchantId, async (tx) => {
         const origin = await originAllowed(tx, key.merchantId, key.livemode, request.headers.origin);
         if (!origin.ok) throw new ApiFailure("origin_not_allowed", key.livemode
           ? `Origin ${origin.host ?? "(none)"} is not a verified domain for this site key.`
@@ -95,13 +98,15 @@ export function registerCollect(app: FastifyInstance, deps: Deps) {
             ? { t: b.t ?? null, spa: b.data.spa === true, sdk: b.sdk ?? null }
             : { ...b.data, clientT: b.t ?? null, sdk: b.sdk ?? null, v: b.v ?? 1 };
         await tx`
-          INSERT INTO merchant_events (merchant_id, livemode, session_id, kind, name, page_view_id, path, origin, ip, ip_hash, user_agent, accept_language, identity, data)
+          INSERT INTO merchant_events (merchant_id, livemode, session_id, kind, name, page_view_id, path, origin, ip, ip_hash, user_agent, accept_language, identity, data, lab_label, lab_verified)
           VALUES (${key.merchantId}, ${key.livemode}, ${sessionId}, ${b.kind}, ${b.kind === "event" ? String(b.data.name) : null}, ${b.pl ?? null},
                   ${normalisePath(b.path)}, ${request.headers.origin ?? null}, ${ip}, ${ipHash(deps.config.ipHashSecret, key.merchantId, ip)},
-                  ${userAgent}, ${acceptLanguage}, ${identity ? tx.json(identity as any) : null}, ${tx.json(data as any)})`;
+                  ${userAgent}, ${acceptLanguage}, ${identity ? tx.json(identity as any) : null}, ${tx.json(data as any)},
+                  ${lab?.label ?? null}, ${lab?.verified ?? false})`;
         await tx`UPDATE api_keys SET last_used_at = now() WHERE key_id = ${key.keyId} AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')`;
-        return reply.send({ session_token: issued.token, expires_at: new Date(issued.claims.e * 1000).toISOString() });
+        return { session_token: issued.token, expires_at: new Date(issued.claims.e * 1000).toISOString() };
       });
+      return reply.send(out);
     } catch (err) {
       if (err instanceof ApiFailure) return sendError(request, reply, err.code, err.message);
       throw err;

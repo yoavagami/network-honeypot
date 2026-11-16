@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type AgentBucket, type LabRunCreated, type LabRunsResponse } from "../api.js";
 import { BUCKET_LABEL } from "./AgentBadge.js";
+import { adminMerchants } from "../merchantApi.js";
 
 const BUCKETS: AgentBucket[] = ["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"];
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -34,9 +35,15 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
   const [ttl, setTtl] = useState("2");
   const [created, setCreated] = useState<LabRunCreated | null>(null);
   const [busy, setBusy] = useState(false);
+  // Where the run happens: the honeypot (uhoney.shop) or a merchant site running the uHoney tag.
+  const [site, setSite] = useState("");
+  const [sites, setSites] = useState<Array<{ host: string; company: string }>>([]);
 
   const load = () => api.labRuns().then(setRuns).catch((e) => setError(String(e.message ?? e)));
   useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    adminMerchants.list("approved").then((r) => setSites(r.merchants.map((m) => ({ host: m.website.replace(/^https?:\/\//, "").replace(/\/.*$/, ""), company: m.company })))).catch(() => {});
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +61,7 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
       setBusy(false);
     }
   };
-  const link = created ? created.url ?? created.query : null;
+  const link = created ? (site ? `https://${site}/${created.query}` : created.url ?? created.query) : null;
 
   return (
     <div className="panel">
@@ -75,6 +82,10 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
         <input required placeholder={kind === "human" ? "human-safari-1" : "browser-use-checkout-1"} value={label} onChange={(e) => setLabel(e.target.value)} aria-label="Label" style={{ minWidth: 220 }} />
         <input placeholder={kind === "human" ? "browser (optional)" : "agent (optional)"} value={agent} onChange={(e) => setAgent(e.target.value)} aria-label="Agent" />
         <input placeholder="scenario (optional)" value={scenario} onChange={(e) => setScenario(e.target.value)} aria-label="Scenario" />
+        <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="Site" title="Where the run happens. Merchant sites need the uHoney tag.">
+          <option value="">on uhoney.shop</option>
+          {sites.map((s) => <option key={s.host} value={s.host}>on {s.host} ({s.company})</option>)}
+        </select>
         <select value={ttl} onChange={(e) => setTtl(e.target.value)} aria-label="Link lifetime">
           <option value="0.25">valid 6 hours</option>
           <option value="1">valid 1 day</option>
@@ -89,12 +100,13 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
           Link for <strong className="mono">{created!.label}</strong> (expires {new Date(created!.expiresAt).toLocaleString()}):{" "}
           <span className="mono" style={{ userSelect: "all", wordBreak: "break-all" }}>{link}</span>{" "}
           <button type="button" onClick={() => navigator.clipboard?.writeText(link)}>Copy</button>
-          {!created!.url && <span className="muted small"> — append to the site's URL (set PUBLIC_SITE_URL on admin-api for a full link)</span>}
+          {!created!.url && !site && <span className="muted small"> — append to the site's URL (set PUBLIC_SITE_URL on admin-api for a full link)</span>}
+          {site && <span className="muted small"> — open it on {site}; its visits appear under Merchant traffic and in this table.</span>}
         </div>
       )}
       <table>
         <thead>
-          <tr><th>Label</th><th>Kind</th><th title="What you said this run is (typed when creating the link)">Agent / scenario</th><th title="Which agent the score named in this run's visits">Detected</th><th>Created</th><th>Expires</th><th>Visits</th><th>Verdicts</th><th>Last seen</th></tr>
+          <tr><th>Label</th><th>Kind</th><th title="What you said this run is (typed when creating the link)">Agent / scenario</th><th title="Which agent the score named in this run's visits">Detected</th><th>Created</th><th>Expires</th><th>Visits</th><th title="Where this run's visits were seen">Seen on</th><th>Verdicts</th><th>Last seen</th></tr>
         </thead>
         <tbody>
           {runs?.data.map((r) => (
@@ -106,6 +118,7 @@ export function LabRunsPanel({ onPick }: { onPick: (label: string) => void }) {
               <td>{new Date(r.createdAt).toLocaleString()}{r.createdBy ? <span className="muted"> · {r.createdBy}</span> : null}</td>
               <td className={new Date(r.expiresAt) < new Date() ? "muted" : ""}>{new Date(r.expiresAt).toLocaleString()}</td>
               <td>{r.visits}{r.proven ? <span className="muted"> · {r.proven} proven</span> : null}</td>
+              <td className="small">{r.sites?.length ? r.sites.join(", ") : <span className="muted">—</span>}</td>
               <td>{BUCKETS.filter((b) => r.buckets[b]).map((b) => `${r.buckets[b]} ${BUCKET_LABEL[b].toLowerCase()}`).join(", ") || "—"}</td>
               <td>{r.lastSeen ? new Date(r.lastSeen).toLocaleString() : "—"}</td>
             </tr>

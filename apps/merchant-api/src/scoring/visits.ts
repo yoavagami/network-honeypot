@@ -26,6 +26,8 @@ export interface MerchantEventRow {
   accept_language: string | null;
   identity: RequestIdentity | null;
   data: Record<string, any>;
+  lab_label?: string | null;
+  lab_verified?: boolean;
 }
 
 export const SHOP_EVENT_FOR: Record<string, string> = {
@@ -56,8 +58,8 @@ export function toVisitRows(events: MerchantEventRow[]) {
         status_code: 200,
         user_agent_raw: e.user_agent,
         ip: e.ip,
-        lab_label: null,
-        lab_verified: false,
+        lab_label: e.lab_label ?? null,
+        lab_verified: e.lab_verified ?? false,
         identity_verdict: id?.verdict ?? "browser",
         identity_agent: id?.agent ?? null,
         ua_library: id?.uaLibrary ?? null,
@@ -91,8 +93,8 @@ export function toVisitRows(events: MerchantEventRow[]) {
         kind: e.kind,
         created_at: e.created_at,
         path: e.path,
-        lab_label: null,
-        lab_verified: false,
+        lab_label: e.lab_label ?? null,
+        lab_verified: e.lab_verified ?? false,
         page_load_id: e.page_view_id,
         // A beacon is bound when its page view was announced by this session's tag.
         bound: e.page_view_id && pageViews.has(`${e.session_id}|${e.page_view_id}`) ? true : null,

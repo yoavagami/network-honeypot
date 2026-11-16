@@ -3,7 +3,6 @@ import argon2 from "argon2";
 import { z } from "zod";
 import { policySchema, DEFAULT_POLICY } from "@honeypot/merchant-contract";
 import { withMerchant, type MerchantTx } from "@honeypot/merchant-db";
-import { buildVisits, scoreVisit, visitEvidence } from "@honeypot/detection";
 import type { Deps } from "../context.js";
 import {
   atLeast, clearSessionCookies, createSession, csrfOk, loadSession, setSessionCookies, SESSION_COOKIE,
@@ -16,9 +15,7 @@ import { encrypt, sha256, ipHash } from "../crypto.js";
 import { randomString, newMerchantId } from "../ids.js";
 import { normaliseHost, verifyDomain, VERIFY_PREFIX } from "../domains.js";
 import { enqueueEvent } from "../webhooks/enqueue.js";
-import { loadSessionEvents, LOOKBACK_MS } from "../scoring/load.js";
-import { toVisitRows } from "../scoring/visits.js";
-import { visitIdFor } from "../ids.js";
+import { buildVisitDetail } from "../visitDetail.js";
 import { RateLimiter } from "../ratelimit.js";
 
 declare module "fastify" {
@@ -166,11 +163,13 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
 
   app.get("/m/api/visits", async (request, reply) => {
     const q = request.query as Record<string, string>;
-    return reply.send({ visits: await scoped(request, (tx, s) => listVisits(tx, s, { driver: q.driver || undefined, agentsOnly: q.agents === "1", before: q.before, limit: Number(q.limit) || 50 })) });
+    const visits = await scoped(request, (tx, s) => listVisits(tx, s, { driver: q.driver || undefined, agentsOnly: q.agents === "1", bucket: q.bucket || undefined, before: q.before, limit: Number(q.limit) || 50 }));
+    // Lab labels are uHoney's internal testing; merchants don't see them.
+    return reply.send({ visits: visits.map(({ lab_label: _l, lab_verified: _v, ...rest }: any) => rest) });
   });
 
   app.get<{ Params: { id: string } }>("/m/api/visits/:id", async (request, reply) => {
-    const out = await scoped(request, (tx, s) => visitDetail(tx, s, request.params.id));
+    const out = await scoped(request, (tx, s) => buildVisitDetail(tx, s, request.params.id, "merchant"));
     if (!out) return reply.status(404).send({ error: { code: "not_found", message: "No such visit." } });
     return reply.send(out);
   });
@@ -188,7 +187,7 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
 
   app.get("/m/api/live", async (request, reply) => {
     return reply.send(await scoped(request, async (tx, s) => ({
-      visits: await listVisits(tx, s, { activeSinceMs: 10 * 60_000, limit: 50 }),
+      visits: (await listVisits(tx, s, { activeSinceMs: 10 * 60_000, limit: 50 })).map(({ lab_label: _l, lab_verified: _v, ...rest }: any) => rest),
       pay_events: await recentPayEvents(tx, s, 30 * 60_000),
       at: new Date().toISOString(),
     })));
@@ -430,34 +429,4 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
     });
     return reply.send({ policy: body.data });
   });
-}
-
-/** One visit with its per-page drivers and event timeline (rebuilt from events, like the honeypot's visit page). */
-export async function visitDetail(tx: MerchantTx, s: Scope, visitId: string) {
-  if (!/^vis_[A-Za-z0-9]{20}$/.test(visitId)) return null;
-  const [v] = await tx`
-    SELECT v.*, m.company FROM merchant_visits v JOIN merchants m USING (merchant_id)
-    WHERE v.visit_id = ${visitId} AND v.livemode = ${s.livemode} ${s.merchantId ? tx`AND v.merchant_id = ${s.merchantId}` : tx``}`;
-  if (!v) return null;
-  const events = await loadSessionEvents(tx, v.merchant_id, v.livemode, [v.session_id], new Date(new Date(v.first_at).getTime() - LOOKBACK_MS));
-  const rows = toVisitRows(events);
-  const visit = buildVisits(rows.requests, rows.client, rows.shop).find((x) => visitIdFor(v.merchant_id, x.id) === visitId);
-  const score = visit ? scoreVisit(visitEvidence(visit, new Date())) : null;
-  const first = new Date(v.first_at).getTime();
-  const last = new Date(v.last_at).getTime();
-  const timeline = events
-    .filter((e) => new Date(e.created_at).getTime() >= first - 1000 && new Date(e.created_at).getTime() <= last + 5 * 60_000)
-    .filter((e) => e.kind !== "fp")
-    .slice(0, 300)
-    .map((e) => ({ kind: e.kind, name: e.name, path: e.path, at: e.created_at }));
-  const assessments = await tx`SELECT assessment_id, order_id, amount, currency, response->>'suggested_action' AS suggested_action, response->>'driver' AS driver, final, created_at FROM assessments WHERE visit_id = ${visitId}`;
-  return {
-    visit: v,
-    pages: score?.control.pages ?? [],
-    checks: score?.checks ?? [],
-    environment: score?.environment ?? null,
-    input: score?.input ?? null,
-    timeline,
-    assessments,
-  };
 }

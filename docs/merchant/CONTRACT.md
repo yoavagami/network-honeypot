@@ -27,6 +27,9 @@ checks that the spec, its examples and the server's runtime schemas agree.
 | Session token | `st_<payload>.<signature>` | Tag → checkout form field `uhoney_token` | Ties a checkout to its visit; 2 h, one merchant |
 | Assessment ID | `as_` + 20 | Your order record | Fetch / update a verdict |
 
+The tag also forwards a signed `?lab=` token (from links minted in the admin dashboard's Lab runs) so uHoney's own
+accuracy runs on merchant sites are labelled; merchants never see lab labels.
+
 Test and live are separate worlds: test keys see test data only and also accept `localhost` and `127.0.0.1`.
 Secret keys are shown once and stored hashed; a merchant can have two active secret keys while rotating.
 

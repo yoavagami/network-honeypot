@@ -24,7 +24,7 @@ export const PATCHES: Array<{ name: string; find: string; replace: string; all?:
   // No server-minted page-load id on a merchant page: use the tag's page-view id and skip the
   // honeypot-only rendering-ladder pixel (it is guarded by SERVER_PL).
   { name: "page-id", find: "var PL = SERVER_PL;", replace: "SERVER_PL = null; var PL = __UH.pl;" },
-  { name: "beacon-body", find: "JSON.stringify({ v: 1, sdk: SDK, kind: kind,", replace: "JSON.stringify({ site_key: __UH.key, session_token: __UH.token() || undefined, v: 1, sdk: SDK, kind: kind," },
+  { name: "beacon-body", find: "JSON.stringify({ v: 1, sdk: SDK, kind: kind,", replace: "JSON.stringify({ site_key: __UH.key, session_token: __UH.token() || undefined, lab: __UH.lab() || undefined, v: 1, sdk: SDK, kind: kind," },
   // Merchant URLs can carry personal data in query strings: send the path only.
   { name: "path-only", find: "path: location.pathname + location.search", replace: "path: location.pathname", all: true },
   { name: "no-cookies", find: 'credentials: "same-origin"', replace: 'credentials: "omit"', all: true },
@@ -57,6 +57,13 @@ const loader = (apiBase: string) => `
     var consented = cs.getAttribute("data-consent") !== "pending";
     var token = null, started = false, readyCbs = [], pending = [], lastPath = location.pathname;
     try { token = sessionStorage.getItem(STORE); } catch (e) {}
+    // Signed lab-run links (?lab=…) for uHoney's own accuracy testing: kept for the browser session.
+    var lab = null;
+    try {
+      var labParam = new URLSearchParams(location.search).get("lab");
+      if (labParam && labParam.length <= 120) { lab = labParam; sessionStorage.setItem("uhoney_lab", labParam); }
+      else lab = sessionStorage.getItem("uhoney_lab");
+    } catch (e) {}
     function rid() {
       var s = "pv_", a = new Uint8Array(12);
       try { crypto.getRandomValues(a); } catch (e) { for (var j = 0; j < 12; j++) a[j] = Math.floor(Math.random() * 256); }
@@ -78,7 +85,7 @@ const loader = (apiBase: string) => `
     function attachAll() { try { for (var i = 0; i < document.forms.length; i++) attach(document.forms[i]); } catch (e) {} }
     document.addEventListener("submit", function (e) { attach(e.target); }, true);
     function body(kind, data) {
-      return { site_key: KEY, session_token: token || undefined, kind: kind, pl: pl, path: location.pathname, t: Math.max(0, Math.round(performance.now())), sdk: VERSION, data: data || {} };
+      return { site_key: KEY, session_token: token || undefined, lab: lab || undefined, kind: kind, pl: pl, path: location.pathname, t: Math.max(0, Math.round(performance.now())), sdk: VERSION, data: data || {} };
     }
     function post(kind, data, done) {
       var b;
@@ -125,6 +132,7 @@ const loader = (apiBase: string) => `
     var api = {
       endpoint: ENDPOINT, key: KEY, pl: pl,
       token: function () { return token; },
+      lab: function () { return lab; },
       ready: function (cb) { if (started) cb(); else readyCbs.push(cb); }
     };
     window.uhoney = {

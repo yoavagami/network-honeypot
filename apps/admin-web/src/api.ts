@@ -431,6 +431,12 @@ export interface AgentVisitDetail extends Omit<AgentVisitRow, "network" | "score
   pageLoads: number;
   behavior: Array<Record<string, any>>;
   shopEvents: Array<{ at: string; type: string; requestId: string | null; detail: Record<string, any> | null }>;
+  /** Present on merchant visits (merchant-api), absent on honeypot visits. */
+  merchant?: {
+    visitId: string; merchantId: string; company: string; livemode: boolean; settled: boolean; driver: string;
+    timeline: Array<{ kind: string; name: string | null; path: string | null; at: string }>;
+    assessments: Array<{ assessment_id: string; order_id: string; amount: number; currency: string; suggested_action: string; driver: string; final: boolean; created_at: string }>;
+  };
 }
 export interface AgentNetwork { ip: string | null; asn: string | null; organization: string | null; country: string | null; city: string | null; ja4: string[]; h2: string[]; webBotAuth: string[]; userAgents: string[] }
 export interface AgentRequestRow {
@@ -457,5 +463,7 @@ export interface LabRun {
   visits: number; lastSeen: string | null; buckets: Partial<Record<AgentBucket, number>>; proven: number;
   /** Agents the score named in this run's visits (empty: caught or cleared without a name). */
   detectedAgents: string[];
+  /** Where the visits were seen: "uhoney.shop" and/or merchant names. */
+  sites?: string[];
 }
 export interface LabRunsResponse { enabled: boolean; data: LabRun[] }

@@ -48,13 +48,41 @@ export function registerLabRoutes(app: FastifyInstance) {
       ORDER BY l.created_at DESC
       LIMIT 500`;
     await audit(request.adminSession!.adminUserId, "list_lab_runs", null, null, { count: rows.length });
+    const merchantRuns = await merchantLabRuns(rows.map((r) => r.label));
     return {
       enabled: Boolean(config.labLinkSecret),
-      data: rows.map((r) => ({
-        label: r.label, kind: r.kind, agent: r.agent, scenario: r.scenario, notes: r.notes, createdAt: r.created_at, expiresAt: r.expires_at,
-        createdBy: r.created_by, visits: r.visits, lastSeen: r.last_seen, buckets: r.buckets ?? {}, proven: r.proven,
-        detectedAgents: r.detected_agents ?? [],
-      })),
+      data: rows.map((r) => {
+        const m = merchantRuns.get(r.label);
+        const buckets: Record<string, number> = { ...(r.buckets ?? {}) };
+        for (const [b, n] of Object.entries(m?.buckets ?? {})) buckets[b] = (buckets[b] ?? 0) + Number(n);
+        const lastSeen = [r.last_seen, m?.last_seen].filter(Boolean).map((d) => new Date(d as string | Date)).sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+        return {
+          label: r.label, kind: r.kind, agent: r.agent, scenario: r.scenario, notes: r.notes, createdAt: r.created_at, expiresAt: r.expires_at,
+          createdBy: r.created_by, visits: r.visits + (m?.visits ?? 0), lastSeen, buckets, proven: r.proven + (m?.proven ?? 0),
+          detectedAgents: [...new Set([...(r.detected_agents ?? []), ...(m?.detected_agents ?? [])])],
+          // Where the run's visits were seen: the honeypot itself and/or merchant sites.
+          sites: [...(r.visits > 0 ? ["uhoney.shop"] : []), ...(m?.sites ?? [])],
+        };
+      }),
     };
   });
+}
+
+/**
+ * Lab runs can also happen on merchant sites (the merchant tag reads ?lab=): their visits live in
+ * the merchant database, so ask merchant-api. Fails soft: without it the scorecard shows honeypot
+ * visits only.
+ */
+async function merchantLabRuns(labels: string[]): Promise<Map<string, { visits: number; last_seen: string | null; buckets: Record<string, number> | null; proven: number; detected_agents: string[]; sites: string[] }>> {
+  const out = new Map();
+  if (!labels.length || !config.merchantInternalUrl || !config.merchantInternalToken) return out;
+  try {
+    const res = await fetch(`${config.merchantInternalUrl}/internal/lab-visits?labels=${encodeURIComponent(labels.slice(0, 200).join(","))}`, {
+      headers: { "x-internal-token": config.merchantInternalToken }, signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return out;
+    const body = (await res.json()) as { runs: Array<{ label: string }> };
+    for (const r of body.runs) out.set(r.label, r);
+  } catch { /* merchant service unavailable */ }
+  return out;
 }

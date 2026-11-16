@@ -68,6 +68,8 @@ export function visitRow(merchantId: string, livemode: boolean, sessionId: strin
     page_count: s.pageCount,
     reached_checkout: [...shopTypes].some((t) => CHECKOUT_TYPES.has(t)),
     reached_pay: [...shopTypes].some((t) => PAY_TYPES.has(t)),
+    lab_label: s.lab,
+    lab_verified: s.labVerified,
   };
 }
 
@@ -89,7 +91,8 @@ export async function rescoreSession(tx: MerchantTx, d: DirtySession, now: Date)
         last_at = EXCLUDED.last_at, settled = EXCLUDED.settled, computed_at = EXCLUDED.computed_at, scorer_version = EXCLUDED.scorer_version,
         probability = EXCLUDED.probability, bucket = EXCLUDED.bucket, type = EXCLUDED.type, agent = EXCLUDED.agent, proven = EXCLUDED.proven,
         driver = EXCLUDED.driver, handover = EXCLUDED.handover, reasons = EXCLUDED.reasons, summary = EXCLUDED.summary,
-        page_count = EXCLUDED.page_count, reached_checkout = EXCLUDED.reached_checkout, reached_pay = EXCLUDED.reached_pay
+        page_count = EXCLUDED.page_count, reached_checkout = EXCLUDED.reached_checkout, reached_pay = EXCLUDED.reached_pay,
+        lab_label = EXCLUDED.lab_label, lab_verified = EXCLUDED.lab_verified
       RETURNING agent_checkout_notified`;
     // An agent-driven visit reached checkout: tell the merchant once (live feed / alerts).
     if (!prev?.agent_checkout_notified && row.reached_checkout && AGENT_AT_CHECKOUT.has(row.driver) && verdict.probability >= 0.7) {
