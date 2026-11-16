@@ -49,19 +49,23 @@ export async function overview(tx: MerchantTx, s: Scope, days: number) {
   return { days, totals: { ...totals!, agent_share: totals!.visits ? totals!.agent_visits / totals!.visits : 0 }, drivers, agents, funnel, daily, orders };
 }
 
-export interface VisitFilters { driver?: string; agentsOnly?: boolean; before?: string; limit?: number; activeSinceMs?: number }
+export interface VisitFilters { driver?: string; agentsOnly?: boolean; bucket?: string; labOnly?: boolean; before?: string; limit?: number; activeSinceMs?: number }
 
 export async function listVisits(tx: MerchantTx, s: Scope, f: VisitFilters) {
   const limit = Math.min(Math.max(f.limit ?? 50, 1), 200);
   return tx`
     SELECT v.visit_id, v.merchant_id, m.company, v.livemode, v.first_at, v.last_at, v.settled, v.probability, v.bucket, v.type,
-           v.agent, v.proven, v.driver, v.handover, v.page_count, v.reached_checkout, v.reached_pay,
+           v.agent, v.proven, v.driver, v.handover, v.page_count, v.reached_checkout, v.reached_pay, v.lab_label, v.lab_verified,
+           (SELECT count(*)::int FROM jsonb_array_elements(coalesce(v.summary->'checks', '[]'::jsonb)) c WHERE c->>'status' = 'mismatch') AS checks_failed,
+           (SELECT count(*)::int FROM jsonb_array_elements(coalesce(v.summary->'checks', '[]'::jsonb)) c WHERE c->>'status' IN ('match', 'mismatch')) AS checks_compared,
            v.summary->'network' AS network, v.summary->>'userAgent' AS user_agent, v.summary->'paths' AS paths,
            (SELECT count(*)::int FROM assessments a WHERE a.visit_id = v.visit_id) AS assessments
     FROM merchant_visits v JOIN merchants m USING (merchant_id)
     WHERE v.livemode = ${s.livemode} ${merchantFilter(tx, s, "v.merchant_id")}
       ${f.driver ? tx`AND v.driver = ${f.driver}` : tx``}
       ${f.agentsOnly ? tx`AND (v.driver = ANY(${AGENT_DRIVERS}) OR v.probability >= 0.7)` : tx``}
+      ${f.bucket ? tx`AND v.bucket = ${f.bucket}` : tx``}
+      ${f.labOnly ? tx`AND v.lab_label IS NOT NULL` : tx``}
       ${f.before ? tx`AND v.last_at < ${new Date(f.before)}` : tx``}
       ${f.activeSinceMs ? tx`AND v.last_at >= ${new Date(Date.now() - f.activeSinceMs)}` : tx``}
     ORDER BY v.last_at DESC LIMIT ${limit}`;

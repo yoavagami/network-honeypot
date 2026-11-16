@@ -11,6 +11,7 @@ import { NetworkLookup } from "../src/sensing.js";
 import { runScoringTick } from "../src/scoring/worker.js";
 import { dispatchDue } from "../src/webhooks/dispatcher.js";
 import { verifySignature } from "../src/webhooks/sign.js";
+import { signLabToken } from "@honeypot/detection";
 
 const spec = JSON.parse(readFileSync(fileURLToPath(new URL("../../../packages/merchant-contract/openapi.json", import.meta.url)), "utf8"));
 const ajv = new (Ajv2020 as any)({ strict: false, allErrors: true });
@@ -24,6 +25,7 @@ const matches = (schema: string, value: unknown) => {
 };
 
 const INTERNAL = "i".repeat(40);
+const LAB_SECRET = "l".repeat(40);
 const CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
@@ -65,7 +67,7 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     const config = loadConfig({
       MERCHANT_APP_DATABASE_URL: db.urls.app, MERCHANT_ADMIN_DATABASE_URL: db.urls.admin,
       MERCHANT_TOKEN_SECRET: "t".repeat(40), MERCHANT_ENCRYPTION_KEY: "e".repeat(64), IP_HASH_SECRET: "h".repeat(32),
-      MERCHANT_INTERNAL_TOKEN: INTERNAL, MERCHANT_COOKIE_SECURE: "false", MERCHANT_DASHBOARD_URL: "https://app.example.test",
+      MERCHANT_INTERNAL_TOKEN: INTERNAL, MERCHANT_COOKIE_SECURE: "false", MERCHANT_DASHBOARD_URL: "https://app.example.test", LAB_LINK_SECRET: LAB_SECRET,
     });
     app = await buildApp({ config, app: db.app, admin: db.admin, network: new NetworkLookup(null) });
     await onboard(A, "alpha", "owner@alpha.test");
@@ -167,7 +169,7 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(browsing.reached_pay).toBe(true);
     const detail = await dash(A, "GET", `/m/api/visits/${browsing.visit_id}`);
     expect(detail.statusCode).toBe(200);
-    expect(detail.json().timeline.length).toBeGreaterThan(3);
+    expect(detail.json().merchant.timeline.length).toBeGreaterThan(3);
     const ov = (await dash(A, "GET", "/m/api/overview")).json();
     expect(ov.totals.visits).toBe(visits.length);
     expect(ov.orders.assessed).toBe(3);
@@ -285,6 +287,52 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(d.agents.map((a: any) => a.agent)).toContain("chatgpt-user");
     await expect(db.app`SELECT * FROM public_page_hits`).rejects.toThrow(/permission denied/);
     expect((await app.inject({ method: "GET", url: "/internal/page-hits" })).statusCode).toBe(404);
+  });
+
+  it("lab links on merchant sites: labelled visits for admins, hidden from merchants", async () => {
+    const lab = signLabToken("claude-chrome-uchoco-1", Math.floor(Date.now() / 1000) + 3600, LAB_SECRET);
+    const p = await collect(A, { kind: "page", pl: "pv_labrun00001", path: "/products/9", lab });
+    const st = p.json().session_token;
+    await collect(A, { kind: "behavior", session_token: st, pl: "pv_labrun00001", path: "/products/9", lab, data: { clicks: [] } });
+    const a = await server(A, "POST", "/v1/assess", { session_token: st, order: { id: "ord_lab_1", amount: 990, currency: "EUR" }, request: { ip: "203.0.113.50", user_agent: CHROME, headers: { accept: "*/*", "accept-language": "en", "sec-fetch-site": "same-origin" } } });
+    expect(a.statusCode).toBe(200);
+    const [ev] = await db.admin`SELECT lab_label, lab_verified FROM merchant_events WHERE kind = 'assess' AND data->'order'->>'id' = 'ord_lab_1'`;
+    expect(ev).toMatchObject({ lab_label: "claude-chrome-uchoco-1", lab_verified: true });
+    await runScoringTick(db.admin, new Date(Date.now() - 3600_000));
+    const runs = (await internal("GET", "/internal/lab-visits?labels=claude-chrome-uchoco-1,other")).json().runs;
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ label: "claude-chrome-uchoco-1", visits: 1, sites: ["alpha"] });
+    const adminVisits = (await internal("GET", `/internal/visits?merchant_id=${A.id}&lab=1`)).json().visits;
+    expect(adminVisits.map((v: any) => v.lab_label)).toEqual(["claude-chrome-uchoco-1"]);
+    const merchantVisits = (await dash(A, "GET", "/m/api/visits")).json().visits;
+    expect(merchantVisits.every((v: any) => !("lab_label" in v))).toBe(true);
+    // A forged token counts as claimed, never verified.
+    const fr = await collect(A, { kind: "page", pl: "pv_labrun00002", path: "/", lab: "claude-chrome-uchoco-1~9999999999~forgedforgedforgedforg" });
+    expect(fr.statusCode, fr.body).toBe(200);
+    const [forged] = await db.admin`SELECT lab_verified FROM merchant_events WHERE page_view_id = 'pv_labrun00002'`;
+    expect(forged!.lab_verified).toBe(false);
+  });
+
+  it("visit detail: full for admins, plain findings for merchants", async () => {
+    const id = (await dash(A, "GET", "/m/api/visits")).json().visits.find((v: any) => v.page_count >= 3).visit_id;
+    const admin = (await internal("GET", `/internal/visits/${id}?merchant_id=${A.id}`)).json();
+    const mine = (await dash(A, "GET", `/m/api/visits/${id}`)).json();
+    for (const d of [admin, mine]) {
+      expect(d.id).toBe(id);
+      expect(d.score.control.pages.length).toBeGreaterThan(0);
+      expect(Array.isArray(d.score.checks)).toBe(true);
+      expect(d.merchant.timeline.length).toBeGreaterThan(3);
+      expect(d.merchant.assessments.length).toBeGreaterThan(0);
+    }
+    expect(admin.network.ip).toBe("127.0.0.1");
+    expect(admin.requests.length).toBeGreaterThan(0);
+    expect(mine.network.ip).toBeNull();
+    expect(mine.requests).toEqual([]);
+    expect(mine.lab).toBeNull();
+    expect(mine.score.reasons.every((r: any) => [-1, 0, 1].includes(r.weight))).toBe(true);
+    expect(mine.fingerprint === null || !("globalsDiff" in mine.fingerprint)).toBe(true);
+    // B is suspended by now (401); either way it never gets A's visit.
+    expect([401, 404]).toContain((await dash(B, "GET", `/m/api/visits/${id}`)).statusCode);
   });
 
   it("serves the tag", async () => {

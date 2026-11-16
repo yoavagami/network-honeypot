@@ -6,7 +6,7 @@ import { safeEqual, sha256 } from "../crypto.js";
 import { displayKey, generateKey, hashKey } from "../keys.js";
 import { randomString } from "../ids.js";
 import { overview, listVisits, listOrders, getOrder, type Scope } from "../queries.js";
-import { visitDetail } from "./dashboard.js";
+import { buildVisitDetail } from "../visitDetail.js";
 
 /**
  * Internal admin API — only for admin-api, never routed by nginx. admin-api authenticates the
@@ -147,6 +147,22 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     return reply.send(out);
   });
 
+  // Lab runs on merchant sites, per label — admin-api merges these into the lab scorecard.
+  app.get("/internal/lab-visits", async (request, reply) => {
+    const labels = String((request.query as Record<string, string>).labels ?? "").split(",").filter((l) => /^[A-Za-z0-9._-]{1,64}$/.test(l)).slice(0, 500);
+    if (!labels.length) return reply.send({ runs: [] });
+    const runs = await tx((t) => t`
+      SELECT v.lab_label AS label, count(*)::int AS visits, max(v.last_at) AS last_seen,
+             (SELECT jsonb_object_agg(bucket, n) FROM (SELECT bucket, count(*)::int AS n FROM merchant_visits x WHERE x.lab_label = v.lab_label AND x.lab_verified GROUP BY bucket) b) AS buckets,
+             count(*) FILTER (WHERE v.proven)::int AS proven,
+             array_remove(array_agg(DISTINCT v.agent), NULL) AS detected_agents,
+             array_agg(DISTINCT m.company) AS sites
+      FROM merchant_visits v JOIN merchants m USING (merchant_id)
+      WHERE v.lab_verified AND v.lab_label = ANY(${labels}::text[])
+      GROUP BY v.lab_label`);
+    return reply.send({ runs });
+  });
+
   // Who opened the public merchant pages (pageHits.ts).
   app.get("/internal/page-hits", async (request, reply) => {
     const q = request.query as Record<string, string>;
@@ -177,12 +193,12 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     const s = scopeOf(request);
     if (!s) return notFound(reply);
     const q = request.query as Record<string, string>;
-    return reply.send({ visits: await tx((t) => listVisits(t, s, { driver: q.driver || undefined, agentsOnly: q.agents === "1", before: q.before, limit: Number(q.limit) || 50 })) });
+    return reply.send({ visits: await tx((t) => listVisits(t, s, { driver: q.driver || undefined, agentsOnly: q.agents === "1", bucket: q.bucket || undefined, labOnly: q.lab === "1", before: q.before, limit: Number(q.limit) || 50 })) });
   });
   app.get<{ Params: { id: string } }>("/internal/visits/:id", async (request, reply) => {
     const s = scopeOf(request);
     if (!s) return notFound(reply);
-    const out = await tx((t) => visitDetail(t, s, request.params.id));
+    const out = await tx((t) => buildVisitDetail(t, s, request.params.id, "admin"));
     return out ? reply.send(out) : notFound(reply);
   });
   app.get("/internal/orders", async (request, reply) => {

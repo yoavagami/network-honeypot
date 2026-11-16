@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api.js";
-import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Policy, type VisitDetail, type VisitRow, type OrderRow } from "../merchantApi.js";
-import { ChecklistView, fmtTime, ModeToggle, OrdersTable, OverviewPanels, VisitDetailView, VisitsTable } from "../components/MerchantViews.js";
+import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Policy, type VisitRow, type OrderRow } from "../merchantApi.js";
+import type { AgentVisitDetail } from "../api.js";
+import { VisitDetailBody } from "../components/VisitDetail.js";
+import { ChecklistView, fmtTime, ModeToggle, OrdersTable, OverviewPanels, VisitsTable, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
 import { OrderDetailView } from "./MerchantsAdmin.js";
 
 /**
@@ -208,7 +210,8 @@ export function MerchantVisitsPage() {
   const { mode } = useMerchant();
   const [driver, setDriver] = useState("");
   const [agentsOnly, setAgentsOnly] = useState(false);
-  const { data, error } = useLoad<{ visits: VisitRow[] }>(() => merchant.visits({ mode, driver: driver || undefined, agents: agentsOnly ? "1" : undefined }), [mode, driver, agentsOnly]);
+  const [bucket, setBucket] = useState("");
+  const { data, error } = useLoad<{ visits: VisitRow[] }>(() => merchant.visits({ mode, driver: driver || undefined, agents: agentsOnly ? "1" : undefined, bucket: bucket || undefined }), [mode, driver, agentsOnly, bucket]);
   return (
     <div>
       <div className="toolbar">
@@ -216,6 +219,7 @@ export function MerchantVisitsPage() {
         <select value={driver} onChange={(e) => setDriver(e.target.value)} aria-label="Driven by">
           <option value="">Any driver</option><option value="agent">Agent</option><option value="agent_then_human">Agent → human</option><option value="human_then_agent">Human → agent</option><option value="mixed">Mixed</option><option value="human">Human</option><option value="unknown">Unknown</option>
         </select>
+        <select value={bucket} onChange={(e) => setBucket(e.target.value)} aria-label="Recommendation">{BUCKET_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         <label className="small"><input type="checkbox" checked={agentsOnly} onChange={(e) => setAgentsOnly(e.target.checked)} /> Agents only</label>
       </div>
       {error && <div className="banner warn">{error}</div>}
@@ -229,12 +233,13 @@ export function MerchantVisitPage() {
   const [params] = useSearchParams();
   const ctx = useMerchant();
   const mode = (params.get("mode") as Mode) ?? ctx.mode;
-  const { data, error } = useLoad<VisitDetail>(() => merchant.visit(id!, mode), [id, mode]);
+  const { data, error } = useLoad<AgentVisitDetail>(() => merchant.visit(id!, mode), [id, mode]);
   return (
     <div>
       <div className="toolbar"><h1 style={{ marginRight: "auto" }}>Visit</h1><Link to="/m/visits">← Visits</Link></div>
       {error && <div className="banner warn">{error}</div>}
-      {data ? <VisitDetailView d={data} base="/m" mode={mode} /> : !error && <p className="muted">Loading…</p>}
+      {data && <MerchantVisitHeader v={data} />}
+      {data ? <VisitDetailBody v={data} variant="merchant" orderLink={(a) => `/m/orders/${a}?mode=${mode}`} /> : !error && <p className="muted">Loading…</p>}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { ControlChip } from "./AgentBadge.js";
+import { AgentBadge, ControlChip, TYPE_LABEL } from "./AgentBadge.js";
 import { BarList } from "./BarList.js";
 import { StatCard } from "./StatCard.js";
-import type { Mode, OrderRow, Overview, VisitDetail, VisitRow, IntegrationStatus } from "../merchantApi.js";
+import type { Mode, OrderRow, Overview, VisitRow, IntegrationStatus } from "../merchantApi.js";
 
 /**
  * Views shared by the admin's Merchant traffic page (all merchants, filterable) and the merchant
@@ -100,21 +100,28 @@ export function OverviewPanels({ data }: { data: Overview }) {
   );
 }
 
-export function VisitsTable({ visits, base, showMerchant, mode }: { visits: VisitRow[]; base: string; showMerchant?: boolean; mode: Mode }) {
+export function VisitsTable({ visits, base, showMerchant, showLab, mode }: { visits: VisitRow[]; base: string; showMerchant?: boolean; showLab?: boolean; mode: Mode }) {
   if (!visits.length) return <p className="muted">No visits yet.</p>;
   return (
     <table>
       <thead>
-        <tr>{showMerchant && <th>Merchant</th>}<th>Last seen</th><th>Driven by</th><th>Agent</th><th>Score</th><th>Pages</th><th>Checkout</th><th>Network</th></tr>
+        <tr>
+          {showMerchant && <th>Merchant</th>}<th>Last seen</th>{showLab && <th>Lab</th>}<th>Recommendation</th><th>P(AI agent)</th><th>Type</th><th>Agent</th>
+          <th>Driven by</th><th title="Browser-vs-request consistency checks that failed / were compared">Checks</th><th>Pages</th><th>Checkout</th><th>Network</th>
+        </tr>
       </thead>
       <tbody>
         {visits.map((v) => (
           <tr key={v.visit_id}>
             {showMerchant && <td><span title={v.merchant_id}>{v.company}</span></td>}
             <td><Link to={`${base}/visits/${v.visit_id}?mode=${mode}`}>{fmtTime(v.last_at)}</Link></td>
-            <td><ControlChip mode={v.driver} handoverPath={v.handover?.page} /></td>
-            <td><AgentName agent={v.agent} verified={v.proven} /></td>
+            {showLab && <td className="mono small">{v.lab_label ? `${v.lab_label}${v.lab_verified ? "" : " (claimed)"}` : ""}</td>}
+            <td><AgentBadge bucket={v.bucket} /></td>
             <td><Score p={v.probability} /></td>
+            <td>{TYPE_LABEL[v.type] ?? v.type}</td>
+            <td><AgentName agent={v.agent} verified={v.proven} /></td>
+            <td><ControlChip mode={v.driver} handoverPath={v.handover?.page} /></td>
+            <td>{v.checks_compared ? <span className={`check-pill ${v.checks_failed ? "mismatch" : "match"}`}>{v.checks_failed ? `${v.checks_failed} of ${v.checks_compared} failed` : `${v.checks_compared} passed`}</span> : <span className="muted">—</span>}</td>
             <td>{v.page_count}</td>
             <td>{v.reached_pay ? "Pay" : v.reached_checkout ? "Checkout" : "—"}{v.assessments ? ` · ${v.assessments} assessed` : ""}</td>
             <td className="truncate" title={v.user_agent ?? ""}>{v.network?.organization ?? v.network?.country ?? "—"}</td>
@@ -122,6 +129,21 @@ export function VisitsTable({ visits, base, showMerchant, mode }: { visits: Visi
         ))}
       </tbody>
     </table>
+  );
+}
+
+/** Recommendation filter options (same buckets as the Agents list). */
+export const BUCKET_OPTIONS: Array<[string, string]> = [["", "Any recommendation"], ["ai_agent", "AI agent"], ["probably_ai_agent", "Probably AI agent"], ["not_sure", "Not sure"], ["not_ai_agent", "Not an AI agent"]];
+
+/** Header line above a merchant visit (both dashboards). */
+export function MerchantVisitHeader({ v, showLab }: { v: import("../api.js").AgentVisitDetail; showLab?: boolean }) {
+  return (
+    <p className="muted" style={{ marginTop: "-.5rem" }}>
+      {new Date(v.firstAt).toLocaleString()} → {new Date(v.lastAt).toLocaleTimeString()} · {v.pageCount} page view{v.pageCount === 1 ? "" : "s"}
+      {" · "}{v.network.organization ?? "unknown network"}{v.network.country ? ` · ${v.network.country}` : ""}
+      {v.merchant && !v.merchant.settled ? " · still open (the verdict can still change)" : ""}
+      {showLab && v.lab ? <> · lab label <strong className="mono">{v.lab}</strong> <span className={`check-pill ${v.labVerified ? "match" : "unknown"}`}>{v.labVerified ? "signed" : "claimed"}</span></> : null}
+    </p>
   );
 }
 
@@ -149,55 +171,6 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
         ))}
       </tbody>
     </table>
-  );
-}
-
-export function VisitDetailView({ d, base, mode }: { d: VisitDetail; base: string; mode: Mode }) {
-  const v = d.visit;
-  return (
-    <>
-      <div className="panel verdict-hero">
-        <div className="kv">
-          <div><span className="muted">Driven by</span> <ControlChip mode={v.driver} handoverPath={v.handover?.page} /></div>
-          <div><span className="muted">Agent</span> <AgentName agent={v.agent} verified={v.proven} /></div>
-          <div><span className="muted">Score</span> <Score p={v.probability} /></div>
-          <div><span className="muted">Type</span> {v.type}</div>
-          {v.handover && <div><span className="muted">Handover</span> {v.handover.page ?? "—"} at {fmtTime(v.handover.at)}</div>}
-          <div><span className="muted">Visit</span> {fmtTime(v.first_at)} → {fmtTime(v.last_at)}{v.settled ? "" : " (still open)"}</div>
-        </div>
-      </div>
-      <div className="grid-2">
-        <div className="panel">
-          <h2>Why</h2>
-          {v.reasons?.length ? <ul className="reason-list">{v.reasons.map((r) => <li key={r.code}><strong>{r.code}</strong> — {r.text}</li>)}</ul> : <p className="muted">No strong signals either way.</p>}
-        </div>
-        <div className="panel">
-          <h2>Who drove each page</h2>
-          {d.pages.length ? (
-            <table>
-              <thead><tr><th>Page</th><th>Driver</th><th>Signs</th></tr></thead>
-              <tbody>{d.pages.map((p, i) => <tr key={i}><td>{p.path ?? "—"}</td><td><ControlChip mode={p.driver === "both" ? "mixed" : p.driver} /></td><td className="small">{[...p.agentSigns, ...p.humanSigns].join(", ") || "—"}</td></tr>)}</tbody>
-            </table>
-          ) : <p className="muted">The page script didn't report on this visit.</p>}
-        </div>
-      </div>
-      {d.assessments.length > 0 && (
-        <div className="panel">
-          <h2>Orders from this visit</h2>
-          <table>
-            <thead><tr><th>Order</th><th>Amount</th><th>Driven by</th><th>Suggested</th><th>Final</th></tr></thead>
-            <tbody>{d.assessments.map((a) => <tr key={a.assessment_id}><td><Link to={`${base}/orders/${a.assessment_id}?mode=${mode}`}>{a.order_id}</Link></td><td>{fmtMoney(a.amount, a.currency)}</td><td><ControlChip mode={a.driver} /></td><td><ActionBadge action={a.suggested_action} /></td><td>{a.final ? "yes" : "not yet"}</td></tr>)}</tbody>
-          </table>
-        </div>
-      )}
-      <div className="panel">
-        <h2>Timeline</h2>
-        <table>
-          <thead><tr><th>Time</th><th>Event</th><th>Page</th></tr></thead>
-          <tbody>{d.timeline.map((e, i) => <tr key={i}><td>{new Date(e.at).toLocaleTimeString()}</td><td>{e.kind === "event" ? e.name : e.kind === "assess" ? "assess at Pay" : e.kind}</td><td>{e.path ?? "—"}</td></tr>)}</tbody>
-        </table>
-      </div>
-    </>
   );
 }
 

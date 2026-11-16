@@ -7,7 +7,7 @@
 import { createIpinfoProvider, type EnrichmentProvider } from "@honeypot/detection";
 import { parseUserAgent } from "../../honeypot/src/sensing/userAgent.js";
 import { verifyWebBotAuth, type WbaResult } from "../../honeypot/src/sensing/webBotAuth.js";
-import { agentRangesFor, isTorExit, loadBundledRanges } from "../../honeypot/src/sensing/ipIntel.js";
+import { agentRangesFor, isTorExit, loadBundledRanges, reverseDns, type ReverseDns } from "../../honeypot/src/sensing/ipIntel.js";
 import { decideIdentity } from "../../honeypot/src/sensing/verdict.js";
 import { AGENTS } from "../../honeypot/src/sensing/agents.js";
 
@@ -46,6 +46,8 @@ export interface IdentifyInput {
   /** Signature directory fetches can be slow; past this the signature counts as unverified for now. */
   wbaTimeoutMs?: number;
   network?: NetworkInfo | null;
+  /** Reverse-DNS check for user-agents whose operator verifies by rDNS (search crawlers). 0 = skip. */
+  rdnsTimeoutMs?: number;
 }
 
 export async function identifyRequest(i: IdentifyInput): Promise<RequestIdentity> {
@@ -62,7 +64,14 @@ export async function identifyRequest(i: IdentifyInput): Promise<RequestIdentity
     ]);
   }
   const ipRanges = i.ip ? agentRangesFor(i.ip) : [];
-  const identity = decideIdentity({ ua, rawUa: i.userAgent, ipRanges, rdns: null, wba, consistencyFlags: [] });
+  let rdns: ReverseDns | null = null;
+  if (i.ip && i.rdnsTimeoutMs && ua.claim?.rdnsSuffixes && !ipRanges.length) {
+    rdns = await Promise.race([
+      reverseDns(i.ip).catch(() => null),
+      new Promise<null>((r) => setTimeout(() => r(null), i.rdnsTimeoutMs).unref()),
+    ]);
+  }
+  const identity = decideIdentity({ ua, rawUa: i.userAgent, ipRanges, rdns, wba, consistencyFlags: [] });
   return {
     verdict: identity.verdict,
     agent: identity.agent,

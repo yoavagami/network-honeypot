@@ -93,12 +93,17 @@ export function registerServerApi(app: FastifyInstance, deps: Deps) {
         if (existing.request_hash !== requestHash) throw new ApiFailure("idempotency_conflict", `Idempotency key ${idempotencyKey} was already used with a different request.`);
         return existing.response;
       }
+      // A lab run's label comes from the tag's beacons; the assess event joins the same run.
+      const [lab] = tokenValid
+        ? await tx<{ lab_label: string; lab_verified: boolean }[]>`SELECT lab_label, lab_verified FROM merchant_events WHERE merchant_id = ${key.merchantId} AND livemode = ${key.livemode} AND session_id = ${sessionId} AND lab_label IS NOT NULL ORDER BY created_at DESC LIMIT 1`
+        : [];
       const [ev] = await tx<{ event_id: string }[]>`
-        INSERT INTO merchant_events (merchant_id, livemode, session_id, kind, path, ip, ip_hash, user_agent, accept_language, identity, data)
+        INSERT INTO merchant_events (merchant_id, livemode, session_id, kind, path, ip, ip_hash, user_agent, accept_language, identity, data, lab_label, lab_verified)
         VALUES (${key.merchantId}, ${key.livemode}, ${sessionId}, 'assess', ${body.request.path?.split("?")[0]?.slice(0, 512) ?? null},
                 ${body.request.ip}, ${ipHash(deps.config.ipHashSecret, key.merchantId, body.request.ip)}, ${body.request.user_agent},
                 ${headers["accept-language"]?.slice(0, 256) ?? null}, ${tx.json(identity as any)},
-                ${tx.json({ order: body.order, stage: body.stage, header_count: Object.keys(headers).length } as any)})
+                ${tx.json({ order: body.order, stage: body.stage, header_count: Object.keys(headers).length } as any)},
+                ${lab?.lab_label ?? null}, ${lab?.lab_verified ?? false})
         RETURNING event_id`;
       const now = new Date();
       const events = await loadSessionEvents(tx, key.merchantId, key.livemode, [sessionId], new Date(now.getTime() - LOOKBACK_MS));

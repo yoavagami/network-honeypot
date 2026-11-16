@@ -158,6 +158,7 @@
           "t": { "type": "integer", "minimum": 0, "maximum": 86400000, "description": "Milliseconds since the page loaded." },
           "v": { "type": "integer", "minimum": 1, "maximum": 99 },
           "sdk": { "type": "string", "pattern": "^[0-9A-Za-z.+-]{1,40}$" },
+          "lab": { "type": "string", "maxLength": 120, "description": "Signed lab-run token from a `?lab=` link the visit landed on. Sent by the tag automatically; used for uHoney's own accuracy testing." },
           "data": { "type": "object", "description": "For `event`: `{ \"name\": \"pay_clicked\" | \"checkout_started\" | \"add_to_cart\" | \"product_viewed\", \"order_id\"?: string }`. For the page script's own kinds: its payload, opaque to merchants." }
         }
       },

@@ -109,6 +109,8 @@ export const collectRequest = z.object({
   v: z.number().int().min(1).max(99).optional(),
   sdk: z.string().regex(/^[0-9A-Za-z.+-]{1,40}$/).optional(),
   data: z.record(z.unknown()).default({}),
+  /** A signed lab-run token from a ?lab= link the visit landed on (internal accuracy testing). */
+  lab: z.string().max(120).optional(),
 });
 export type CollectRequest = z.infer<typeof collectRequest>;
 

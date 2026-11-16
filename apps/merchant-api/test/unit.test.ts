@@ -108,6 +108,8 @@ describe("tag", () => {
     expect(body).not.toContain('"/api/v1/rum"');
     expect(body).not.toContain("location.pathname + location.search");
     expect(body).toContain("site_key: __UH.key");
+    expect(body).toContain("lab: __UH.lab() || undefined");
+    expect(body).toContain('get("lab")');
     for (const p of PATCHES) expect(body).toContain(p.replace);
   });
   it("is valid JavaScript", () => {

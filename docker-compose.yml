@@ -146,6 +146,8 @@ services:
       MERCHANT_ENCRYPTION_KEY: ${MERCHANT_ENCRYPTION_KEY}
       MERCHANT_INTERNAL_TOKEN: ${MERCHANT_INTERNAL_TOKEN}
       IP_HASH_SECRET: ${IP_HASH_SECRET}
+      # Same secret as the honeypot: signed ?lab= links also work on merchant sites.
+      LAB_LINK_SECRET: ${LAB_LINK_SECRET:-}
       MERCHANT_PUBLIC_API_URL: ${MERCHANT_PUBLIC_API_URL:-http://localhost:8095}
       MERCHANT_TAG_BASE_URL: ${MERCHANT_TAG_BASE_URL:-http://localhost:8095}
       MERCHANT_DASHBOARD_URL: ${MERCHANT_DASHBOARD_URL:-http://localhost:8081}
