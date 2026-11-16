@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { AgentBadge, ControlChip, TYPE_LABEL } from "./AgentBadge.js";
+import { AgentBadge, ControlChip, ProbabilityBar, TYPE_LABEL } from "./AgentBadge.js";
 import { BarList } from "./BarList.js";
 import { StatCard } from "./StatCard.js";
 import type { Mode, OrderRow, Overview, VisitRow, IntegrationStatus } from "../merchantApi.js";
@@ -30,13 +30,9 @@ export function ActionBadge({ action }: { action: string }) {
   return <span className={`badge ${cls}`}>{action}</span>;
 }
 
+/** P(AI agent) bar: the same coloured bar as the Agents list (green → yellow → orange → red). */
 export function Score({ p }: { p: number }) {
-  return (
-    <span className="prob" title="Probability that an AI agent was involved (not yet calibrated)">
-      <span className="prob-track"><span className="prob-fill" style={{ width: `${Math.round(p * 100)}%` }} /></span>
-      <span className="prob-num">{Math.round(p * 100)}%</span>
-    </span>
-  );
+  return <ProbabilityBar p={p} />;
 }
 
 export function AgentName({ agent, verified }: { agent: string | null; verified?: boolean }) {
