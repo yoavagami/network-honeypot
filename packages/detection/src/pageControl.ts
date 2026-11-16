@@ -28,7 +28,7 @@ export interface ControlSummary {
   jumpClicks: number;
   scriptFilledFields: number;
   scriptFilledPages: number;
-  /** Fields the browser autofilled (trusted, no inputType, :autofill), SDK 1.2.1+. */
+  /** Fields the browser autofilled (:autofill state, or trusted untyped input on a text field), SDK 1.2.1+. */
   autofilledFields: number;
   inputlessScrollPages: number;
   /** Where control changed hands (first page of the second driver). */
@@ -94,7 +94,9 @@ export function pageControl(behaviors: Array<Record<string, any>>): ControlSumma
     // when nothing on the page was typed or pasted.
     const split = typeof B.untypedUntrusted === "number";
     const untyped = split ? Number(B.untypedUntrusted) || 0 : Number(B.inputs?.none) || 0;
-    const autofilled = split ? Math.max(Number(B.autofilled) || 0, Number(B.untypedTrusted) || 0) : 0;
+    // Autofill: fields in the :autofill state, or (1.2.2+) trusted untyped events on text-entry
+    // fields. 1.2.1's untypedTrusted also counts checkbox/radio clicks, so it isn't used.
+    const autofilled = split ? Math.max(Number(B.autofilled) || 0, Number(B.untypedTrustedText) || 0) : 0;
     if (autofilled) {
       autofilledFields += autofilled;
       humanSigns.push(`${autofilled} field${autofilled > 1 ? "s" : ""} autofilled by the browser`);

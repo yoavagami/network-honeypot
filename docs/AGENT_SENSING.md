@@ -45,6 +45,8 @@ An `input` event with no `inputType` comes either from browser autofill or from 
 `field.value` and dispatches `new Event("input")`. Browsers mark the first `isTrusted`; events a page
 creates never are. From SDK 1.2.1 the page script counts the two apart (`untypedTrusted`,
 `untypedUntrusted`) and records fields in the `:autofill` / `:-webkit-autofill` state (`autofilled`).
+Ticking a checkbox, picking a radio or select option and number spinners also fire trusted untyped
+events, so from SDK 1.2.2 only text-entry fields count as possible autofill (`untypedTrustedText`).
 Only untrusted ones count toward `form_set_by_script`; autofill adds `browser_autofill` (−0.6) and
 turns off `instant_checkout`, since autofill makes a 20-second checkout normal. Snapshots from older
 SDKs keep the old rule. Found by the signed human runs of 2026-11-13, which scored "probably AI
