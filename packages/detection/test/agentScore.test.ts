@@ -16,6 +16,23 @@ describe("agent score", () => {
     expect([bucketFor(0.95), bucketFor(0.8), bucketFor(0.5), bucketFor(0.1)]).toEqual(["ai_agent", "probably_ai_agent", "not_sure", "not_ai_agent"]);
   });
 
+  it("doesn't call a page left by a person 'driven while hidden'", () => {
+    // human-chrome-Nov-13-evening-8: the snapshot sent as each page is left says hidden/unfocused,
+    // but nothing arrived while hidden.
+    const leaving = { visibility: "hidden", focus: false, behavior: { mouseMoves: 220, mouseDistance: 6400, clickCount: 3, clicks: [], keyDowns: 7, wheels: 6, scrolls: 10, hiddenInputs: 0, visibility: [[9202, "hidden"]] } };
+    const s = scoreVisit(visit({ client: { fingerprints: [{ ...humanFp, doc: { visibility: "hidden", hasFocus: false } }], behaviors: [leaving] } }));
+    expect(s.reasons.map((r) => r.signal)).not.toContain("driven_while_hidden");
+    expect(s.bucket).toBe("not_ai_agent");
+    expect(s.type).toBe("human");
+  });
+
+  it("labels a 'not an AI agent' verdict as human even with an agent-leaning signal", () => {
+    const s = scoreVisit(visit({ client: { fingerprints: [humanFp], behaviors: [{ behavior: { mouseMoves: 220, mouseDistance: 6400, wheels: 6, scrolls: 10, keyDowns: 30, keyIntervals: [180, 260, 140, 320, 210, 150, 400, 230], hiddenInputs: 2 } }] } }));
+    expect(s.reasons.map((r) => r.signal)).toContain("driven_while_hidden");
+    expect(s.bucket).toBe("not_ai_agent");
+    expect(s.type).toBe("human");
+  });
+
   it("proves a signed ChatGPT agent", () => {
     const s = scoreVisit(visit({ requests: [req({ verdict: "verified", agent: "chatgpt-agent", verdictReasons: ["Web Bot Auth signature verified for https://chatgpt.com"] })] }));
     expect(s).toMatchObject({ bucket: "ai_agent", type: "cloud_browser_agent", agent: "chatgpt-agent", proven: true });
@@ -36,7 +53,8 @@ describe("agent score", () => {
       requests: [req(), req({ at: "2026-10-31T10:00:05Z", path: "/search" }), req({ path: "/assets/app.css", isHtmlPage: false, isAsset: true })],
       client: {
         fingerprints: [{ ...humanFp, screen: { outerW: 0, outerH: 0 }, doc: { visibility: "hidden", hasFocus: false } }],
-        behaviors: [{ visibility: "hidden", focus: true, behavior: { mouseMoves: 2, mouseDistance: 163, clickCount: 1, clicks: [{ trusted: true, movesLast1s: 1, hadMouseDown: true }], keyDowns: 0, inputWithoutKey: 0, scrolls: 0 } }],
+        // SDK 1.2.3+ counts input that arrives while the tab is hidden at event time.
+        behaviors: [{ visibility: "hidden", focus: true, behavior: { mouseMoves: 2, mouseDistance: 163, clickCount: 1, clicks: [{ trusted: true, movesLast1s: 1, hadMouseDown: true }], keyDowns: 0, inputWithoutKey: 0, scrolls: 0, hiddenInputs: 3 } }],
       },
     }));
     expect(s.type).toBe("in_browser_agent");

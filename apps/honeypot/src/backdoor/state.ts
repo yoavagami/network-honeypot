@@ -4,7 +4,7 @@
  * (BACKDOOR_COMMAND_ITERATION) rather than a fresh first touch. In-memory, not the DB — event
  * writes go through the async ingestion queue (see ingestion/queue.ts), so a DB read at request
  * time could race a not-yet-flushed write from the immediately preceding request. Same
- * per-process-lifetime tradeoff already accepted by enrichment.ts's enrichedActors Set.
+ * per-process-lifetime tradeoff already accepted by enrichment.ts's per-process caches.
  */
 const seenCommands = new Map<string, Set<string>>();
 

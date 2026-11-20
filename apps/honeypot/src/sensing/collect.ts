@@ -7,6 +7,7 @@ import { verifyWebBotAuth } from "./webBotAuth.js";
 import { agentRangesFor, isTorExit, reverseDns } from "./ipIntel.js";
 import { decideIdentity } from "./verdict.js";
 import { decodeEdgeHeader } from "./edge.js";
+import { requestNetwork } from "../ingestion/enrichment.js";
 
 export type RequestSignalsRow = InferInsertModel<typeof schema.requestSignals>;
 
@@ -36,6 +37,9 @@ export async function collectRequestSignals(request: FastifyRequest, requestId: 
     header: headerLookup,
   });
 
+  // The network this request came from, kept on the row: the actor's network is overwritten when
+  // the visitor moves network, which used to re-score old visits with today's network.
+  const network = await requestNetwork(ip, request.hp.ipHash);
   const ipRanges = ip ? agentRangesFor(ip) : [];
   const needsRdns = Boolean(ua.claim?.rdnsSuffixes) || ipRanges.length === 0;
   const rdns = ip && needsRdns ? await reverseDns(ip) : null;
@@ -75,6 +79,7 @@ export async function collectRequestSignals(request: FastifyRequest, requestId: 
       consistencyFlags: flags,
       wba,
       ip: { ranges: ipRanges, tor, rdns },
+      network,
       edge,
       pageLoadId: request.hp.pageLoadId ?? null,
     },

@@ -52,6 +52,18 @@ turns off `instant_checkout`, since autofill makes a 20-second checkout normal. 
 SDKs keep the old rule. Found by the signed human runs of 2026-11-13, which scored "probably AI
 agent" because the person used autofill.
 
+## Driven while hidden
+
+`driven_while_hidden` (+2.0) needs clicks, key presses or input that arrived **while the tab was
+hidden**, counted at event time by the page script (`hiddenInputs`, SDK 1.2.3+; `unfocusedInputs` is
+recorded too, not scored yet). It used to read the visibility of behaviour snapshots, but the last
+snapshot of every page is sent as the page is left and always says "hidden", so it fired on 3 of 4
+signed human runs on 2026-11-13, and on agents whose tabs were in fact visible. Older snapshots have
+no event-time count, so the signal doesn't fire for them.
+
+A visit that scores "not an AI agent" is typed `human` even if an agent-leaning behaviour signal
+fired; identity-based types (named fetchers, scanners) are kept.
+
 ## Rendering ladder
 
 Tells "fetched the HTML only" from "rendered CSS, no JS" from "ran JS" on a **single** page load,

@@ -409,9 +409,12 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     const scrolls = b("scrolls");
     const wheels = b("wheels");
     const touches = b("touches");
-    const hiddenDriven = bs.some((x) => x.visibility === "hidden" && x.focus === false) && clicks.length + keys + inputNoKey > 0
-      || fps.some((f) => f.doc?.visibility === "hidden" && f.doc?.hasFocus === false);
-    if (hiddenDriven) add("driven_while_hidden", W.driven_while_hidden, "the page was operated while its tab was hidden and unfocused — nobody was looking at it");
+    // Clicks, keys or input that arrived while the tab was hidden (SDK 1.2.3+, counted at event
+    // time). Snapshot visibility isn't used: the last snapshot of every page is sent as the page is
+    // left, so it always says "hidden" — that fired on every signed human run of 2026-11-13. Older
+    // snapshots have no event-time count, so the signal doesn't fire for them.
+    const hiddenInputs = b("hiddenInputs");
+    if (hiddenInputs >= 2) add("driven_while_hidden", W.driven_while_hidden, `${hiddenInputs} clicks, key presses or inputs arrived while the tab was hidden — nobody was looking at it`);
     if (clicks.length) {
       const teleport = clicks.filter((c: any) => (c.movesLast1s ?? 0) <= 1).length;
       const untrusted = clicks.filter((c: any) => c.trusted === false).length;
@@ -462,9 +465,10 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
   }
 
   // ---------------------------------------------------------------- type when nothing decided it
+  let typeFromEvidence = false;
   if (!type) {
     const automated = reasons.filter((r) => r.weight > 0 && ["browser", "behavior"].includes(r.group)).length > 0;
-    if (automated) type = hosted ? "cloud_browser_agent" : "in_browser_agent";
+    if (automated) { type = hosted ? "cloud_browser_agent" : "in_browser_agent"; typeFromEvidence = true; }
     else type = "human";
   } else if (type === "browser_automation" && fps.length) {
     type = hosted ? "cloud_browser_agent" : "browser_automation";
@@ -497,6 +501,9 @@ export function scoreVisit(v: VisitEvidence): AgentScore {
     if (p > 0.69) add("no_ai_evidence", W.no_ai_evidence, "automated, but nothing ties it to an AI agent rather than an ordinary bot — capped at \"not sure\"");
     p = Math.min(p, 0.69);
   }
+  // The type follows the verdict: a few agent-leaning signals on a visit scored "not an AI agent"
+  // don't make it an agent. Identity-based types (a named fetcher, a scanner) are kept.
+  if (typeFromEvidence && bucketFor(p) === "not_ai_agent") type = "human";
   return finish(p, type, agent, false, reasons, extras);
 }
 
