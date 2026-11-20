@@ -43,8 +43,13 @@ export function registerStatic(app: FastifyInstance, deps: Deps) {
   page("/docs/integrate", "developer.html", "text/html; charset=utf-8");
   page("/integrate/v1/agent.md", "agent.md", "text/markdown; charset=utf-8");
   page("/integrate/v1/openapi.json", "openapi.json", "application/json; charset=utf-8");
+  page("/integrate/v1/uhoney.mjs", "uhoney.mjs", "text/javascript; charset=utf-8");
+  // text/plain: served as a file to save, never executed by the web server.
+  page("/integrate/v1/uhoney.php", "uhoney.php", "text/plain; charset=utf-8");
   page("/integrate/changelog.md", "changelog.md", "text/markdown; charset=utf-8");
+  // /llms.txt on the API host; on the shop host the root belongs to the honeypot, so it's under /integrate/.
   page("/llms.txt", "llms.txt", "text/plain; charset=utf-8");
+  page("/integrate/llms.txt", "llms.txt", "text/plain; charset=utf-8");
   page("/merchants", "public:merchants.html", "text/html; charset=utf-8");
   app.get("/healthz", async (_r, reply) => reply.send({ ok: true }));
 }

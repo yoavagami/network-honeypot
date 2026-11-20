@@ -182,6 +182,18 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     return reply.send(out);
   });
 
+  // Site alerts (siteAlerts.ts), newest first. The count (no visitor data) drives the nav badge.
+  app.get("/internal/site-alerts", async (_request, reply) => {
+    const alerts = await tx((t) => t`SELECT alert_id::text AS id, created_at, kind, path, host(ip) AS ip, country, network, user_agent, agent, company, delivered_at, delivery_error FROM public_site_alerts ORDER BY created_at DESC LIMIT 100`);
+    return reply.send({ alerts, push_configured: Boolean(deps.config.alerts.url) });
+  });
+  app.get("/internal/site-alerts/count", async (request, reply) => {
+    const since = (request.query as Record<string, string>).since;
+    const from = since && !Number.isNaN(Date.parse(since)) ? new Date(since) : new Date(Date.now() - 7 * 86400_000);
+    const [r] = await tx((t) => t`SELECT count(*)::int AS n, max(created_at) AS last_at FROM public_site_alerts WHERE created_at > ${from}`);
+    return reply.send({ new_count: r!.n, last_at: r!.last_at });
+  });
+
   // Cross-merchant data, optionally filtered to one merchant.
   app.get("/internal/overview", async (request, reply) => {
     const s = scopeOf(request);

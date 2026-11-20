@@ -19,7 +19,7 @@ honeypot admins ──► admin-web /merchants ──► admin-api ──/intern
 | API + workers | `apps/merchant-api` | `/v1/*` public API, `/m/api/*` merchant dashboard, `/internal/*` admin, scoring + webhook + retention workers |
 | Admin views | `apps/admin-api/src/routes/merchants.ts`, `apps/admin-web/src/pages/MerchantsAdmin.tsx` | All merchants, filterable by one; access-logged |
 | Merchant portal | `apps/admin-web/src/pages/MerchantPortal.tsx` (`/m/*`) | Own sign-in; one merchant only |
-| Guides | `docs/integrate` → `pnpm --filter @honeypot/app-merchant-api build:docs` | Served at `/docs/integrate`, `/integrate/v1/agent.md`, `/llms.txt` |
+| Guides | `docs/integrate` → `pnpm --filter @honeypot/app-merchant-api build:docs` | Served at `/docs/integrate`, `/integrate/v1/agent.md`, the helpers `/integrate/v1/uhoney.mjs` and `/integrate/v1/uhoney.php`, and `llms.txt` (`/integrate/llms.txt` on the shop host, whose root belongs to the honeypot; `/llms.txt` on a separate API host) |
 
 Scoring reuses `packages/detection` unchanged: merchant events are mapped to the same visit rows the honeypot
 scores (`apps/merchant-api/src/scoring/visits.ts`). The tag is the honeypot's page script with a loader and a few
@@ -38,6 +38,13 @@ textual patches (`apps/merchant-api/src/tag.ts`); a test fails if a patch target
   `public_page_hits` (time, page, IP, country, network, user agent, referrer, detected agent or tool) and shown
   to admins on **Merchants → Who opened the merchant pages**. Only `merchant_admin` can read the table; each
   admin view is audit-logged as `view_merchant_page_hits`. IPs are cleared after 30 days, rows deleted after 365.
+- **Site alerts** (`public_site_alerts`, apps/merchant-api/src/siteAlerts.ts): an agent-file read, a
+  developer-guide open (one per IP and kind every 6 hours) or an access request (always). Shown on
+  **Merchants → Site alerts** with a count badge on the Merchants nav item (new since this browser last
+  looked); the list is audit-logged as `view_merchant_site_alerts`. Set `MERCHANT_ALERT_URL` to push them
+  (Slack incoming webhook, or an ntfy topic URL for phone notifications) and `MERCHANT_ALERT_IGNORE_IPS`
+  to skip your own addresses. Access-request alerts carry the company name only, never the email.
+  Same retention as page hits.
 
 ## Onboarding a merchant
 

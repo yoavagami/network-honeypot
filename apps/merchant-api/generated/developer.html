@@ -39,15 +39,15 @@ th, td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line
 <p><strong>Using a coding agent?</strong> Put your test keys in <code>.env</code> and tell it: <code>Integrate uHoney using {{AGENT_URL}}</code>. It follows the same steps as this page.</p>
 <h2 id="1-before-you-start">1. Before you start</h2>
 <p>You need:</p>
-<ul><li>An approved uHoney account. No account yet? Request access at <code>{{TAG_BASE}}/merchants</code>.</li><li>Your <strong>test keys</strong> from the dashboard (<code>{{DASHBOARD_URL}}/m/settings</code> → Keys): the public site key <code>pk_test_…</code> and a secret key <code>sk_test_…</code> (shown once when you create it).</li><li>Access to your site's shared page layout and to the server code that creates the charge.</li></ul>
+<ul><li>An approved uHoney account. No account yet? Request access at <code>{{TAG_BASE}}/merchants</code>.</li><li>Your <strong>test keys</strong> from the dashboard (<code>{{DASHBOARD_URL}}/m/settings</code> → Keys): the public site key <code>pk_test_XXXX</code> and a secret key <code>sk_test_XXXX</code> (shown once when you create it).</li><li>Access to your site's shared page layout and to the server code that creates the charge.</li></ul>
 <p>Supported in v1: any site with its own backend. Recipes below for <strong>Next.js</strong>, <strong>Node.js with Express</strong> and <strong>PHP</strong>, plus a generic recipe for anything else. Stripe is covered; other payment providers work the same way without the Stripe metadata.</p>
 <p>Two rules hold for every integration:</p>
 <ul><li><strong>Fail open.</strong> The checkout never waits more than 300 ms for uHoney and never fails because of it.</li><li><strong>Advisory only.</strong> Save the verdict on the order. Acting on it (review, challenge) is your decision.</li></ul>
 <h2 id="2-store-the-keys">2. Store the keys</h2>
 <p>Add the keys to your server environment (for local development, the project's <code>.env</code>, which must stay out of git):</p>
-<pre><code class="language-bash">UHONEY_SITE_KEY=pk_test_...        # public: used in the page tag
-UHONEY_SECRET_KEY=sk_test_...      # secret: server only
-UHONEY_WEBHOOK_SECRET=whsec_...    # from step 6</code></pre>
+<pre><code class="language-bash">UHONEY_SITE_KEY=pk_test_XXXX       # public: used in the page tag
+UHONEY_SECRET_KEY=sk_test_XXXX     # secret: server only
+UHONEY_WEBHOOK_SECRET=whsec_XXXX   # from step 6</code></pre>
 <p>Frameworks that expose public variables need a public copy of the site key (Next.js: <code>NEXT_PUBLIC_UHONEY_SITE_KEY</code>). The secret key must never reach browser code, logs, commits or test fixtures.</p>
 <p><strong>Check:</strong></p>
 <pre><code class="language-bash">curl -s {{API_URL}}/v1/integration/status -H &quot;Authorization: Bearer $UHONEY_SECRET_KEY&quot;</code></pre>
@@ -198,10 +198,10 @@ export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHO
 <p>Every check is <code>pass</code> or <code>not_applicable</code> (<code>all_passed: true</code>). Each failing check's <code>detail</code> says exactly what to fix, and <code>recent_events</code> shows the last five things uHoney received from you. The same checklist is in the dashboard under Integration.</p>
 <p>On localhost it is normal for <code>webhook_delivered</code> to fail until the webhook endpoint is reachable over HTTPS.</p>
 <h2 id="8-go-live">8. Go live</h2>
-<ol><li>Add your production domain (Settings → Domains) and verify it with the DNS TXT record or the meta tag shown there. Live keys require a verified domain.</li><li>Create a live secret key, and copy the live site key.</li><li>Swap the environment variables in production to <code>pk_live_…</code> / <code>sk_live_…</code>, add a live webhook endpoint, and deploy.</li><li>Run the status call with the live secret key until it passes, and switch the dashboard to <strong>Live data</strong>.</li></ol>
+<ol><li>Add your production domain (Settings → Domains) and verify it with the DNS TXT record or the meta tag shown there. Live keys require a verified domain.</li><li>Create a live secret key, and copy the live site key.</li><li>Swap the environment variables in production to <code>pk_live_XXXX</code> / <code>sk_live_XXXX</code>, add a live webhook endpoint, and deploy.</li><li>Run the status call with the live secret key until it passes, and switch the dashboard to <strong>Live data</strong>.</li></ol>
 <h2 id="stack-recipes">Stack recipes</h2>
 <h3 id="next-js-app-router">Next.js (App Router)</h3>
-<ol><li>Copy the Node helper (step 5) to <code>lib/uhoney.mjs</code>.</li><li>Add <code>NEXT_PUBLIC_UHONEY_SITE_KEY</code> (the <code>pk_</code> key) and <code>UHONEY_SECRET_KEY</code> to <code>.env.local</code>.</li><li>Tag in the root layout:</li></ol>
+<ol><li>Save the Node helper (step 5, also at <code>{{TAG_BASE}}/integrate/v1/uhoney.mjs</code>) as <code>lib/uhoney.mjs</code> in the project.</li><li>Add <code>NEXT_PUBLIC_UHONEY_SITE_KEY</code> (the <code>pk_</code> key) and <code>UHONEY_SECRET_KEY</code> to <code>.env.local</code>.</li><li>Tag in the root layout:</li></ol>
 <pre><code class="language-tsx">// app/layout.tsx — add the tag once, in the root layout.
 import Script from &quot;next/script&quot;;
 
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
 }</code></pre>
 <p>Pages Router: put the tag in <code>pages/_document.tsx</code> and use the same helper in <code>pages/api/checkout.ts</code>.</p>
 <h3 id="node-js-with-express">Node.js with Express</h3>
-<ol><li>Copy the Node helper (step 5) next to your server code as <code>uhoney.mjs</code> (CommonJS projects: rename to <code>.mjs</code> and <code>import()</code> it, or convert the exports).</li><li>Add the tag (step 3) to your layout template.</li><li>Assess in the checkout route and add the webhook route:</li></ol>
+<ol><li>Save the Node helper (step 5, also at <code>{{TAG_BASE}}/integrate/v1/uhoney.mjs</code>) next to your server code as <code>uhoney.mjs</code> (CommonJS projects: rename to <code>.mjs</code> and <code>import()</code> it, or convert the exports).</li><li>Add the tag (step 3) to your layout template.</li><li>Assess in the checkout route and add the webhook route:</li></ol>
 <pre><code class="language-js">// Express: add the assess call to your existing checkout route, and a webhook route.
 import express from &quot;express&quot;;
 import { assessOrder, verdictFields, stripeMetadata, verifyWebhook } from &quot;./uhoney.mjs&quot;;
@@ -302,7 +302,7 @@ app.post(&quot;/webhooks/uhoney&quot;, express.raw({ type: &quot;application/jso
   res.status(200).send(&quot;ok&quot;);
 });</code></pre>
 <h3 id="php-plain-php-laravel-symfony-woocommerce-custom-code">PHP (plain PHP, Laravel, Symfony, WooCommerce custom code)</h3>
-<ol><li>Add the tag (step 3) to your layout template (<code>header.php</code>, Blade layout, Twig base template).</li><li>Add this helper and call <code>uhoney_assess()</code> before charging:</li></ol>
+<ol><li>Add the tag (step 3) to your layout template (<code>header.php</code>, Blade layout, Twig base template).</li><li>Add this helper (also at <code>{{TAG_BASE}}/integrate/v1/uhoney.php</code>) and call <code>uhoney_assess()</code> before charging:</li></ol>
 <pre><code class="language-php">&lt;?php
 // uhoney.php — server helper for the uHoney merchant API (PHP 7.4+, curl).
 // Reads UHONEY_SECRET_KEY and UHONEY_WEBHOOK_SECRET from the environment.

@@ -4,13 +4,15 @@ import { SESSION_COOKIE, CSRF_COOKIE } from "./routes/auth.js";
 
 const PUBLIC_PATHS = new Set(["/api/auth/login", "/api/system/health"]);
 const SUPERADMIN_PATH_PREFIXES = ["/api/access-log"];
+/** Polled by the dashboard in the background (the nav badge): authenticated, but not activity. */
+export const BACKGROUND_PATHS = new Set(["/api/merchant-site/alerts/count"]);
 
 export function registerAuthMiddleware(app: FastifyInstance) {
   app.addHook("onRequest", async (request, reply) => {
     const sessionId = request.cookies[SESSION_COOKIE];
-    request.adminSession = sessionId ? await loadSession(sessionId) : null;
-
     const path = request.url.split("?")[0]!;
+    request.adminSession = sessionId ? await loadSession(sessionId, !BACKGROUND_PATHS.has(path)) : null;
+
     if (PUBLIC_PATHS.has(path)) return;
     if (!path.startsWith("/api/")) return;
 

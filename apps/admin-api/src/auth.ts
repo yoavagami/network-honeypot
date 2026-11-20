@@ -38,7 +38,8 @@ export async function createSession(adminUserId: string, ipHash: string | null):
   return { adminSessionId, adminUserId, csrfToken, username: user?.username ?? "unknown", role: user?.role ?? "admin" };
 }
 
-export async function loadSession(adminSessionId: string): Promise<AdminSession | null> {
+/** touch=false: a background poll, which must not count as activity (else an open tab never idles out). */
+export async function loadSession(adminSessionId: string, touch = true): Promise<AdminSession | null> {
   const [row] = await db
     .select({
       adminSessionId: schema.adminSessions.adminSessionId,
@@ -60,7 +61,7 @@ export async function loadSession(adminSessionId: string): Promise<AdminSession 
   if (row.expiresAt.getTime() < now) return null;
   if (row.lastSeenAt.getTime() + config.sessionIdleTimeoutMs < now) return null;
 
-  await db.update(schema.adminSessions).set({ lastSeenAt: new Date() }).where(eq(schema.adminSessions.adminSessionId, adminSessionId));
+  if (touch) await db.update(schema.adminSessions).set({ lastSeenAt: new Date() }).where(eq(schema.adminSessions.adminSessionId, adminSessionId));
 
   return { adminSessionId: row.adminSessionId, adminUserId: row.adminUserId, csrfToken: row.csrfToken, username: row.username, role: row.role };
 }

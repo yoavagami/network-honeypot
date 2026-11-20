@@ -1,3 +1,5 @@
+import { parseIgnoreList, type AlertConfig } from "./siteAlerts.js";
+
 /**
  * merchant-api configuration. Read once at startup by loadConfig(); tests build their own.
  * Secrets must be long random values (openssl rand -hex 32).
@@ -28,6 +30,8 @@ export interface MerchantConfig {
   webhookIntervalMs: number;
   /** Verifies signed ?lab= tokens (same secret as the honeypot). Unset: lab labels count as claimed only. */
   labLinkSecret: string | undefined;
+  /** Site alerts (siteAlerts.ts): MERCHANT_ALERT_URL, MERCHANT_ALERT_IGNORE_IPS. */
+  alerts: AlertConfig;
   /** Test only: allow webhook delivery to private addresses (local mock servers). */
   allowPrivateWebhookTargets: boolean;
 }
@@ -62,6 +66,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): MerchantConfig
     scorerIntervalMs: Number(env.MERCHANT_SCORER_INTERVAL_MS ?? 3000),
     webhookIntervalMs: Number(env.MERCHANT_WEBHOOK_INTERVAL_MS ?? 5000),
     labLinkSecret: env.LAB_LINK_SECRET || undefined,
+    alerts: {
+      url: env.MERCHANT_ALERT_URL || undefined,
+      ignore: parseIgnoreList(env.MERCHANT_ALERT_IGNORE_IPS),
+      linkUrl: `${trimSlash(env.ADMIN_DASHBOARD_URL ?? dashboardUrl)}/merchants`,
+    },
     allowPrivateWebhookTargets: false,
   };
 }

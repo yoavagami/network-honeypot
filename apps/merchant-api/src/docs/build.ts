@@ -94,6 +94,7 @@ ${html}
 - [Agent integration instructions]({{AGENT_URL}}): step-by-step procedure for coding agents integrating uHoney into a merchant site
 - [Developer guide]({{DOCS_URL}}): the same steps for people
 - [OpenAPI contract]({{API_URL}}/integrate/v1/openapi.json)
+- [Node.js helper]({{TAG_BASE}}/integrate/v1/uhoney.mjs) and [PHP helper]({{TAG_BASE}}/integrate/v1/uhoney.php): the server helpers from the guide, as files
 - [Changelog]({{TAG_BASE}}/integrate/changelog.md)
 `;
 
@@ -102,6 +103,9 @@ ${html}
     "developer.html": developer,
     "llms.txt": llms,
     "changelog.md": read("changelog.md") + "\n",
+    // The server helpers as standalone files, so an agent can save them with one request.
+    "uhoney.mjs": readFileSync(path.join(SRC, "snippets/node/uhoney.mjs"), "utf8"),
+    "uhoney.php": readFileSync(path.join(SRC, "snippets/php/uhoney.php"), "utf8"),
     "openapi.json": readFileSync(path.join(ROOT, "packages/merchant-contract/openapi.json"), "utf8"),
   };
 }
