@@ -1,0 +1,4457 @@
+{
+  "name": "lab-human-safari-nov-13-evening-4",
+  "source": "lab-export",
+  "description": "Signed lab run human-safari-Nov-13-evening-4 (2026-11-13): the operator shopping by hand in Safari, through a full purchase. Was scored \"probably AI agent\" before the autofill and driven-while-hidden fixes. Must stay 'not an AI agent', typed human. Network pinned to the run's own (KPN, NL): the exporter reads the actor's current network.",
+  "expect": {
+    "bucket": "not_ai_agent",
+    "type": "human",
+    "signalsExclude": [
+      "driven_while_hidden",
+      "form_set_by_script",
+      "instant_checkout"
+    ]
+  },
+  "evidence": {
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [
+      "SHOP_HOME_VIEW",
+      "SHOP_PRODUCT_VIEW",
+      "SHOP_ADD_TO_CART",
+      "SHOP_PRODUCT_VIEW",
+      "SHOP_ADD_TO_CART",
+      "SHOP_PRODUCT_VIEW",
+      "SHOP_CART_VIEW",
+      "SHOP_CHECKOUT_START",
+      "SHOP_CHECKOUT_DETAILS",
+      "SHOP_SHIPPING_VIEW",
+      "SHOP_CHECKOUT_SHIPPING",
+      "SHOP_PAYMENT_VIEW",
+      "SHOP_ORDER_PLACED",
+      "SHOP_PAYMENT_ATTEMPT",
+      "SHOP_ORDER_CONFIRMATION_VIEW"
+    ],
+    "evaluatedAt": "2026-11-20T17:42:38.301Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "path": "/",
+          "at": "2026-11-13T20:43:19.003Z"
+        },
+        {
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:21.414Z"
+        },
+        {
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:22.754Z"
+        },
+        {
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:24.136Z"
+        },
+        {
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "path": "/cart",
+          "at": "2026-11-13T20:43:25.140Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "path": "/checkout",
+          "at": "2026-11-13T20:43:26.278Z"
+        },
+        {
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T20:43:36.450Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T20:43:37.852Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T20:43:52.007Z"
+        }
+      ],
+      "hits": [
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "rung": "css",
+          "at": "2026-11-13T20:43:19.267Z"
+        },
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "rung": "js",
+          "at": "2026-11-13T20:43:19.342Z"
+        },
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "rung": "js",
+          "at": "2026-11-13T20:43:20.705Z"
+        },
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "rung": "js",
+          "at": "2026-11-13T20:43:21.670Z"
+        },
+        {
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "rung": "js",
+          "at": "2026-11-13T20:43:21.673Z"
+        },
+        {
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "rung": "css",
+          "at": "2026-11-13T20:43:21.820Z"
+        },
+        {
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "rung": "js",
+          "at": "2026-11-13T20:43:22.028Z"
+        },
+        {
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "rung": "js",
+          "at": "2026-11-13T20:43:22.878Z"
+        },
+        {
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "rung": "js",
+          "at": "2026-11-13T20:43:22.882Z"
+        },
+        {
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "rung": "css",
+          "at": "2026-11-13T20:43:22.979Z"
+        },
+        {
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "rung": "js",
+          "at": "2026-11-13T20:43:23.063Z"
+        },
+        {
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "rung": "js",
+          "at": "2026-11-13T20:43:24.290Z"
+        },
+        {
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "rung": "js",
+          "at": "2026-11-13T20:43:24.298Z"
+        },
+        {
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "rung": "css",
+          "at": "2026-11-13T20:43:24.395Z"
+        },
+        {
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "rung": "js",
+          "at": "2026-11-13T20:43:24.490Z"
+        },
+        {
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "rung": "js",
+          "at": "2026-11-13T20:43:25.266Z"
+        },
+        {
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "rung": "js",
+          "at": "2026-11-13T20:43:25.269Z"
+        },
+        {
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "rung": "js",
+          "at": "2026-11-13T20:43:25.457Z"
+        },
+        {
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "rung": "css",
+          "at": "2026-11-13T20:43:25.460Z"
+        },
+        {
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "rung": "js",
+          "at": "2026-11-13T20:43:26.403Z"
+        },
+        {
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "rung": "js",
+          "at": "2026-11-13T20:43:26.408Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "rung": "css",
+          "at": "2026-11-13T20:43:26.504Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "rung": "js",
+          "at": "2026-11-13T20:43:26.600Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "rung": "js",
+          "at": "2026-11-13T20:43:27.928Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "rung": "js",
+          "at": "2026-11-13T20:43:36.575Z"
+        },
+        {
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "rung": "js",
+          "at": "2026-11-13T20:43:36.581Z"
+        },
+        {
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "rung": "css",
+          "at": "2026-11-13T20:43:36.764Z"
+        },
+        {
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "rung": "js",
+          "at": "2026-11-13T20:43:36.767Z"
+        },
+        {
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "rung": "js",
+          "at": "2026-11-13T20:43:37.988Z"
+        },
+        {
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "rung": "js",
+          "at": "2026-11-13T20:43:37.990Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "rung": "css",
+          "at": "2026-11-13T20:43:38.094Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "rung": "js",
+          "at": "2026-11-13T20:43:38.178Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "rung": "js",
+          "at": "2026-11-13T20:43:39.567Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "rung": "js",
+          "at": "2026-11-13T20:43:52.134Z"
+        },
+        {
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "rung": "js",
+          "at": "2026-11-13T20:43:52.138Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "rung": "css",
+          "at": "2026-11-13T20:43:52.238Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "rung": "js",
+          "at": "2026-11-13T20:43:52.328Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "rung": "js",
+          "at": "2026-11-13T20:43:53.658Z"
+        },
+        {
+          "pl": "iZgU2lH8sIMssONHnS7n",
+          "rung": "js",
+          "at": "2026-11-13T20:43:56.020Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "rung": "js",
+          "at": "2026-11-13T20:43:56.070Z"
+        },
+        {
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "rung": "js",
+          "at": "2026-11-13T20:43:56.072Z"
+        }
+      ]
+    },
+    "client": {
+      "fingerprints": [
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US"
+            ],
+            "language": "en-US",
+            "vendor": "Apple Computer, Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 8,
+            "deviceMemory": null,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": null,
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1329,
+            "outerH": 883,
+            "innerW": 1329,
+            "innerH": 793,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": null,
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [
+            "safari"
+          ],
+          "artifacts": [],
+          "clientT": 1355
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US"
+            ],
+            "language": "en-US",
+            "vendor": "Apple Computer, Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 8,
+            "deviceMemory": null,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": null,
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1329,
+            "outerH": 883,
+            "innerW": 1329,
+            "innerH": 793,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": null,
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [
+            "safari"
+          ],
+          "artifacts": [],
+          "clientT": 1328
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US"
+            ],
+            "language": "en-US",
+            "vendor": "Apple Computer, Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 8,
+            "deviceMemory": null,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": null,
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1329,
+            "outerH": 883,
+            "innerW": 1329,
+            "innerH": 793,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": null,
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "safari",
+            "webpackChunkStripeJSouter",
+            "noop",
+            "Stripe",
+            "__SJS_PERF_STATE__"
+          ],
+          "artifacts": [],
+          "clientT": 1390
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US"
+            ],
+            "language": "en-US",
+            "vendor": "Apple Computer, Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 8,
+            "deviceMemory": null,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": null,
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1329,
+            "outerH": 883,
+            "innerW": 1329,
+            "innerH": 793,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": null,
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [
+            "safari"
+          ],
+          "artifacts": [],
+          "clientT": 1328
+        }
+      ],
+      "behaviors": [
+        {
+          "focus": true,
+          "clientT": 2267,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 2014,
+                "x": 892,
+                "y": 675,
+                "dx": -0.084,
+                "dy": -0.002,
+                "detail": 1,
+                "target": "IMG",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 36,
+                "msSinceMove": 80,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 7603,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 43,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 956.4685125926607,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 888,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1534,
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "path": "/",
+          "at": "2026-11-13T20:43:21.670Z"
+        },
+        {
+          "focus": true,
+          "clientT": 2269,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 2014,
+                "x": 892,
+                "y": 675,
+                "dx": -0.084,
+                "dy": -0.002,
+                "detail": 1,
+                "target": "IMG",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 36,
+                "msSinceMove": 80,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 7603,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 43,
+            "selections": 1,
+            "visibility": [
+              [
+                2269,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 956.4685125926607,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 888,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1534,
+          "pl": "cLFCUzuCtNPCvzqsNj22",
+          "path": "/",
+          "at": "2026-11-13T20:43:21.673Z"
+        },
+        {
+          "focus": true,
+          "clientT": 960,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 724,
+                "x": 925,
+                "y": 511,
+                "dx": -0.021,
+                "dy": -0.053,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 28,
+                "msSinceMove": 97,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2331,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 28,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 198.49654958488375,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 167,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1262,
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:22.878Z"
+        },
+        {
+          "focus": true,
+          "clientT": 961,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 724,
+                "x": 925,
+                "y": 511,
+                "dx": -0.021,
+                "dy": -0.053,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 28,
+                "msSinceMove": 97,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2331,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 28,
+            "selections": 1,
+            "visibility": [
+              [
+                961,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 198.49654958488375,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 167,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1262,
+          "pl": "DJ9QRvKawrsS6i7o1iM1",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:22.882Z"
+        },
+        {
+          "focus": true,
+          "clientT": 1187,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 955,
+                "x": 904,
+                "y": 567,
+                "dx": -0.068,
+                "dy": -0.292,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 41,
+                "msSinceMove": 104,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2372,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 41,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 308.866798183668,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 205,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1328,
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:24.290Z"
+        },
+        {
+          "focus": true,
+          "clientT": 1188,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 955,
+                "x": 904,
+                "y": 567,
+                "dx": -0.068,
+                "dy": -0.292,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 41,
+                "msSinceMove": 104,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2372,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 41,
+            "selections": 0,
+            "visibility": [
+              [
+                1187,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 308.866798183668,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 205,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1328,
+          "pl": "70Gh1dRp2xeiofzNf4R8",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:24.298Z"
+        },
+        {
+          "focus": true,
+          "clientT": 766,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 644,
+                "x": 1214,
+                "y": 68,
+                "dx": -0.24,
+                "dy": -0.123,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 34,
+                "msSinceMove": 87,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2642,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 34,
+            "selections": 1,
+            "visibility": [
+              [
+                766,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 137.31362170518688,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 7,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1328,
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:25.266Z"
+        },
+        {
+          "focus": true,
+          "clientT": 766,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 644,
+                "x": 1214,
+                "y": 68,
+                "dx": -0.24,
+                "dy": -0.123,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 34,
+                "msSinceMove": 87,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2642,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 34,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 137.31362170518688,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 7,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1328,
+          "pl": "1M9IARr25_TPo4diPgpz",
+          "path": "/products/heather-honey",
+          "at": "2026-11-13T20:43:25.269Z"
+        },
+        {
+          "focus": true,
+          "clientT": 946,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 820,
+                "x": 910,
+                "y": 520,
+                "dx": -0.251,
+                "dy": -0.139,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 24,
+                "msSinceMove": 142,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2423,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 24,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 232.34322577585857,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 13,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 865,
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "path": "/cart",
+          "at": "2026-11-13T20:43:26.403Z"
+        },
+        {
+          "focus": true,
+          "clientT": 946,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 820,
+                "x": 910,
+                "y": 520,
+                "dx": -0.251,
+                "dy": -0.139,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 24,
+                "msSinceMove": 142,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2423,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 24,
+            "selections": 1,
+            "visibility": [
+              [
+                946,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 232.34322577585857,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 13,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 865,
+          "pl": "6ooFj3o1pUUmPisPoaNS",
+          "path": "/cart",
+          "at": "2026-11-13T20:43:26.408Z"
+        },
+        {
+          "focus": true,
+          "clientT": 9970,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 6,
+            "focus": 6,
+            "clicks": [
+              {
+                "t": 9739,
+                "x": 386,
+                "y": 615,
+                "dx": -0.086,
+                "dy": -0.234,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 29,
+                "msSinceMove": 144,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "insertText": 33,
+              "deleteContentBackward": 2
+            },
+            "pastes": 0,
+            "wheels": 44,
+            "resizes": 0,
+            "scrolls": 23,
+            "touches": 0,
+            "keyDowns": 40,
+            "keyKinds": {
+              "nav": 3,
+              "enter": 0,
+              "other": 0,
+              "modifier": 4,
+              "printable": 33
+            },
+            "maxSpeed": 7071,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 131,
+            "mouseDowns": 6,
+            "mouseMoves": 165,
+            "selections": 42,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [
+              4,
+              2,
+              0,
+              1,
+              1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              5,
+              17,
+              9,
+              7,
+              8,
+              8,
+              12,
+              52,
+              9,
+              682,
+              89,
+              173,
+              553,
+              80,
+              139,
+              805,
+              147,
+              81,
+              88,
+              824,
+              136,
+              675,
+              145,
+              273,
+              148,
+              373,
+              324,
+              93,
+              140
+            ],
+            "keyUntrusted": 0,
+            "pointerDowns": 6,
+            "mouseDistance": 1540.745408117127,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {
+              "text": 16,
+              "email": 19
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 90,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1057,
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "path": "/checkout",
+          "at": "2026-11-13T20:43:36.575Z"
+        },
+        {
+          "focus": true,
+          "clientT": 9971,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 6,
+            "focus": 6,
+            "clicks": [
+              {
+                "t": 9739,
+                "x": 386,
+                "y": 615,
+                "dx": -0.086,
+                "dy": -0.234,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 29,
+                "msSinceMove": 144,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "insertText": 33,
+              "deleteContentBackward": 2
+            },
+            "pastes": 0,
+            "wheels": 44,
+            "resizes": 0,
+            "scrolls": 23,
+            "touches": 0,
+            "keyDowns": 40,
+            "keyKinds": {
+              "nav": 3,
+              "enter": 0,
+              "other": 0,
+              "modifier": 4,
+              "printable": 33
+            },
+            "maxSpeed": 7071,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 131,
+            "mouseDowns": 6,
+            "mouseMoves": 165,
+            "selections": 42,
+            "visibility": [
+              [
+                9971,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [
+              4,
+              2,
+              0,
+              1,
+              1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              5,
+              17,
+              9,
+              7,
+              8,
+              8,
+              12,
+              52,
+              9,
+              682,
+              89,
+              173,
+              553,
+              80,
+              139,
+              805,
+              147,
+              81,
+              88,
+              824,
+              136,
+              675,
+              145,
+              273,
+              148,
+              373,
+              324,
+              93,
+              140
+            ],
+            "keyUntrusted": 0,
+            "pointerDowns": 6,
+            "mouseDistance": 1540.745408117127,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {
+              "text": 16,
+              "email": 19
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 90,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1057,
+          "pl": "njgrk0qOD8Q8aIs6TVqW",
+          "path": "/checkout",
+          "at": "2026-11-13T20:43:36.581Z"
+        },
+        {
+          "focus": true,
+          "clientT": 1208,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 975,
+                "x": 435,
+                "y": 468,
+                "dx": -0.001,
+                "dy": 0.065,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 31,
+                "msSinceMove": 123,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3396,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 31,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 328.84239249514104,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 280,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 793,
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T20:43:37.988Z"
+        },
+        {
+          "focus": true,
+          "clientT": 1209,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [
+              {
+                "t": 975,
+                "x": 435,
+                "y": 468,
+                "dx": -0.001,
+                "dy": 0.065,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 31,
+                "msSinceMove": 123,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3396,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 31,
+            "selections": 1,
+            "visibility": [
+              [
+                1208,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 328.84239249514104,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 280,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 793,
+          "pl": "aP12RKvXG7yGDMOkG6Bt",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T20:43:37.990Z"
+        },
+        {
+          "focus": true,
+          "clientT": 13952,
+          "foreign": {
+            "count": 332,
+            "items": [
+              {
+                "t": 323,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 477,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 477,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 754,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 754,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 791,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 792,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1051,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1328,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1328,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1330,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1330,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1330,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1391,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1454,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1454,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1999,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 2056,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 2966,
+                "on": "DIV",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "HEADER",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "MAIN",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "FOOTER",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SPAN",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "NOSCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "INPUT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 5,
+            "focus": 5,
+            "clicks": [
+              {
+                "t": 11627,
+                "x": 179,
+                "y": 580,
+                "dx": -0.447,
+                "dy": -0.101,
+                "detail": 1,
+                "target": "LABEL",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 46,
+                "msSinceMove": 68,
+                "hadMouseDown": true
+              },
+              {
+                "t": 11627,
+                "x": 179,
+                "y": 580,
+                "dx": 1.875,
+                "dy": -0.187,
+                "detail": 0,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 46,
+                "msSinceMove": 68,
+                "hadMouseDown": true
+              },
+              {
+                "t": 12328,
+                "x": 337,
+                "y": 652,
+                "dx": -0.172,
+                "dy": 0.477,
+                "detail": 1,
+                "target": "BUTTON#pay-button",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 37,
+                "msSinceMove": 111,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 1
+            },
+            "pastes": 0,
+            "wheels": 135,
+            "resizes": 0,
+            "scrolls": 73,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3043,
+            "autofilled": 0,
+            "clickCount": 3,
+            "maxScrollY": 362,
+            "mouseDowns": 2,
+            "mouseMoves": 125,
+            "selections": 1,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 3,
+            "mouseDistance": 933.1925262443964,
+            "moveUntrusted": 0,
+            "untypedTrusted": 1,
+            "inputFieldTypes": {
+              "checkbox": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 446,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1294,
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T20:43:52.134Z"
+        },
+        {
+          "focus": true,
+          "clientT": 13952,
+          "foreign": {
+            "count": 332,
+            "items": [
+              {
+                "t": 323,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 324,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 477,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 477,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 569,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 754,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 754,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 791,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 792,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1051,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1328,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1328,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1330,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1330,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1330,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1391,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1454,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1454,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1999,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 2056,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 2966,
+                "on": "DIV",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "HEADER",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "MAIN",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "FOOTER",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "SPAN",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "NOSCRIPT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "INPUT",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              },
+              {
+                "t": 2966,
+                "on": "IFRAME",
+                "attr": "aria-hidden"
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 5,
+            "focus": 5,
+            "clicks": [
+              {
+                "t": 11627,
+                "x": 179,
+                "y": 580,
+                "dx": -0.447,
+                "dy": -0.101,
+                "detail": 1,
+                "target": "LABEL",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 46,
+                "msSinceMove": 68,
+                "hadMouseDown": true
+              },
+              {
+                "t": 11627,
+                "x": 179,
+                "y": 580,
+                "dx": 1.875,
+                "dy": -0.187,
+                "detail": 0,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 46,
+                "msSinceMove": 68,
+                "hadMouseDown": true
+              },
+              {
+                "t": 12328,
+                "x": 337,
+                "y": 652,
+                "dx": -0.172,
+                "dy": 0.477,
+                "detail": 1,
+                "target": "BUTTON#pay-button",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 37,
+                "msSinceMove": 111,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 1
+            },
+            "pastes": 0,
+            "wheels": 135,
+            "resizes": 0,
+            "scrolls": 73,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3043,
+            "autofilled": 0,
+            "clickCount": 3,
+            "maxScrollY": 362,
+            "mouseDowns": 2,
+            "mouseMoves": 125,
+            "selections": 1,
+            "visibility": [
+              [
+                13952,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 3,
+            "mouseDistance": 933.1925262443964,
+            "moveUntrusted": 0,
+            "untypedTrusted": 1,
+            "inputFieldTypes": {
+              "checkbox": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 446,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1294,
+          "pl": "c41Bs7EfCvX3Mo7TLHeq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T20:43:52.138Z"
+        },
+        {
+          "focus": false,
+          "clientT": 8217922,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 2,
+            "focus": 1,
+            "clicks": [],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 1,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 1,
+              "printable": 0
+            },
+            "maxSpeed": 14560,
+            "clickCount": 0,
+            "maxScrollY": 0,
+            "mouseDowns": 0,
+            "mouseMoves": 58,
+            "selections": 0,
+            "visibility": [
+              [
+                34387,
+                "hidden"
+              ],
+              [
+                1015329,
+                "visible"
+              ],
+              [
+                1015654,
+                "hidden"
+              ],
+              [
+                1609804,
+                "visible"
+              ],
+              [
+                1610163,
+                "hidden"
+              ],
+              [
+                2420085,
+                "visible"
+              ],
+              [
+                2420314,
+                "hidden"
+              ],
+              [
+                5230085,
+                "visible"
+              ],
+              [
+                5230388,
+                "hidden"
+              ],
+              [
+                5544711,
+                "visible"
+              ],
+              [
+                5545069,
+                "hidden"
+              ],
+              [
+                6092366,
+                "visible"
+              ],
+              [
+                6092443,
+                "hidden"
+              ],
+              [
+                6688447,
+                "visible"
+              ],
+              [
+                6688554,
+                "hidden"
+              ],
+              [
+                6696368,
+                "visible"
+              ],
+              [
+                6696509,
+                "hidden"
+              ],
+              [
+                7070343,
+                "visible"
+              ],
+              [
+                7070571,
+                "hidden"
+              ],
+              [
+                8175723,
+                "visible"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 0,
+            "mouseDistance": 2502.4910647961715,
+            "moveUntrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 2023
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1031,
+          "pl": "iZgU2lH8sIMssONHnS7n",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T20:43:56.020Z"
+        },
+        {
+          "focus": true,
+          "clientT": 3737,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 9904,
+            "autofilled": 0,
+            "clickCount": 0,
+            "maxScrollY": 0,
+            "mouseDowns": 0,
+            "mouseMoves": 63,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 0,
+            "mouseDistance": 2187.7421920364704,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 415,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1031,
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T20:43:56.070Z"
+        },
+        {
+          "focus": true,
+          "clientT": 3737,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 0,
+            "clicks": [],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 9904,
+            "autofilled": 0,
+            "clickCount": 0,
+            "maxScrollY": 0,
+            "mouseDowns": 0,
+            "mouseMoves": 63,
+            "selections": 0,
+            "visibility": [
+              [
+                3737,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 0,
+            "mouseDistance": 2187.7421920364704,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 415,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1031,
+          "pl": "sYMahTF5tbjZK6uEGLWU",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T20:43:56.072Z"
+        }
+      ],
+      "unboundBeacons": 0,
+      "probes": []
+    },
+    "requests": [
+      {
+        "at": "2026-11-13T20:43:19.003Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:19.155Z",
+        "method": "GET",
+        "path": "/assets/shop.css",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:19.159Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:19.268Z",
+        "method": "GET",
+        "path": "/assets/img/bg/cLFCUzuCtNPCvzqsNj22.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:19.342Z",
+        "method": "GET",
+        "path": "/assets/img/sp/cLFCUzuCtNPCvzqsNj22.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:20.706Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:21.414Z",
+        "method": "GET",
+        "path": "/products/heather-honey",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:21.670Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:21.673Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:21.675Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:21.821Z",
+        "method": "GET",
+        "path": "/assets/img/bg/DJ9QRvKawrsS6i7o1iM1.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.029Z",
+        "method": "GET",
+        "path": "/assets/img/sp/DJ9QRvKawrsS6i7o1iM1.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.650Z",
+        "method": "POST",
+        "path": "/cart/add",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.754Z",
+        "method": "GET",
+        "path": "/products/heather-honey",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.878Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.882Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.884Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:22.980Z",
+        "method": "GET",
+        "path": "/assets/img/bg/70Gh1dRp2xeiofzNf4R8.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:23.063Z",
+        "method": "GET",
+        "path": "/assets/img/sp/70Gh1dRp2xeiofzNf4R8.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.031Z",
+        "method": "POST",
+        "path": "/cart/add",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.136Z",
+        "method": "GET",
+        "path": "/products/heather-honey",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.295Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.299Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.306Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.396Z",
+        "method": "GET",
+        "path": "/assets/img/bg/1M9IARr25_TPo4diPgpz.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:24.490Z",
+        "method": "GET",
+        "path": "/assets/img/sp/1M9IARr25_TPo4diPgpz.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.140Z",
+        "method": "GET",
+        "path": "/cart",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.264Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.266Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.270Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.458Z",
+        "method": "GET",
+        "path": "/assets/img/sp/6ooFj3o1pUUmPisPoaNS.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:25.461Z",
+        "method": "GET",
+        "path": "/assets/img/bg/6ooFj3o1pUUmPisPoaNS.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.278Z",
+        "method": "GET",
+        "path": "/checkout",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.403Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.408Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.411Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.505Z",
+        "method": "GET",
+        "path": "/assets/img/bg/njgrk0qOD8Q8aIs6TVqW.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:26.600Z",
+        "method": "GET",
+        "path": "/assets/img/sp/njgrk0qOD8Q8aIs6TVqW.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:27.929Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.347Z",
+        "method": "POST",
+        "path": "/checkout/details",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.450Z",
+        "method": "GET",
+        "path": "/checkout/shipping",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.576Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.580Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.581Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.765Z",
+        "method": "GET",
+        "path": "/assets/img/bg/aP12RKvXG7yGDMOkG6Bt.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:36.767Z",
+        "method": "GET",
+        "path": "/assets/img/sp/aP12RKvXG7yGDMOkG6Bt.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.746Z",
+        "method": "POST",
+        "path": "/checkout/shipping",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.852Z",
+        "method": "GET",
+        "path": "/checkout/payment",
+        "status": 500,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.989Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.990Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.992Z",
+        "method": "GET",
+        "path": "/assets/stripe-checkout.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:37.995Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:38.094Z",
+        "method": "GET",
+        "path": "/assets/img/bg/c41Bs7EfCvX3Mo7TLHeq.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:38.178Z",
+        "method": "GET",
+        "path": "/assets/img/sp/c41Bs7EfCvX3Mo7TLHeq.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:38.370Z",
+        "method": "POST",
+        "path": "/checkout/stripe/intent",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:39.567Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:51.902Z",
+        "method": "POST",
+        "path": "/checkout/pay",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.007Z",
+        "method": "GET",
+        "path": "/order/confirmation",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.134Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.139Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.144Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.239Z",
+        "method": "GET",
+        "path": "/assets/img/bg/sYMahTF5tbjZK6uEGLWU.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:52.328Z",
+        "method": "GET",
+        "path": "/assets/img/sp/sYMahTF5tbjZK6uEGLWU.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:53.658Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:56.020Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:56.070Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T20:43:56.073Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent safari 27"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "safari",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ]
+  }
+}

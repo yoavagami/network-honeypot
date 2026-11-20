@@ -10,7 +10,7 @@
  */
 
 /** Bump when weights, signals or scoring logic change; stored with every visit_scores row. */
-export const SCORER_VERSION = "2026.11.13-6";
+export const SCORER_VERSION = "2026.11.20-1";
 
 export type SignalGroup = "proof" | "network" | "request" | "browser" | "behavior" | "journey";
 /** The three questions a verdict answers (plus the shop journey). */
@@ -85,7 +85,7 @@ export const SIGNALS = def({
   agent_like_dom: { group: "browser", weight: 1.5, question: "identity", aiSpecific: true, summary: "page elements injected with agent-like names" },
 
   // ---- driver: is a human operating the input
-  driven_while_hidden: { group: "behavior", weight: 2.0, question: "driver", summary: "operated while the tab was hidden and unfocused" },
+  driven_while_hidden: { group: "behavior", weight: 2.0, question: "driver", summary: "clicks, keys or input arrived while the tab was hidden" },
   synthetic_clicks: { group: "behavior", weight: 2.5, question: "driver", summary: "clicks created by script (isTrusted=false)" },
   click_without_press: { group: "behavior", weight: 1.2, question: "driver", summary: "clicks without a mouse press" },
   cursor_teleport: { group: "behavior", weight: 1.6, question: "driver", summary: "cursor jumped straight onto every click target" },

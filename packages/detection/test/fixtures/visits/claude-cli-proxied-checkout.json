@@ -1,11 +1,10 @@
 {
   "name": "claude-cli-proxied-checkout",
   "source": "lab-export",
-  "description": "Real lab run, 2026-11-13: Claude (CLI) driving Chrome through a full purchase to the Stripe test payment, through the operator's own TLS-terminating reverse proxy. Caught by behaviour alone: tab hidden while driven, jump clicks, dead-centre clicks, fields set by script, think-then-act pauses. Must stay 'AI agent'.",
+  "description": "Real lab run, 2026-11-13: Claude (CLI) driving Chrome through a full purchase to the Stripe test payment, through the operator's own TLS-terminating reverse proxy. Caught by behaviour alone: jump clicks, dead-centre clicks, fields set by script, think-then-act pauses. Must stay 'AI agent'.",
   "expect": {
     "bucket": "ai_agent",
     "signalsInclude": [
-      "driven_while_hidden",
       "jump_clicks",
       "centred_clicks",
       "form_set_by_script",
@@ -14,7 +13,8 @@
     ],
     "signalsExclude": [
       "injected_globals",
-      "human_mouse"
+      "human_mouse",
+      "driven_while_hidden"
     ]
   },
   "evidence": {

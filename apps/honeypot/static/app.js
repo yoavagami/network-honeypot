@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   var ENDPOINT = "/api/v1/rum";
-  var SDK = "1.2.2";
+  var SDK = "1.2.3";
   var T0 = performance.now();
   // The server mints a page-load id per HTML response (rendering ladder). Without one we send
   // pl: null rather than inventing an id: the server only trusts ids it served to this visitor.
@@ -103,7 +103,7 @@
     firstInteraction: null, mouseMoves: 0, mouseDistance: 0, maxSpeed: 0, moveUntrusted: 0,
     clicks: [], clickCount: 0, pointerDowns: 0, mouseDowns: 0,
     keyDowns: 0, keyUntrusted: 0, keyIntervals: [], keyKinds: { printable: 0, nav: 0, modifier: 0, enter: 0, other: 0 },
-    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, untypedTrusted: 0, untypedTrustedText: 0, untypedUntrusted: 0, autofilled: 0, pastes: 0, copies: 0,
+    inputs: {}, inputWithoutKey: 0, inputFieldTypes: {}, hiddenInputs: 0, unfocusedInputs: 0, untypedTrusted: 0, untypedTrustedText: 0, untypedUntrusted: 0, autofilled: 0, pastes: 0, copies: 0,
     scrolls: 0, scrollUntrusted: 0, maxScrollY: 0, wheels: 0, touches: 0,
     focus: 0, blur: 0, visibility: [], resizes: 0, selections: 0, contextMenus: 0
   };
@@ -125,8 +125,15 @@
   });
   on(document, "pointerdown", function (e) { b.pointerDowns++; lastPointerDown = { t: performance.now(), type: e.pointerType }; touch(); });
   on(document, "mousedown", function () { b.mouseDowns++; lastMouseDown = performance.now(); });
+  // Input that arrives while the tab is hidden (or the window unfocused). A person can't click or
+  // type into a hidden tab; an agent driving a background tab can. Counted at event time, since a
+  // snapshot sent as the page is left always says "hidden".
+  function noteInputContext() {
+    if (document.visibilityState === "hidden") b.hiddenInputs++;
+    try { if (!document.hasFocus()) b.unfocusedInputs++; } catch (_) {}
+  }
   on(document, "click", function (e) {
-    b.clickCount++; touch();
+    b.clickCount++; noteInputContext(); touch();
     if (b.clicks.length >= 25) return;
     var t = performance.now();
     var el = e.target && e.target.nodeType === 1 ? e.target : null;
@@ -144,7 +151,7 @@
     });
   });
   on(document, "keydown", function (e) {
-    b.keyDowns++; if (!e.isTrusted) b.keyUntrusted++;
+    b.keyDowns++; noteInputContext(); if (!e.isTrusted) b.keyUntrusted++;
     var t = performance.now();
     if (lastKeyAt && b.keyIntervals.length < 80) b.keyIntervals.push(Math.round(t - lastKeyAt));
     lastKeyAt = t;
@@ -158,6 +165,7 @@
   });
   on(document, "input", function (e) {
     var type = e.inputType || "none";
+    noteInputContext();
     b.inputs[type] = (b.inputs[type] || 0) + 1;
     if (/^insert/.test(type) && type !== "insertFromPaste" && performance.now() - lastKeyAt > 150) b.inputWithoutKey++;
     var tgt = e.target;

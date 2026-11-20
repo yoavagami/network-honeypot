@@ -1,0 +1,5526 @@
+{
+  "name": "lab-human-chrome-nov-13-evening-8",
+  "source": "lab-export",
+  "description": "Signed lab run human-chrome-Nov-13-evening-8 (2026-11-13): the operator shopping by hand in Chrome with autofill, through a full purchase. Was scored \"probably AI agent\" before the autofill and driven-while-hidden fixes. Must stay 'not an AI agent', typed human. Network pinned to the run's own (KPN, NL): the exporter reads the actor's current network.",
+  "expect": {
+    "bucket": "not_ai_agent",
+    "type": "human",
+    "signalsExclude": [
+      "driven_while_hidden",
+      "form_set_by_script",
+      "instant_checkout"
+    ]
+  },
+  "evidence": {
+    "asn": "AS1136",
+    "organization": "KPN B.V.",
+    "country": "NL",
+    "shopEvents": [
+      "SHOP_HOME_VIEW",
+      "SHOP_PRODUCT_VIEW",
+      "SHOP_ADD_TO_CART",
+      "SHOP_PRODUCT_VIEW",
+      "SHOP_CART_VIEW",
+      "SHOP_CHECKOUT_START",
+      "SHOP_CHECKOUT_DETAILS",
+      "SHOP_SHIPPING_VIEW",
+      "SHOP_CHECKOUT_SHIPPING",
+      "SHOP_PAYMENT_VIEW",
+      "SHOP_PAYMENT_ATTEMPT",
+      "SHOP_ORDER_PLACED",
+      "SHOP_ORDER_CONFIRMATION_VIEW"
+    ],
+    "evaluatedAt": "2026-11-20T17:42:38.686Z",
+    "ladder": {
+      "served": [
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "path": "/",
+          "at": "2026-11-13T21:28:23.654Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:25.928Z"
+        },
+        {
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:28.182Z"
+        },
+        {
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "path": "/cart",
+          "at": "2026-11-13T21:28:29.148Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "path": "/checkout",
+          "at": "2026-11-13T21:28:30.331Z"
+        },
+        {
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T21:28:33.666Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:28:34.767Z"
+        },
+        {
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T21:29:25.518Z"
+        }
+      ],
+      "hits": [
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "rung": "css",
+          "at": "2026-11-13T21:28:23.920Z"
+        },
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "rung": "js",
+          "at": "2026-11-13T21:28:24.126Z"
+        },
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "rung": "js",
+          "at": "2026-11-13T21:28:25.518Z"
+        },
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "rung": "js",
+          "at": "2026-11-13T21:28:26.061Z"
+        },
+        {
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "rung": "js",
+          "at": "2026-11-13T21:28:26.062Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "rung": "css",
+          "at": "2026-11-13T21:28:26.074Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "rung": "js",
+          "at": "2026-11-13T21:28:26.287Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "rung": "js",
+          "at": "2026-11-13T21:28:27.619Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "rung": "js",
+          "at": "2026-11-13T21:28:28.324Z"
+        },
+        {
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "rung": "css",
+          "at": "2026-11-13T21:28:28.329Z"
+        },
+        {
+          "pl": "w8juX22NBsincXgeNeP8",
+          "rung": "js",
+          "at": "2026-11-13T21:28:28.330Z"
+        },
+        {
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "rung": "js",
+          "at": "2026-11-13T21:28:28.556Z"
+        },
+        {
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "rung": "js",
+          "at": "2026-11-13T21:28:29.266Z"
+        },
+        {
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "rung": "js",
+          "at": "2026-11-13T21:28:29.270Z"
+        },
+        {
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "rung": "css",
+          "at": "2026-11-13T21:28:29.284Z"
+        },
+        {
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "rung": "js",
+          "at": "2026-11-13T21:28:29.492Z"
+        },
+        {
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "rung": "js",
+          "at": "2026-11-13T21:28:30.471Z"
+        },
+        {
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "rung": "js",
+          "at": "2026-11-13T21:28:30.474Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "rung": "css",
+          "at": "2026-11-13T21:28:30.479Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "rung": "js",
+          "at": "2026-11-13T21:28:30.682Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "rung": "js",
+          "at": "2026-11-13T21:28:32.028Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "rung": "js",
+          "at": "2026-11-13T21:28:33.821Z"
+        },
+        {
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "rung": "js",
+          "at": "2026-11-13T21:28:33.833Z"
+        },
+        {
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "rung": "css",
+          "at": "2026-11-13T21:28:33.835Z"
+        },
+        {
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "rung": "js",
+          "at": "2026-11-13T21:28:34.042Z"
+        },
+        {
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "rung": "js",
+          "at": "2026-11-13T21:28:34.926Z"
+        },
+        {
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "rung": "js",
+          "at": "2026-11-13T21:28:34.929Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "css",
+          "at": "2026-11-13T21:28:34.940Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:28:35.142Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:28:36.472Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:28:44.361Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:29:05.149Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:29:20.153Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:29:25.644Z"
+        },
+        {
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "rung": "js",
+          "at": "2026-11-13T21:29:25.655Z"
+        },
+        {
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "rung": "css",
+          "at": "2026-11-13T21:29:25.692Z"
+        },
+        {
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "rung": "js",
+          "at": "2026-11-13T21:29:25.900Z"
+        },
+        {
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "rung": "js",
+          "at": "2026-11-13T21:29:27.253Z"
+        },
+        {
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "rung": "js",
+          "at": "2026-11-13T21:29:30.618Z"
+        }
+      ]
+    },
+    "client": {
+      "fingerprints": [
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "language": "en-US",
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 10,
+            "deviceMemory": 32,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": {
+              "app": true,
+              "csi": "function",
+              "keys": [
+                "loadTimes",
+                "csi",
+                "app"
+              ],
+              "runtime": false,
+              "loadTimes": "function"
+            },
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 883,
+            "innerW": 1512,
+            "innerH": 796,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "platform": "macOS",
+            "mobile": false,
+            "low": {
+              "platform": "macOS",
+              "mobile": false,
+              "brands": [
+                {
+                  "brand": "Not-A.Brand",
+                  "version": "99"
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": "157"
+                },
+                {
+                  "brand": "Chromium",
+                  "version": "157"
+                }
+              ]
+            }
+          },
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "artifacts": [],
+          "clientT": 1395
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "language": "en-US",
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 10,
+            "deviceMemory": 32,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": {
+              "app": true,
+              "csi": "function",
+              "keys": [
+                "loadTimes",
+                "csi",
+                "app"
+              ],
+              "runtime": false,
+              "loadTimes": "function"
+            },
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 883,
+            "innerW": 1512,
+            "innerH": 796,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "platform": "macOS",
+            "mobile": false,
+            "low": {
+              "platform": "macOS",
+              "mobile": false,
+              "brands": [
+                {
+                  "brand": "Not-A.Brand",
+                  "version": "99"
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": "157"
+                },
+                {
+                  "brand": "Chromium",
+                  "version": "157"
+                }
+              ]
+            }
+          },
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "artifacts": [],
+          "clientT": 1334
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "language": "en-US",
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 10,
+            "deviceMemory": 32,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": {
+              "app": true,
+              "csi": "function",
+              "keys": [
+                "loadTimes",
+                "csi",
+                "app"
+              ],
+              "runtime": false,
+              "loadTimes": "function"
+            },
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 883,
+            "innerW": 1512,
+            "innerH": 796,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "platform": "macOS",
+            "mobile": false,
+            "low": {
+              "platform": "macOS",
+              "mobile": false,
+              "brands": [
+                {
+                  "brand": "Not-A.Brand",
+                  "version": "99"
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": "157"
+                },
+                {
+                  "brand": "Chromium",
+                  "version": "157"
+                }
+              ]
+            }
+          },
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "artifacts": [],
+          "clientT": 1338
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "language": "en-US",
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 10,
+            "deviceMemory": 32,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": {
+              "app": true,
+              "csi": "function",
+              "keys": [
+                "loadTimes",
+                "csi",
+                "app"
+              ],
+              "runtime": false,
+              "loadTimes": "function"
+            },
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 883,
+            "innerW": 1512,
+            "innerH": 796,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "platform": "macOS",
+            "mobile": false,
+            "low": {
+              "platform": "macOS",
+              "mobile": false,
+              "brands": [
+                {
+                  "brand": "Not-A.Brand",
+                  "version": "99"
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": "157"
+                },
+                {
+                  "brand": "Chromium",
+                  "version": "157"
+                }
+              ]
+            }
+          },
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "webpackChunkStripeJSouter",
+            "noop",
+            "Stripe",
+            "__SJS_PERF_STATE__"
+          ],
+          "artifacts": [],
+          "clientT": 1329
+        },
+        {
+          "nav": {
+            "webdriver": false,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+            "platform": "MacIntel",
+            "languages": [
+              "en-US",
+              "en"
+            ],
+            "language": "en-US",
+            "vendor": "Google Inc.",
+            "productSub": "20030107",
+            "buildID": null,
+            "hardwareConcurrency": 10,
+            "deviceMemory": 32,
+            "plugins": [
+              "PDF Viewer",
+              "Chrome PDF Viewer",
+              "Chromium PDF Viewer",
+              "Microsoft Edge PDF Viewer",
+              "WebKit built-in PDF"
+            ],
+            "pdfViewerEnabled": true,
+            "mimeTypes": 2,
+            "maxTouchPoints": 0
+          },
+          "automation": {
+            "globals": [],
+            "globalScan": [],
+            "documentScan": [],
+            "webdriverGetterNative": true,
+            "webdriverOwnProp": false,
+            "fnToStringNative": true,
+            "cdpRuntime": false,
+            "chrome": {
+              "app": true,
+              "csi": "function",
+              "keys": [
+                "loadTimes",
+                "csi",
+                "app"
+              ],
+              "runtime": false,
+              "loadTimes": "function"
+            },
+            "outerZero": false
+          },
+          "webgl": {
+            "supported": true,
+            "webgl2": true,
+            "renderer": "gpu-1"
+          },
+          "screen": {
+            "w": 1512,
+            "h": 982,
+            "outerW": 1512,
+            "outerH": 883,
+            "innerW": 1512,
+            "innerH": 796,
+            "dpr": 2
+          },
+          "intl": {
+            "tz": "Europe/Amsterdam"
+          },
+          "uaData": {
+            "platform": "macOS",
+            "mobile": false,
+            "low": {
+              "platform": "macOS",
+              "mobile": false,
+              "brands": [
+                {
+                  "brand": "Not-A.Brand",
+                  "version": "99"
+                },
+                {
+                  "brand": "Google Chrome",
+                  "version": "157"
+                },
+                {
+                  "brand": "Chromium",
+                  "version": "157"
+                }
+              ]
+            }
+          },
+          "canvas": "canvas-1",
+          "doc": {
+            "visibility": "visible",
+            "hasFocus": true
+          },
+          "globalsDiff": [],
+          "artifacts": [],
+          "clientT": 1354
+        }
+      ],
+      "behaviors": [
+        {
+          "focus": true,
+          "clientT": 1934,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 1,
+            "focus": 2,
+            "clicks": [
+              {
+                "t": 1163,
+                "x": 783,
+                "y": 369,
+                "dx": 0.159,
+                "dy": 0.159,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 132,
+                "hadMouseDown": true
+              },
+              {
+                "t": 1812,
+                "x": 523,
+                "y": 389,
+                "dx": 0.072,
+                "dy": 0.302,
+                "detail": 1,
+                "target": "IMG",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 79,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 1,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 4620,
+            "autofilled": 0,
+            "clickCount": 2,
+            "maxScrollY": 426,
+            "mouseDowns": 2,
+            "mouseMoves": 96,
+            "selections": 0,
+            "visibility": [
+              [
+                1934,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 2,
+            "mouseDistance": 795.5308560771621,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 406,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1534,
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "path": "/",
+          "at": "2026-11-13T21:28:26.061Z"
+        },
+        {
+          "focus": true,
+          "clientT": 1933,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 1,
+            "focus": 2,
+            "clicks": [
+              {
+                "t": 1163,
+                "x": 783,
+                "y": 369,
+                "dx": 0.159,
+                "dy": 0.159,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 132,
+                "hadMouseDown": true
+              },
+              {
+                "t": 1812,
+                "x": 523,
+                "y": 389,
+                "dx": 0.072,
+                "dy": 0.302,
+                "detail": 1,
+                "target": "IMG",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 79,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 1,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 4620,
+            "autofilled": 0,
+            "clickCount": 2,
+            "maxScrollY": 426,
+            "mouseDowns": 2,
+            "mouseMoves": 96,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 2,
+            "mouseDistance": 795.5308560771621,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 406,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1534,
+          "pl": "hz0xQnCFzGVXPMZ3Nfrk",
+          "path": "/",
+          "at": "2026-11-13T21:28:26.062Z"
+        },
+        {
+          "focus": true,
+          "clientT": 2011,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 1775,
+                "x": 1016,
+                "y": 502,
+                "dx": -0.022,
+                "dy": -0.277,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 150,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 11089,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 164,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 1890.285098836544,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 52,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1288,
+          "pl": "w8juX22NBsincXgeNeP8",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:28.324Z"
+        },
+        {
+          "focus": true,
+          "clientT": 2012,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 1775,
+                "x": 1016,
+                "y": 502,
+                "dx": -0.022,
+                "dy": -0.277,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 150,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 11089,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 164,
+            "selections": 0,
+            "visibility": [
+              [
+                2012,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 1890.285098836544,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 52,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1288,
+          "pl": "w8juX22NBsincXgeNeP8",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:28.330Z"
+        },
+        {
+          "focus": true,
+          "clientT": 705,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 585,
+                "x": 1407,
+                "y": 67,
+                "dx": -0.163,
+                "dy": -0.149,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 105,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3223,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 50,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 256.80287890447653,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 31,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1354,
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:29.266Z"
+        },
+        {
+          "focus": true,
+          "clientT": 706,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 585,
+                "x": 1407,
+                "y": 67,
+                "dx": -0.163,
+                "dy": -0.149,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 105,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 3223,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 50,
+            "selections": 0,
+            "visibility": [
+              [
+                706,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 256.80287890447653,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 31,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1354,
+          "pl": "Rfi63VU6dGJwx2yTEWzC",
+          "path": "/products/wildflower-raw-honey",
+          "at": "2026-11-13T21:28:29.270Z"
+        },
+        {
+          "focus": true,
+          "clientT": 952,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 835,
+                "x": 969,
+                "y": 523,
+                "dx": -0.342,
+                "dy": -0.082,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 45,
+                "msSinceMove": 90,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2661,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 45,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 235.0154167374864,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 5,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 865,
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "path": "/cart",
+          "at": "2026-11-13T21:28:30.471Z"
+        },
+        {
+          "focus": true,
+          "clientT": 952,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 835,
+                "x": 969,
+                "y": 523,
+                "dx": -0.342,
+                "dy": -0.082,
+                "detail": 1,
+                "target": "A",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 45,
+                "msSinceMove": 90,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 2661,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 45,
+            "selections": 0,
+            "visibility": [
+              [
+                952,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 235.0154167374864,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 5,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 865,
+          "pl": "i2bdj7f5Ftzw7JUt0ATr",
+          "path": "/cart",
+          "at": "2026-11-13T21:28:30.474Z"
+        },
+        {
+          "focus": true,
+          "clientT": 3108,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 9,
+            "focus": 10,
+            "clicks": [
+              {
+                "t": 913,
+                "x": 436,
+                "y": 295,
+                "dx": -0.159,
+                "dy": -0.043,
+                "detail": 1,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 116,
+                "hadMouseDown": true
+              },
+              {
+                "t": 2856,
+                "x": 505,
+                "y": 574,
+                "dx": -0.038,
+                "dy": 0.227,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 41,
+                "msSinceMove": 250,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 7
+            },
+            "pastes": 0,
+            "wheels": 28,
+            "resizes": 0,
+            "scrolls": 27,
+            "touches": 0,
+            "keyDowns": 7,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 7,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 6358,
+            "autofilled": 7,
+            "clickCount": 2,
+            "maxScrollY": 215,
+            "mouseDowns": 2,
+            "mouseMoves": 118,
+            "selections": 8,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "keyUntrusted": 0,
+            "pointerDowns": 2,
+            "mouseDistance": 966.0259823423257,
+            "moveUntrusted": 0,
+            "untypedTrusted": 7,
+            "inputFieldTypes": {
+              "tel": 1,
+              "text": 5,
+              "email": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 66,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1080,
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "path": "/checkout",
+          "at": "2026-11-13T21:28:33.821Z"
+        },
+        {
+          "focus": true,
+          "clientT": 3109,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 9,
+            "focus": 10,
+            "clicks": [
+              {
+                "t": 913,
+                "x": 436,
+                "y": 295,
+                "dx": -0.159,
+                "dy": -0.043,
+                "detail": 1,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 116,
+                "hadMouseDown": true
+              },
+              {
+                "t": 2856,
+                "x": 505,
+                "y": 574,
+                "dx": -0.038,
+                "dy": 0.227,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 41,
+                "msSinceMove": 250,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 7
+            },
+            "pastes": 0,
+            "wheels": 28,
+            "resizes": 0,
+            "scrolls": 27,
+            "touches": 0,
+            "keyDowns": 7,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 7,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 6358,
+            "autofilled": 7,
+            "clickCount": 2,
+            "maxScrollY": 215,
+            "mouseDowns": 2,
+            "mouseMoves": 118,
+            "selections": 8,
+            "visibility": [
+              [
+                3108,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "keyUntrusted": 0,
+            "pointerDowns": 2,
+            "mouseDistance": 966.0259823423257,
+            "moveUntrusted": 0,
+            "untypedTrusted": 7,
+            "inputFieldTypes": {
+              "tel": 1,
+              "text": 5,
+              "email": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 66,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1080,
+          "pl": "Y7204V73JOYhjEyAyH4c",
+          "path": "/checkout",
+          "at": "2026-11-13T21:28:33.833Z"
+        },
+        {
+          "focus": true,
+          "clientT": 854,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 600,
+                "x": 544,
+                "y": 504,
+                "dx": 0.03,
+                "dy": 0.366,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 40,
+                "msSinceMove": 104,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 1226,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 40,
+            "selections": 0,
+            "visibility": [],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 115.38882338321548,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 112,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 796,
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T21:28:34.926Z"
+        },
+        {
+          "focus": true,
+          "clientT": 855,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 0,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 600,
+                "x": 544,
+                "y": 504,
+                "dx": 0.03,
+                "dy": 0.366,
+                "detail": 1,
+                "target": "BUTTON",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 40,
+                "msSinceMove": 104,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 1226,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 0,
+            "mouseDowns": 1,
+            "mouseMoves": 40,
+            "selections": 0,
+            "visibility": [
+              [
+                855,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 115.38882338321548,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 112,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 796,
+          "pl": "6kPdaKojIQ5yqwgMathf",
+          "path": "/checkout/shipping",
+          "at": "2026-11-13T21:28:34.929Z"
+        },
+        {
+          "focus": false,
+          "clientT": 9202,
+          "foreign": {
+            "count": 46,
+            "items": [
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 665,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 665,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1030,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 1199,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 1273,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1273,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1273,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1274,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1275,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1275,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1383,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1548,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1592,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 5640,
+                "id": "",
+                "cls": "",
+                "tag": "SCRIPT",
+                "text": 0,
+                "attrs": [
+                  "charset",
+                  "data-webpack",
+                  "src"
+                ],
+                "parent": "HEAD",
+                "shadow": false
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 2,
+            "focus": 1,
+            "clicks": [
+              {
+                "t": 5608,
+                "x": 177,
+                "y": 520,
+                "dx": -0.383,
+                "dy": -0.112,
+                "detail": 1,
+                "target": "BODY",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 17,
+                "msSinceMove": 54,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 226,
+            "resizes": 0,
+            "scrolls": 221,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 5960,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 527,
+            "mouseDowns": 1,
+            "mouseMoves": 85,
+            "selections": 1,
+            "visibility": [
+              [
+                9202,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 1081.4828120136535,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 137,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1818,
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:28:44.361Z"
+        },
+        {
+          "focus": true,
+          "clientT": 30002,
+          "foreign": {
+            "count": 46,
+            "items": [
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 665,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 665,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1030,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 1199,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 1273,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1273,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1273,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1274,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1275,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1275,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1383,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1548,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1592,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 5640,
+                "id": "",
+                "cls": "",
+                "tag": "SCRIPT",
+                "text": 0,
+                "attrs": [
+                  "charset",
+                  "data-webpack",
+                  "src"
+                ],
+                "parent": "HEAD",
+                "shadow": false
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 3,
+            "focus": 2,
+            "clicks": [
+              {
+                "t": 5608,
+                "x": 177,
+                "y": 520,
+                "dx": -0.383,
+                "dy": -0.112,
+                "detail": 1,
+                "target": "BODY",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 17,
+                "msSinceMove": 54,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 226,
+            "resizes": 0,
+            "scrolls": 221,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 8494,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 527,
+            "mouseDowns": 1,
+            "mouseMoves": 94,
+            "selections": 1,
+            "visibility": [
+              [
+                9202,
+                "hidden"
+              ],
+              [
+                23047,
+                "visible"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 1446.3141414156926,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 137,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1818,
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:29:05.149Z"
+        },
+        {
+          "focus": true,
+          "clientT": 45001,
+          "foreign": {
+            "count": 46,
+            "items": [
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 665,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 665,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1030,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 1199,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 1273,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1273,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1273,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1274,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1275,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1275,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1383,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1548,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1592,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 5640,
+                "id": "",
+                "cls": "",
+                "tag": "SCRIPT",
+                "text": 0,
+                "attrs": [
+                  "charset",
+                  "data-webpack",
+                  "src"
+                ],
+                "parent": "HEAD",
+                "shadow": false
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 3,
+            "focus": 2,
+            "clicks": [
+              {
+                "t": 5608,
+                "x": 177,
+                "y": 520,
+                "dx": -0.383,
+                "dy": -0.112,
+                "detail": 1,
+                "target": "BODY",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 17,
+                "msSinceMove": 54,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 226,
+            "resizes": 0,
+            "scrolls": 327,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 8494,
+            "autofilled": 0,
+            "clickCount": 1,
+            "maxScrollY": 842,
+            "mouseDowns": 1,
+            "mouseMoves": 131,
+            "selections": 1,
+            "visibility": [
+              [
+                9202,
+                "hidden"
+              ],
+              [
+                23047,
+                "visible"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 1,
+            "mouseDistance": 2216.096019947315,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 137,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1818,
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:29:20.153Z"
+        },
+        {
+          "focus": true,
+          "clientT": 50493,
+          "foreign": {
+            "count": 50,
+            "items": [
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 665,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 665,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1030,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 1199,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 1273,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1273,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1273,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1274,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1275,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1275,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1383,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1548,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1592,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 5640,
+                "id": "",
+                "cls": "",
+                "tag": "SCRIPT",
+                "text": 0,
+                "attrs": [
+                  "charset",
+                  "data-webpack",
+                  "src"
+                ],
+                "parent": "HEAD",
+                "shadow": false
+              },
+              {
+                "t": 47684,
+                "on": "P",
+                "attr": "hidden"
+              },
+              {
+                "t": 47684,
+                "on": "BUTTON",
+                "attr": "disabled"
+              },
+              {
+                "t": 50122,
+                "on": "INPUT",
+                "attr": "value"
+              },
+              {
+                "t": 50122,
+                "on": "INPUT",
+                "attr": "value"
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 5,
+            "focus": 5,
+            "clicks": [
+              {
+                "t": 5608,
+                "x": 177,
+                "y": 520,
+                "dx": -0.383,
+                "dy": -0.112,
+                "detail": 1,
+                "target": "BODY",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 17,
+                "msSinceMove": 54,
+                "hadMouseDown": true
+              },
+              {
+                "t": 45550,
+                "x": 247,
+                "y": 624,
+                "dx": -0.269,
+                "dy": -0.174,
+                "detail": 1,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 89,
+                "hadMouseDown": true
+              },
+              {
+                "t": 47681,
+                "x": 585,
+                "y": 682,
+                "dx": 0.101,
+                "dy": 0.148,
+                "detail": 1,
+                "target": "BUTTON#pay-button",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 138,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 1
+            },
+            "pastes": 0,
+            "wheels": 226,
+            "resizes": 0,
+            "scrolls": 327,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 10850,
+            "autofilled": 0,
+            "clickCount": 3,
+            "maxScrollY": 842,
+            "mouseDowns": 3,
+            "mouseMoves": 332,
+            "selections": 1,
+            "visibility": [
+              [
+                9202,
+                "hidden"
+              ],
+              [
+                23047,
+                "visible"
+              ],
+              [
+                50493,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 3,
+            "mouseDistance": 3197.0924635275433,
+            "moveUntrusted": 0,
+            "untypedTrusted": 1,
+            "inputFieldTypes": {
+              "checkbox": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 137,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1818,
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:29:25.644Z"
+        },
+        {
+          "focus": true,
+          "clientT": 50492,
+          "foreign": {
+            "count": 50,
+            "items": [
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "sandbox",
+                  "referrerpolicy",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "id": "",
+                "cls": "__PrivateStripeElement",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 299,
+                "on": "DIV",
+                "attr": "class"
+              },
+              {
+                "t": 665,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 665,
+                "id": "",
+                "cls": "__PrivateStripeElementLoader",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "class",
+                  "role",
+                  "aria-busy",
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 682,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1030,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "name",
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "role",
+                  "allow",
+                  "src",
+                  "aria-hidden",
+                  "tabindex",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1195,
+                "id": "",
+                "cls": "",
+                "tag": "P",
+                "text": 0,
+                "attrs": [
+                  "style"
+                ],
+                "parent": "DIV",
+                "shadow": false
+              },
+              {
+                "t": 1199,
+                "on": "IFRAME",
+                "attr": "title"
+              },
+              {
+                "t": 1273,
+                "id": "",
+                "cls": "",
+                "tag": "DIV",
+                "text": 0,
+                "attrs": [
+                  "data-react-aria-top-layer",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1273,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1273,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1274,
+                "id": "",
+                "cls": "",
+                "tag": "IFRAME",
+                "text": 0,
+                "attrs": [
+                  "frameborder",
+                  "allowtransparency",
+                  "scrolling",
+                  "name",
+                  "referrerpolicy",
+                  "aria-hidden",
+                  "tabindex",
+                  "src",
+                  "style"
+                ],
+                "parent": "BODY",
+                "shadow": false
+              },
+              {
+                "t": 1275,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1275,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1349,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 1383,
+                "on": "IFRAME",
+                "attr": "data-initialized"
+              },
+              {
+                "t": 1548,
+                "on": "IFRAME",
+                "attr": "style"
+              },
+              {
+                "t": 1592,
+                "on": "DIV",
+                "attr": "style"
+              },
+              {
+                "t": 5640,
+                "id": "",
+                "cls": "",
+                "tag": "SCRIPT",
+                "text": 0,
+                "attrs": [
+                  "charset",
+                  "data-webpack",
+                  "src"
+                ],
+                "parent": "HEAD",
+                "shadow": false
+              },
+              {
+                "t": 47684,
+                "on": "P",
+                "attr": "hidden"
+              },
+              {
+                "t": 47684,
+                "on": "BUTTON",
+                "attr": "disabled"
+              },
+              {
+                "t": 50122,
+                "on": "INPUT",
+                "attr": "value"
+              },
+              {
+                "t": 50122,
+                "on": "INPUT",
+                "attr": "value"
+              }
+            ]
+          },
+          "behavior": {
+            "blur": 5,
+            "focus": 5,
+            "clicks": [
+              {
+                "t": 5608,
+                "x": 177,
+                "y": 520,
+                "dx": -0.383,
+                "dy": -0.112,
+                "detail": 1,
+                "target": "BODY",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 17,
+                "msSinceMove": 54,
+                "hadMouseDown": true
+              },
+              {
+                "t": 45550,
+                "x": 247,
+                "y": 624,
+                "dx": -0.269,
+                "dy": -0.174,
+                "detail": 1,
+                "target": "INPUT",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 89,
+                "hadMouseDown": true
+              },
+              {
+                "t": 47681,
+                "x": 585,
+                "y": 682,
+                "dx": 0.101,
+                "dy": 0.148,
+                "detail": 1,
+                "target": "BUTTON#pay-button",
+                "pointer": "mouse",
+                "trusted": true,
+                "zeroCoords": false,
+                "movesLast1s": 50,
+                "msSinceMove": 138,
+                "hadMouseDown": true
+              }
+            ],
+            "copies": 0,
+            "inputs": {
+              "none": 1
+            },
+            "pastes": 0,
+            "wheels": 226,
+            "resizes": 0,
+            "scrolls": 327,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 10850,
+            "autofilled": 0,
+            "clickCount": 3,
+            "maxScrollY": 842,
+            "mouseDowns": 3,
+            "mouseMoves": 332,
+            "selections": 1,
+            "visibility": [
+              [
+                9202,
+                "hidden"
+              ],
+              [
+                23047,
+                "visible"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 3,
+            "mouseDistance": 3197.0924635275433,
+            "moveUntrusted": 0,
+            "untypedTrusted": 1,
+            "inputFieldTypes": {
+              "checkbox": 1
+            },
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 137,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "visible",
+          "scrollHeight": 1818,
+          "pl": "NMZ8UbF1PTxnPZuO5jAq",
+          "path": "/checkout/payment",
+          "at": "2026-11-13T21:29:25.655Z"
+        },
+        {
+          "focus": false,
+          "clientT": 4684,
+          "foreign": {
+            "count": 0,
+            "items": []
+          },
+          "behavior": {
+            "blur": 1,
+            "focus": 0,
+            "clicks": [],
+            "copies": 0,
+            "inputs": {},
+            "pastes": 0,
+            "wheels": 0,
+            "resizes": 0,
+            "scrolls": 0,
+            "touches": 0,
+            "keyDowns": 0,
+            "keyKinds": {
+              "nav": 0,
+              "enter": 0,
+              "other": 0,
+              "modifier": 0,
+              "printable": 0
+            },
+            "maxSpeed": 13944,
+            "autofilled": 0,
+            "clickCount": 0,
+            "maxScrollY": 0,
+            "mouseDowns": 0,
+            "mouseMoves": 44,
+            "selections": 0,
+            "visibility": [
+              [
+                4684,
+                "hidden"
+              ]
+            ],
+            "contextMenus": 0,
+            "keyIntervals": [],
+            "keyUntrusted": 0,
+            "pointerDowns": 0,
+            "mouseDistance": 1240.3575199297259,
+            "moveUntrusted": 0,
+            "untypedTrusted": 0,
+            "inputFieldTypes": {},
+            "inputWithoutKey": 0,
+            "scrollUntrusted": 0,
+            "firstInteraction": 1698,
+            "untypedUntrusted": 0
+          },
+          "artifacts": [],
+          "visibility": "hidden",
+          "scrollHeight": 1031,
+          "pl": "GKzPzsNhkwIuvLHQuLBT",
+          "path": "/order/confirmation",
+          "at": "2026-11-13T21:29:30.618Z"
+        }
+      ],
+      "unboundBeacons": 0,
+      "probes": []
+    },
+    "requests": [
+      {
+        "at": "2026-11-13T21:28:23.654Z",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:23.802Z",
+        "method": "GET",
+        "path": "/assets/shop.css",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:23.810Z",
+        "method": "GET",
+        "path": "/assets/img/heather-honey.svg",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:23.816Z",
+        "method": "GET",
+        "path": "/assets/img/wildflower-raw-honey.svg",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:23.830Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:23.921Z",
+        "method": "GET",
+        "path": "/assets/img/bg/hz0xQnCFzGVXPMZ3Nfrk.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:24.127Z",
+        "method": "GET",
+        "path": "/assets/img/sp/hz0xQnCFzGVXPMZ3Nfrk.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:24.249Z",
+        "method": "GET",
+        "path": "/assets/img/favicon.svg",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:25.519Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:25.928Z",
+        "method": "GET",
+        "path": "/products/wildflower-raw-honey",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:26.061Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:26.063Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:26.070Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:26.074Z",
+        "method": "GET",
+        "path": "/assets/img/bg/w8juX22NBsincXgeNeP8.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:26.287Z",
+        "method": "GET",
+        "path": "/assets/img/sp/w8juX22NBsincXgeNeP8.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:27.619Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.065Z",
+        "method": "POST",
+        "path": "/cart/add",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.182Z",
+        "method": "GET",
+        "path": "/products/wildflower-raw-honey",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.323Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.324Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.329Z",
+        "method": "GET",
+        "path": "/assets/img/bg/Rfi63VU6dGJwx2yTEWzC.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.331Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:28.556Z",
+        "method": "GET",
+        "path": "/assets/img/sp/Rfi63VU6dGJwx2yTEWzC.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.148Z",
+        "method": "GET",
+        "path": "/cart",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.267Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.271Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.285Z",
+        "method": "GET",
+        "path": "/assets/img/bg/i2bdj7f5Ftzw7JUt0ATr.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.291Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:29.492Z",
+        "method": "GET",
+        "path": "/assets/img/sp/i2bdj7f5Ftzw7JUt0ATr.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.331Z",
+        "method": "GET",
+        "path": "/checkout",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.468Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.471Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.474Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.480Z",
+        "method": "GET",
+        "path": "/assets/img/bg/Y7204V73JOYhjEyAyH4c.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:30.682Z",
+        "method": "GET",
+        "path": "/assets/img/sp/Y7204V73JOYhjEyAyH4c.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:32.028Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.551Z",
+        "method": "POST",
+        "path": "/checkout/details",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.666Z",
+        "method": "GET",
+        "path": "/checkout/shipping",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.822Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.829Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.833Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:33.836Z",
+        "method": "GET",
+        "path": "/assets/img/bg/6kPdaKojIQ5yqwgMathf.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.042Z",
+        "method": "GET",
+        "path": "/assets/img/sp/6kPdaKojIQ5yqwgMathf.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.652Z",
+        "method": "POST",
+        "path": "/checkout/shipping",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.767Z",
+        "method": "GET",
+        "path": "/checkout/payment",
+        "status": 500,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.927Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.929Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.933Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.937Z",
+        "method": "GET",
+        "path": "/assets/stripe-checkout.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:34.941Z",
+        "method": "GET",
+        "path": "/assets/img/bg/NMZ8UbF1PTxnPZuO5jAq.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:35.143Z",
+        "method": "GET",
+        "path": "/assets/img/sp/NMZ8UbF1PTxnPZuO5jAq.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:35.313Z",
+        "method": "POST",
+        "path": "/checkout/stripe/intent",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:36.472Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:28:44.362Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:05.150Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:20.154Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.405Z",
+        "method": "POST",
+        "path": "/checkout/pay",
+        "status": 303,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.518Z",
+        "method": "GET",
+        "path": "/order/confirmation",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": true,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.645Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.656Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.688Z",
+        "method": "GET",
+        "path": "/assets/app.js",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.692Z",
+        "method": "GET",
+        "path": "/assets/img/bg/GKzPzsNhkwIuvLHQuLBT.png",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:25.901Z",
+        "method": "GET",
+        "path": "/assets/img/sp/GKzPzsNhkwIuvLHQuLBT.gif",
+        "status": 200,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": true,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:27.253Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      },
+      {
+        "at": "2026-11-13T21:29:30.619Z",
+        "method": "POST",
+        "path": "/api/v1/rum",
+        "status": 204,
+        "verdict": "browser",
+        "agent": null,
+        "verdictMethod": null,
+        "verdictReasons": [
+          "consistent chrome 157"
+        ],
+        "uaLibrary": null,
+        "aiApp": null,
+        "browserFamily": "chrome",
+        "consistencyFlags": [],
+        "tor": false,
+        "isHtmlPage": false,
+        "isAsset": false,
+        "probing": false,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+        "acceptLanguage": "en-US,en;q=0.9"
+      }
+    ]
+  }
+}
