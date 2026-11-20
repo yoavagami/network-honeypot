@@ -12,6 +12,7 @@ import { runScoringTick } from "../src/scoring/worker.js";
 import { dispatchDue } from "../src/webhooks/dispatcher.js";
 import { verifySignature } from "../src/webhooks/sign.js";
 import { signLabToken } from "@honeypot/detection";
+import { parseIgnoreList, raiseAlert } from "../src/siteAlerts.js";
 
 const spec = JSON.parse(readFileSync(fileURLToPath(new URL("../../../packages/merchant-contract/openapi.json", import.meta.url)), "utf8"));
 const ajv = new (Ajv2020 as any)({ strict: false, allErrors: true });
@@ -287,6 +288,47 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(d.agents.map((a: any) => a.agent)).toContain("chatgpt-user");
     await expect(db.app`SELECT * FROM public_page_hits`).rejects.toThrow(/permission denied/);
     expect((await app.inject({ method: "GET", url: "/internal/page-hits" })).statusCode).toBe(404);
+  });
+
+  it("site alerts: agent file, guide and access requests, one per IP and kind, ignored IPs skipped", async () => {
+    // onboard() sent two access requests (beforeAll): one alert each, company name only.
+    let r = (await internal("GET", "/internal/site-alerts")).json();
+    expect(r.push_configured).toBe(false);
+    expect(r.alerts.filter((a: any) => a.kind === "access_request").map((a: any) => a.company).sort()).toEqual(["alpha", "bravo"]);
+    expect(JSON.stringify(r.alerts)).not.toContain("owner@");
+    // The agent.md fetch in the page-hits test raised one; fetching again from the same IP doesn't.
+    await app.inject({ method: "GET", url: "/integrate/v1/agent.md", remoteAddress: "198.51.100.24" });
+    await app.inject({ method: "GET", url: "/docs/integrate", remoteAddress: "198.51.100.24" });
+    await app.inject({ method: "GET", url: "/integrate/v1/uhoney.mjs", remoteAddress: "198.51.100.24" });
+    await new Promise((res) => setTimeout(res, 200));
+    r = (await internal("GET", "/internal/site-alerts")).json();
+    const from = r.alerts.filter((a: any) => a.ip === "198.51.100.24");
+    expect(from.map((a: any) => a.kind).sort()).toEqual(["agent_file", "developer_guide"]);
+    expect(from.find((a: any) => a.kind === "agent_file").agent).toBe("chatgpt-user");
+    const count = (await internal("GET", `/internal/site-alerts/count?since=${encodeURIComponent(new Date(Date.now() - 60_000).toISOString())}`)).json();
+    expect(count.new_count).toBe(r.alerts.length);
+    expect((await internal("GET", `/internal/site-alerts/count?since=${encodeURIComponent(new Date(Date.now() + 1000).toISOString())}`)).json().new_count).toBe(0);
+    expect((await app.inject({ method: "GET", url: "/internal/site-alerts" })).statusCode).toBe(404);
+
+    // Push: ntfy-style plain text, Slack JSON; ignored IPs and ranges never alert.
+    const sent: Array<{ url: string; init: any }> = [];
+    const fake = (async (url: string, init: any) => { sent.push({ url, init }); return new Response("ok"); }) as any;
+    const cfg = { url: "https://ntfy.example.test/topic", ignore: parseIgnoreList("192.0.2.1, 203.0.113.0/24"), linkUrl: "https://admin.example.test/merchants" };
+    const base = { kind: "agent_file" as const, path: "/integrate/v1/agent.md", country: "PL", network: "TC DATACENTER", userAgent: "x", agent: null };
+    expect(await raiseAlert(db.admin, cfg, { ...base, ip: "192.0.2.1" }, fake)).toBe(false);
+    expect(await raiseAlert(db.admin, cfg, { ...base, ip: "203.0.113.77" }, fake)).toBe(false);
+    expect(await raiseAlert(db.admin, cfg, { ...base, ip: "192.0.2.9" }, fake)).toBe(true);
+    expect(await raiseAlert(db.admin, cfg, { ...base, ip: "192.0.2.9" }, fake)).toBe(false);
+    expect(await raiseAlert(db.admin, { ...cfg, url: "https://hooks.slack.com/services/T/B/x" }, { ...base, ip: "192.0.2.10", kind: "access_request", company: "Café ünïcode" }, fake)).toBe(true);
+    expect(sent).toHaveLength(2);
+    expect(sent[0]!.init.headers.title).toBe("uHoney: Agent file read");
+    expect(sent[0]!.init.body).toContain("192.0.2.9 · PL · TC DATACENTER · browser");
+    expect(sent[0]!.init.body).toContain("https://admin.example.test/merchants");
+    expect(JSON.parse(sent[1]!.init.body).text).toContain("New access request - Café ünïcode");
+    const [row] = await db.admin`SELECT delivered_at FROM public_site_alerts WHERE ip = '192.0.2.9'`;
+    expect(row!.delivered_at).not.toBeNull();
+    expect(() => parseIgnoreList("not-an-ip")).toThrow(/MERCHANT_ALERT_IGNORE_IPS/);
+    await expect(db.app`SELECT * FROM public_site_alerts`).rejects.toThrow(/permission denied/);
   });
 
   it("lab links on merchant sites: labelled visits for admins, hidden from merchants", async () => {

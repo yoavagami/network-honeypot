@@ -9,7 +9,7 @@ import { audit } from "../audit.js";
  * can filter by one; merchants themselves only ever see their own data, in their own dashboard.
  */
 const MERCHANT_RE = /^mer_[0-9A-HJKMNP-TV-Z]{8}$/;
-const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "action", "path", "bucket", "lab", "labels"]);
+const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "action", "path", "bucket", "lab", "labels", "since"]);
 
 async function forward(request: FastifyRequest, reply: FastifyReply, method: "GET" | "POST", path: string, body?: unknown) {
   if (!config.merchantInternalUrl || !config.merchantInternalToken) {
@@ -44,6 +44,13 @@ export function registerMerchantRoutes(app: FastifyInstance) {
     await audit(request.adminSession!.adminUserId, "view_merchant_page_hits", null, null, {});
     return forward(request, reply, "GET", "page-hits");
   });
+
+  // Site alerts: the list shows visitor IPs, so it's logged; the badge count carries no visitor data.
+  app.get("/api/merchant-site/alerts", async (request, reply) => {
+    await audit(request.adminSession!.adminUserId, "view_merchant_site_alerts", null, null, {});
+    return forward(request, reply, "GET", "site-alerts");
+  });
+  app.get("/api/merchant-site/alerts/count", async (request, reply) => forward(request, reply, "GET", "site-alerts/count"));
 
   app.get("/api/merchants/:id", async (request, reply) => {
     if (!MERCHANT_RE.test(id(request))) return reply.status(404).send({ error: { code: "not_found", message: "Not found" } });

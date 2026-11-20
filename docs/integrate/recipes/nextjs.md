@@ -1,6 +1,6 @@
 ### Next.js (App Router)
 
-1. Copy the Node helper (step 5) to `lib/uhoney.mjs`.
+1. Save the Node helper (step 5, also at `{{TAG_BASE}}/integrate/v1/uhoney.mjs`) as `lib/uhoney.mjs` in the project.
 2. Add `NEXT_PUBLIC_UHONEY_SITE_KEY` (the `pk_` key) and `UHONEY_SECRET_KEY` to `.env.local`.
 3. Tag in the root layout:
 

@@ -59,7 +59,14 @@ export interface PageHits {
   hits: Array<{ created_at: string; path: string; status: number; ip: string | null; country: string | null; network: string | null; user_agent: string | null; referrer: string | null; agent: string | null }>;
 }
 
+export interface SiteAlert {
+  id: string; created_at: string; kind: "agent_file" | "developer_guide" | "access_request"; path: string; ip: string | null; country: string | null;
+  network: string | null; user_agent: string | null; agent: string | null; company: string | null; delivered_at: string | null; delivery_error: string | null;
+}
+
 export const adminMerchants = {
+  siteAlerts: () => request<{ alerts: SiteAlert[]; push_configured: boolean }>(`/api/merchant-site/alerts`),
+  siteAlertCount: (since?: string) => request<{ new_count: number; last_at: string | null }>(`/api/merchant-site/alerts/count${qs({ since })}`),
   pageHits: (p: { days?: number; path?: string }) => request<PageHits>(`/api/merchant-site/hits${qs(p)}`),
   list: (status?: string) => request<{ merchants: MerchantRow[] }>(`/api/merchants${qs({ status })}`),
   get: (id: string) => request<Record<string, any>>(`/api/merchants/${id}`),

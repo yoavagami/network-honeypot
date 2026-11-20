@@ -7,4 +7,5 @@
 - [Agent integration instructions]({{AGENT_URL}}): step-by-step procedure for coding agents integrating uHoney into a merchant site
 - [Developer guide]({{DOCS_URL}}): the same steps for people
 - [OpenAPI contract]({{API_URL}}/integrate/v1/openapi.json)
+- [Node.js helper]({{TAG_BASE}}/integrate/v1/uhoney.mjs) and [PHP helper]({{TAG_BASE}}/integrate/v1/uhoney.php): the server helpers from the guide, as files
 - [Changelog]({{TAG_BASE}}/integrate/changelog.md)

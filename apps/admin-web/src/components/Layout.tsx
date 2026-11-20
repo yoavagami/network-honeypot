@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
+import { SiteAlertBadge } from "./SiteAlertBadge.js";
 
 const NAV = [
   { to: "/", label: "Overview", end: true },
@@ -32,6 +33,7 @@ export function Layout() {
           {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => (isActive ? "active" : "")}>
               {item.label}
+              {item.to === "/merchants" && <SiteAlertBadge />}
             </NavLink>
           ))}
         </nav>

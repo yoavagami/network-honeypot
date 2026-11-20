@@ -37,6 +37,18 @@ describe("integration docs", () => {
     for (const rule of ["Secret key on the server only", "Fail open", "Never change payment behaviour", "Only add code", "Never forward `cookie` or `authorization`", "Test keys only", "UHONEY_INTEGRATION.md", "Without keys", "Never ask the developer to paste a secret key", "uhoney-integration", "Never merge it yourself"]) expect(agent).toContain(rule);
   });
 
+  it("every /integrate/ URL in the docs is a file we serve, and no placeholder looks like a path", () => {
+    // An agent fetched /integrate/v1/uhoney.mjs and /integrate/v1/… before these existed (2026-11-20).
+    const served = new Set(["/integrate/v1/agent.md", "/integrate/v1/openapi.json", "/integrate/v1/uhoney.mjs", "/integrate/v1/uhoney.php", "/integrate/changelog.md", "/integrate/llms.txt"]);
+    for (const name of ["agent.md", "llms.txt", "changelog.md", "developer.html"]) {
+      const body = built[name]!;
+      for (const m of body.matchAll(/\/integrate\/[^\s`)"'<>]*/g)) expect(served.has(m[0]), `${name}: ${m[0]}`).toBe(true);
+      expect(body, name).not.toContain("…");
+    }
+    expect(built["uhoney.mjs"]).toContain("export async function assessOrder");
+    expect(built["uhoney.php"]).toContain("function uhoney_assess");
+  });
+
   it("the developer page escapes code (no live script tags from the source)", () => {
     expect(built["developer.html"]!.match(/<script/g)).toBeNull();
     expect(built["developer.html"]).toContain("&lt;script async src=");

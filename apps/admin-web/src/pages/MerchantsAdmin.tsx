@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { adminMerchants, type PageHits, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type OrderDetail } from "../merchantApi.js";
+import { adminMerchants, type PageHits, type SiteAlert, type MerchantRow, type Mode, type Overview, type VisitRow, type OrderRow, type OrderDetail } from "../merchantApi.js";
+import { markSiteAlertsSeen, siteAlertsSeenAt } from "../components/SiteAlertBadge.js";
 import type { AgentVisitDetail } from "../api.js";
 import { VisitDetailBody } from "../components/VisitDetail.js";
 import { ApiError } from "../api.js";
@@ -76,6 +77,7 @@ export function MerchantsPage() {
           </table>
         )}
       </div>
+      <SiteAlertsPanel />
       <PageHitsPanel />
     </div>
   );
@@ -86,7 +88,48 @@ const PAGE_LABEL: Record<string, string> = {
   "/docs/integrate": "Developer guide",
   "/integrate/v1/agent.md": "Agent file",
   "/llms.txt": "llms.txt",
+  "/integrate/llms.txt": "llms.txt",
+  "/integrate/v1/uhoney.mjs": "Node helper",
+  "/integrate/v1/uhoney.php": "PHP helper",
 };
+
+const ALERT_LABEL: Record<SiteAlert["kind"], string> = {
+  agent_file: "Agent file read",
+  developer_guide: "Developer guide opened",
+  access_request: "Access request",
+};
+
+/** Alerts: agent file read, developer guide opened, access request sent (one per IP and kind per 6 h). */
+function SiteAlertsPanel() {
+  const [data, setData] = useState<{ alerts: SiteAlert[]; push_configured: boolean } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [seenAt] = useState(() => siteAlertsSeenAt());
+  useEffect(() => {
+    adminMerchants.siteAlerts().then((d) => { setData(d); markSiteAlertsSeen(); }).catch((e) => setError(errText(e)));
+  }, []);
+  const isNew = (a: SiteAlert) => !seenAt || a.created_at > seenAt;
+  return (
+    <div className="panel" id="site-alerts">
+      <h2>Site alerts</h2>
+      {error && <div className="banner warn">{error}</div>}
+      {!data ? !error && <p className="muted">Loading…</p> : data.alerts.length === 0 ? <p className="muted">No alerts yet.</p> : (
+        <table>
+          <thead><tr><th>Time</th><th>What</th><th>IP</th><th>Country</th><th>Network</th><th>Agent / tool</th><th>User agent</th><th>Pushed</th></tr></thead>
+          <tbody>{data.alerts.map((a) => (
+            <tr key={a.id}>
+              <td>{fmtTime(a.created_at)}{isNew(a) && <span className="badge critical" style={{ marginLeft: ".4rem" }}>new</span>}</td>
+              <td>{ALERT_LABEL[a.kind] ?? a.kind}{a.company ? <div className="muted small">{a.company}</div> : null}</td>
+              <td>{a.ip ?? <span className="muted">cleared</span>}</td><td>{a.country ?? "—"}</td><td className="truncate">{a.network ?? "—"}</td>
+              <td>{a.agent ?? <span className="muted">browser</span>}</td><td className="truncate" title={a.user_agent ?? ""}>{a.user_agent ?? "—"}</td>
+              <td>{a.delivered_at ? "yes" : a.delivery_error ? <span title={a.delivery_error}>failed</span> : <span className="muted">—</span>}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      )}
+      {data && !data.push_configured && <p className="muted small" style={{ marginTop: ".5rem" }}>Phone or Slack notifications are off. Set <code>MERCHANT_ALERT_URL</code> on the server to turn them on.</p>}
+    </div>
+  );
+}
 
 /** Who opened the public merchant pages: request access, developer guide, agent file. */
 function PageHitsPanel() {
