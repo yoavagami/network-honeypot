@@ -319,12 +319,12 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(await raiseAlert(db.admin, cfg, { ...base, ip: "203.0.113.77" }, fake)).toBe(false);
     expect(await raiseAlert(db.admin, cfg, { ...base, ip: "192.0.2.9" }, fake)).toBe(true);
     expect(await raiseAlert(db.admin, cfg, { ...base, ip: "192.0.2.9" }, fake)).toBe(false);
-    expect(await raiseAlert(db.admin, { ...cfg, url: "https://hooks.slack.com/services/T/B/x" }, { ...base, ip: "192.0.2.10", kind: "access_request", company: "Café ünïcode" }, fake)).toBe(true);
+    expect(await raiseAlert(db.admin, { ...cfg, url: "https://hooks.slack.com/services/T/B/x" }, { ...base, ip: "192.0.2.10", kind: "access_request", company: "Café ünïcode <!channel>" }, fake)).toBe(true);
     expect(sent).toHaveLength(2);
     expect(sent[0]!.init.headers.title).toBe("uHoney: Agent file read");
     expect(sent[0]!.init.body).toContain("192.0.2.9 · PL · TC DATACENTER · browser");
     expect(sent[0]!.init.body).toContain("https://admin.example.test/merchants");
-    expect(JSON.parse(sent[1]!.init.body).text).toContain("New access request - Café ünïcode");
+    expect(JSON.parse(sent[1]!.init.body).text).toContain("New access request - Café ünïcode &lt;!channel&gt;");
     const [row] = await db.admin`SELECT delivered_at FROM public_site_alerts WHERE ip = '192.0.2.9'`;
     expect(row!.delivered_at).not.toBeNull();
     expect(() => parseIgnoreList("not-an-ip")).toThrow(/MERCHANT_ALERT_IGNORE_IPS/);

@@ -21,11 +21,12 @@ export function SiteAlertBadge() {
   const [n, setN] = useState(0);
   useEffect(() => {
     let stop = false;
-    const load = () => adminMerchants.siteAlertCount(siteAlertsSeenAt() ?? undefined).then((r) => { if (!stop) setN(r.new_count); }).catch(() => { if (!stop) setN(0); });
+    const load = () => document.visibilityState === "hidden" ? undefined : adminMerchants.siteAlertCount(siteAlertsSeenAt() ?? undefined).then((r) => { if (!stop) setN(r.new_count); }).catch(() => { if (!stop) setN(0); });
     void load();
     const t = setInterval(load, 60_000);
     window.addEventListener(EVENT, load);
-    return () => { stop = true; clearInterval(t); window.removeEventListener(EVENT, load); };
+    document.addEventListener("visibilitychange", load);
+    return () => { stop = true; clearInterval(t); window.removeEventListener(EVENT, load); document.removeEventListener("visibilitychange", load); };
   }, []);
   if (!n) return null;
   return <span className="badge critical" style={{ marginLeft: ".4rem" }} title={`${n} new site alert${n > 1 ? "s" : ""}`}>{n}</span>;

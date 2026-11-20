@@ -73,6 +73,9 @@ export function alertText(a: AlertInput, linkUrl: string) {
   return { title, body: `${who}\n${a.path}\n${linkUrl}` };
 }
 
+/** Slack control sequences (<!channel>, <url|text>) start with "<": the company name is visitor input. */
+const slackEscape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 /** Records the alert unless it's ignored or a duplicate, then pushes it. Returns whether one was recorded. */
 export async function raiseAlert(sql: MerchantSql, cfg: AlertConfig, a: AlertInput, fetchImpl: typeof fetch = fetch): Promise<boolean> {
   if (ignored(cfg.ignore, a.ip)) return false;
@@ -89,7 +92,7 @@ export async function raiseAlert(sql: MerchantSql, cfg: AlertConfig, a: AlertInp
   try {
     const slack = new URL(cfg.url).hostname === "hooks.slack.com";
     const res = await fetchImpl(cfg.url, slack
-      ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: `*${title}*\n${body}` }), signal: AbortSignal.timeout(5000) }
+      ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: slackEscape(`*${title}*\n${body}`) }), signal: AbortSignal.timeout(5000) }
       // ntfy-style: the body is the message, the Title header the headline.
       : { method: "POST", headers: { "content-type": "text/plain; charset=utf-8", title: title.replace(/[^\x20-\x7e]/g, "?"), tags: "honey_pot" }, body, signal: AbortSignal.timeout(5000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

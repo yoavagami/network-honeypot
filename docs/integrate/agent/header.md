@@ -13,6 +13,7 @@ Everything you need is in this file: the steps, the code for each stack and the 
 | `{{TAG_BASE}}/integrate/v1/uhoney.mjs` | the Node.js helper from step 5, ready to save as a file |
 | `{{TAG_BASE}}/integrate/v1/uhoney.php` | the PHP helper from the PHP recipe |
 | `{{TAG_BASE}}/integrate/v1/openapi.json` | the API contract |
+| `{{TAG_BASE}}/integrate/changelog.md` | what changed in this file |
 
 No other files exist there. Paths in this file such as `lib/uhoney.mjs`, `.env` or `composer.json` are files in the merchant's project, not URLs. Text written as `XXXX` is a placeholder. Never request it.
 
