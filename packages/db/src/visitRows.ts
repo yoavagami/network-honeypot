@@ -48,7 +48,18 @@ export async function loadVisitRows(sql: postgres.Sql, q: VisitRowsQuery): Promi
              ARRAY(SELECT jsonb_array_elements_text(coalesce(s.data -> 'consistencyFlags', '[]'))) AS flags,
              s.data #>> '{headers,values,accept-language}' AS accept_language,
              coalesce(s.page_load_id, s.data ->> 'pageLoadId') AS page_load_id,
-             a.asn, a.organization, a.country, a.city
+             -- The request's own network (data.network, stored since 2026-11-20). Older rows: the
+             -- actor's network, but only if it hadn't changed since the request (enrichment is
+             -- written only on change; 10 min covers the first lookup finishing after the request),
+             -- otherwise unknown — a visitor who later moved network mustn't re-score old visits.
+             CASE WHEN s.data ? 'network' THEN s.data #>> '{network,asn}'
+                  WHEN a.enrichment_updated_at <= r.created_at + interval '10 minutes' THEN a.asn END AS asn,
+             CASE WHEN s.data ? 'network' THEN s.data #>> '{network,organization}'
+                  WHEN a.enrichment_updated_at <= r.created_at + interval '10 minutes' THEN a.organization END AS organization,
+             CASE WHEN s.data ? 'network' THEN s.data #>> '{network,country}'
+                  WHEN a.enrichment_updated_at <= r.created_at + interval '10 minutes' THEN a.country END AS country,
+             CASE WHEN s.data ? 'network' THEN s.data #>> '{network,city}'
+                  WHEN a.enrichment_updated_at <= r.created_at + interval '10 minutes' THEN a.city END AS city
       FROM requests r
       JOIN request_signals s USING (request_id)
       LEFT JOIN actors a ON a.actor_id = r.actor_id

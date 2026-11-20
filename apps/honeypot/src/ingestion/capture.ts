@@ -115,7 +115,7 @@ export function registerIngestion(app: FastifyInstance, queue: IngestionQueue) {
     // never the visitor's response. The .catch() matters even though it only logs — an unhandled
     // rejection here crashes the whole process (found live for the same pattern in
     // correlationWorker.ts/canaries.ts — see docs/ROADMAP.md Phase 4).
-    enrichActorIfNeeded(ip, actorId).catch((err) => {
+    enrichActorIfNeeded(ip, ipHash, actorId).catch((err) => {
       request.log.warn({ msg: "actor enrichment failed", err: err instanceof Error ? err.message : String(err) });
     });
 
