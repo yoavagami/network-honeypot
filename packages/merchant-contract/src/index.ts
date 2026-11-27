@@ -36,6 +36,23 @@ export type Driver = (typeof DRIVERS)[number];
 export const SUGGESTED_ACTIONS = ["allow", "review", "challenge"] as const;
 export type SuggestedAction = (typeof SUGGESTED_ACTIONS)[number];
 
+/**
+ * What to do with the order: let it through, confirm with the human first, or stop it. `confirm`
+ * is the most the default policy returns; `block` only where the merchant's policy opts in.
+ */
+export const DECISIONS = ["allow", "confirm", "block"] as const;
+export type Decision = (typeof DECISIONS)[number];
+
+/** Where a policy may escalate the decision to `block` (opt-in, see policySchema.block_when). */
+export const BLOCK_CATEGORIES = ["spoofed_agent", "unverified_agent"] as const;
+export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
+
+/** not_provided: no intent named at assess. not_evaluated: named, but not checked yet. */
+export const INTENT_STATUSES = ["not_provided", "not_evaluated", "match", "mismatch"] as const;
+export type IntentStatus = (typeof INTENT_STATUSES)[number];
+
+export const PAYMENT_METHODS = ["card", "wallet", "bank_transfer", "bnpl", "gift_card", "crypto", "other"] as const;
+
 export const CONFIDENCE = ["low", "medium", "high"] as const;
 export type Confidence = (typeof CONFIDENCE)[number];
 
@@ -117,17 +134,44 @@ export type CollectRequest = z.infer<typeof collectRequest>;
 /** Events the loader may send as kind "event" (data.name). */
 export const TAG_EVENTS = ["pay_clicked", "checkout_started", "add_to_cart", "product_viewed"] as const;
 
+const minorUnits = z.number().int().min(0).max(10_000_000_000);
+
+/** One cart line, as the shopper sees it. */
+export const lineItemSchema = z.object({
+  sku: z.string().min(1).max(128),
+  title: z.string().min(1).max(200).optional(),
+  /** Your own category slug, e.g. "chocolate", "gift_card". */
+  category: z.string().regex(/^[a-z0-9_-]{1,64}$/).optional(),
+  quantity: z.number().int().min(1).max(100_000),
+  /** Price of one unit, minor units. */
+  unit_amount: minorUnits,
+});
+
 export const orderSchema = z.object({
   id: z.string().min(1).max(128),
   /** Minor units (cents). */
-  amount: z.number().int().min(0).max(10_000_000_000),
+  amount: minorUnits,
   currency: z.string().regex(/^[A-Z]{3}$/),
+  // Optional cart detail, used by the intent and legitimacy checks. No personal data: the address
+  // travels only as a hash you compute, never in clear.
+  items: z.array(lineItemSchema).max(100).optional(),
+  shipping: z.object({
+    country: z.string().regex(/^[A-Z]{2}$/).optional(),
+    /** Your hash of the normalized shipping address (any stable hash, e.g. SHA-256 hex). */
+    address_hash: z.string().regex(/^[A-Za-z0-9_+/=:-]{8,128}$/).optional(),
+    /** True when this customer has never shipped to this address before. */
+    new_address: z.boolean().optional(),
+  }).optional(),
+  payment: z.object({ method: z.enum(PAYMENT_METHODS) }).optional(),
 });
+export type Order = z.infer<typeof orderSchema>;
 
 export const assessRequest = z.object({
   session_token: sessionToken.optional(),
   stage: z.enum(ASSESS_STAGES).default("pay"),
   order: orderSchema,
+  /** The intent this order should fulfil (an intent id, or your own reference). Optional. */
+  intent_ref: z.string().regex(/^[A-Za-z0-9_.:-]{1,128}$/).optional(),
   request: z.object({
     ip: ipString,
     user_agent: z.string().max(1024).nullable(),
@@ -180,6 +224,13 @@ export interface Assessment {
   signals_used: { client: boolean; server: boolean };
   suggested_action: SuggestedAction;
   scorer_version: string;
+  decision: Decision;
+  /** Is the agent acting for a real, authorized shopper? Higher score = more legitimate. */
+  legitimacy: { evaluated: boolean; score: number | null; reasons: Reason[] };
+  /** Does the cart match what the shopper asked for? */
+  intent: { status: IntentStatus; score: number | null; violations: Reason[] };
+  /** The order's evidence record, once evidence is kept. */
+  evidence_id: string | null;
 }
 
 export interface CollectResponse { session_token: string; expires_at: string }
@@ -201,6 +252,8 @@ export const policySchema = z.object({
   unverified_agent: z.enum(SUGGESTED_ACTIONS).default("review"),
   agent_then_human: z.enum(SUGGESTED_ACTIONS).default("allow"),
   uncertain: z.enum(SUGGESTED_ACTIONS).default("allow"),
+  /** Where the decision becomes `block` instead of `confirm`. Empty by default: nothing is blocked. */
+  block_when: z.array(z.enum(BLOCK_CATEGORIES)).max(BLOCK_CATEGORIES.length).default([]),
 });
 export type Policy = z.infer<typeof policySchema>;
 export const DEFAULT_POLICY: Policy = policySchema.parse({});

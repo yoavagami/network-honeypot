@@ -26,12 +26,15 @@ function readHeader(headers, name) {
  *
  * @param {object} p
  * @param {string|undefined|null} p.sessionToken  the uhoney_token the checkout form sent
- * @param {{id: string, amount: number, currency: string}} p.order  amount in minor units (cents)
+ * @param {{id: string, amount: number, currency: string, items?: Array<{sku: string, title?: string, category?: string, quantity: number, unit_amount: number}>, shipping?: {country?: string, address_hash?: string, new_address?: boolean}, payment?: {method: string}}} p.order
+ *   amounts in minor units (cents). items, shipping and payment are optional; shipping carries a hash
+ *   of the address, never the address itself.
+ * @param {string} [p.intentRef]  the intent this order should fulfil, if you have one
  * @param {string} p.ip  the visitor's IP address
  * @param {object} p.headers  the visitor's request headers (Express req.headers or Fetch Headers)
  * @param {string} [p.method]  @param {string} [p.path]  @param {string} [p.host]
  */
-export async function assessOrder({ sessionToken, order, ip, headers, method, path, host, timeoutMs = 300, fetchImpl = fetch }) {
+export async function assessOrder({ sessionToken, order, intentRef, ip, headers, method, path, host, timeoutMs = 300, fetchImpl = fetch }) {
   const secret = process.env.UHONEY_SECRET_KEY;
   if (!secret || !order || !ip) return null;
   const forwarded = {};
@@ -42,7 +45,16 @@ export async function assessOrder({ sessionToken, order, ip, headers, method, pa
   const body = {
     session_token: typeof sessionToken === "string" && sessionToken.startsWith("st_") ? sessionToken : undefined,
     stage: "pay",
-    order: { id: String(order.id), amount: Math.round(order.amount), currency: String(order.currency).toUpperCase() },
+    order: {
+      id: String(order.id), amount: Math.round(order.amount), currency: String(order.currency).toUpperCase(),
+      items: Array.isArray(order.items) ? order.items.slice(0, 100).map((i) => ({
+        sku: String(i.sku), title: i.title ? String(i.title).slice(0, 200) : undefined, category: i.category || undefined,
+        quantity: Math.round(i.quantity), unit_amount: Math.round(i.unit_amount),
+      })) : undefined,
+      shipping: order.shipping || undefined,
+      payment: order.payment || undefined,
+    },
+    intent_ref: intentRef || undefined,
     request: { ip, user_agent: readHeader(headers, "user-agent") ?? null, method, path, host, headers: forwarded },
   };
   try {
@@ -61,8 +73,11 @@ export async function assessOrder({ sessionToken, order, ip, headers, method, pa
 
 /** The fields worth keeping on your order record. */
 export function verdictFields(assessment) {
-  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null };
-  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_action: assessment.suggested_action };
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null };
+  return {
+    uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver,
+    uhoney_action: assessment.suggested_action, uhoney_decision: assessment.decision ?? null,
+  };
 }
 
 /** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
@@ -72,6 +87,7 @@ export function stripeMetadata(assessment) {
     uhoney_assessment_id: assessment.assessment_id,
     uhoney_driver: assessment.driver,
     uhoney_action: assessment.suggested_action,
+    uhoney_decision: assessment.decision ?? "none",
     uhoney_agent: assessment.agent ? assessment.agent.id : "none",
     uhoney_agent_verified: String(Boolean(assessment.agent && assessment.agent.verified)),
     uhoney_score: String(assessment.score),

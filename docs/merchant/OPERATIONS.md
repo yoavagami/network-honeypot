@@ -46,6 +46,12 @@ textual patches (`apps/merchant-api/src/tag.ts`); a test fails if a patch target
   (Slack incoming webhook, or an ntfy topic URL for phone notifications) and `MERCHANT_ALERT_IGNORE_IPS`
   to skip your own addresses. Access-request alerts carry the company name only, never the email.
   Same retention as page hits.
+- **Decisions, intents, evidence** (migration 0005). Every assess returns a `decision` (allow / confirm /
+  block; block only with the merchant's `policy.block_when`), and each decision, the first and every later
+  change, is a row in `decisions` (deleted with its assessment after 400 days). `intents` (400 days) and
+  `evidence_entries` (append-only, hash-chained, kept 540 days because card disputes can come that late) are
+  in place for the intent and evidence layers; nothing writes them yet. Cart detail sent at assess (items,
+  hashed address, payment method) stays with the assess event, under the merchant's event retention.
 
 ## Onboarding a merchant
 

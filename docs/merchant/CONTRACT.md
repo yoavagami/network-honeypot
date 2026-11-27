@@ -52,6 +52,11 @@ and the visitor's request as the merchant received it — `ip`, `user_agent`, an
 `host` and lower-case `headers` (send `accept*`, `sec-ch-ua*`, `sec-fetch-*`, and `signature`, `signature-input`,
 `signature-agent` when present; never `cookie` or `authorization`).
 
+Optional, for the legitimacy and intent checks: `order.items` (`sku`, `title`, `category`, `quantity`,
+`unit_amount`), `order.shipping` (`country`, `address_hash` — the merchant's own hash of the normalized address,
+never the address — and `new_address`), `order.payment.method`, and `intent_ref` (the intent the order should
+fulfil). The cart detail is kept with the assess event and is not echoed in the response.
+
 Response fields:
 
 | Field | Meaning |
@@ -65,6 +70,10 @@ Response fields:
 | `reasons` | Up to 8 `{ code, text }`. Codes are the scorer's signal ids plus `no_client_signals`, `session_token_invalid`, `web_bot_auth_unverified` |
 | `signals_used` | Whether page-script (`client`) and server-side signals contributed |
 | `suggested_action` | `allow`, `review`, `challenge` — from the merchant's policy |
+| `decision` | `allow`, `confirm` (ask the shopper before charging), `block`. Follows `suggested_action` (`review` and `challenge` → `confirm`); `block` only where the policy's `block_when` opts in |
+| `legitimacy` | `{ evaluated, score, reasons }`: is the agent acting for a real, authorized shopper. Not evaluated yet (`evaluated: false`, `score: null`) |
+| `intent` | `{ status, score, violations }`: does the cart match what the shopper asked for. `status`: `not_provided` (no `intent_ref`), `not_evaluated`, `match`, `mismatch` |
+| `evidence_id` | The order's evidence record, once evidence is kept (`null` for now) |
 | `final` | `false` at Pay; `true` once the visit has ended |
 
 A bad, expired or missing token never causes an error — the verdict rests on server signals and says so.
@@ -77,6 +86,11 @@ A bad, expired or missing token never causes an error — the verdict rests on s
 | Unverified agent drove the checkout | `review` |
 | Agent browsed, a person paid (`agent_then_human`) | `allow` |
 | Uncertain | `allow` |
+
+The decision never goes above `confirm` by default. A merchant can opt in to `block` with `block_when`:
+`spoofed_agent` (claims to be a known agent and fails that agent's check) and `unverified_agent` (any
+unverified agent driving the checkout). Every decision, the first and each later change, is kept in the
+order's decision history.
 
 ## Webhooks
 

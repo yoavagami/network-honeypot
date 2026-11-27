@@ -8,7 +8,7 @@ import { createTestDatabase, testPgUrl, type TestDatabase } from "@honeypot/merc
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { NetworkLookup } from "../src/sensing.js";
-import { runScoringTick } from "../src/scoring/worker.js";
+import { runRetention, runScoringTick } from "../src/scoring/worker.js";
 import { dispatchDue } from "../src/webhooks/dispatcher.js";
 import { verifySignature } from "../src/webhooks/sign.js";
 import { signLabToken } from "@honeypot/detection";
@@ -137,6 +137,63 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(bad.json().reasons.map((x: any) => x.code)).toContain("session_token_invalid");
   });
 
+  it("assess takes cart detail and an intent reference, returns a decision and keeps its history", async () => {
+    const order = {
+      id: "ord_cart", amount: 13900, currency: "EUR",
+      items: [{ sku: "dark-70", title: "Dark 70%", category: "chocolate", quantity: 3, unit_amount: 4300 }],
+      shipping: { country: "NL", address_hash: "9c1185a5c5e9fc54612808977ee8f548", new_address: true },
+      payment: { method: "card" },
+    };
+    const r = await server(A, "POST", "/v1/assess", { session_token: A.token, order, intent_ref: "in_demo.1", request: { ip: "203.0.113.7", user_agent: CHROME, headers: {} } });
+    expect(r.statusCode).toBe(200);
+    const a = r.json();
+    expect(matches("Assessment", a)).toBe(true);
+    // The cart detail stays out of the response.
+    expect(a.order).toEqual({ id: "ord_cart", amount: 13900, currency: "EUR" });
+    expect(a.decision).toBe(a.suggested_action === "allow" ? "allow" : "confirm");
+    expect(a.legitimacy).toEqual({ evaluated: false, score: null, reasons: [] });
+    expect(a.intent).toEqual({ status: "not_evaluated", score: null, violations: [] });
+    expect(a.evidence_id).toBeNull();
+    const [row] = await db.admin`SELECT decision, intent_ref FROM assessments WHERE assessment_id = ${a.assessment_id}`;
+    expect(row).toEqual({ decision: a.decision, intent_ref: "in_demo.1" });
+    const history = await db.admin`SELECT decision, suggested_action, intent_status, final FROM decisions WHERE assessment_id = ${a.assessment_id}`;
+    expect(history).toEqual([{ decision: a.decision, suggested_action: a.suggested_action, intent_status: "not_evaluated", final: false }]);
+    // The assess event keeps the cart for the later checks.
+    const [ev] = await db.admin`SELECT data FROM merchant_events WHERE merchant_id = ${A.id} AND kind = 'assess' AND data->'order'->>'id' = 'ord_cart'`;
+    expect(ev!.data.order.items[0].sku).toBe("dark-70");
+    // Without an intent_ref the intent is not provided.
+    const plain = await server(A, "POST", "/v1/assess", { order: { id: "ord_plain", amount: 100, currency: "EUR" }, request: { ip: "203.0.113.7", user_agent: CHROME, headers: {} } });
+    expect(plain.json().intent.status).toBe("not_provided");
+  });
+
+  it("block only where the merchant's policy opts in", async () => {
+    // A user-agent that claims ChatGPT-User from an IP outside OpenAI's published ranges: spoofed.
+    const spoofUa = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot";
+    const assess = (id: string) => server(A, "POST", "/v1/assess", { order: { id, amount: 2500, currency: "EUR" }, request: { ip: "198.51.100.23", user_agent: spoofUa, headers: {} } });
+    const before = (await assess("ord_spoof_1")).json();
+    expect(matches("Assessment", before)).toBe(true);
+    expect(before.decision).not.toBe("block");
+    expect((await dash(A, "PUT", "/m/api/policy", { block_when: ["spoofed_agent"] })).statusCode).toBe(200);
+    const after = (await assess("ord_spoof_2")).json();
+    expect(matches("Assessment", after)).toBe(true);
+    expect(after.decision).toBe("block");
+    expect((await dash(A, "PUT", "/m/api/policy", { block_when: ["shoplifters"] })).statusCode).toBe(400);
+    expect((await dash(A, "PUT", "/m/api/policy", {})).statusCode).toBe(200);
+    expect((await assess("ord_spoof_3")).json().decision).not.toBe("block");
+  });
+
+  it("evidence entries are append-only and expire by whole order", async () => {
+    const add = (order: string, seq: number, daysAgo: number) => db.admin`
+      INSERT INTO evidence_entries (merchant_id, livemode, order_id, seq, kind, payload, payload_hash, entry_hash, created_at)
+      VALUES (${A.id}, false, ${order}, ${seq}, 'test', '{}'::jsonb, 'p', 'e', now() - make_interval(days => ${daysAgo}))`;
+    await add("ev_old", 0, 600); await add("ev_old", 1, 590);
+    await add("ev_mixed", 0, 600); await add("ev_mixed", 1, 10);
+    await expect(db.admin`UPDATE evidence_entries SET kind = 'changed' WHERE order_id = 'ev_old'`).rejects.toThrow(/append-only/);
+    await runRetention(db.admin);
+    const left = await db.admin`SELECT order_id, count(*)::int AS n FROM evidence_entries WHERE merchant_id = ${A.id} GROUP BY 1 ORDER BY 1`;
+    expect(left).toEqual([{ order_id: "ev_mixed", n: 2 }]);
+  });
+
   it("server endpoints: errors follow the contract", async () => {
     expect((await app.inject({ method: "POST", url: "/v1/assess", payload: {} })).json().error.code).toBe("invalid_key");
     expect((await server({ sk: A.pk }, "POST", "/v1/assess", {})).json().error.code).toBe("wrong_key_type");
@@ -173,7 +230,9 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(detail.json().merchant.timeline.length).toBeGreaterThan(3);
     const ov = (await dash(A, "GET", "/m/api/overview")).json();
     expect(ov.totals.visits).toBe(visits.length);
-    expect(ov.orders.assessed).toBe(3);
+    const [assessed] = await db.admin`SELECT count(*)::int AS n FROM assessments WHERE merchant_id = ${A.id} AND NOT livemode`;
+    expect(ov.orders.assessed).toBe(assessed!.n);
+    expect(assessed!.n).toBeGreaterThanOrEqual(3);
   });
 
   it("webhooks are signed with the endpoint's secret and recorded as delivered", async () => {

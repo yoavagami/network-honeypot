@@ -5,7 +5,7 @@ import { markSiteAlertsSeen, siteAlertsSeenAt } from "../components/SiteAlertBad
 import type { AgentVisitDetail } from "../api.js";
 import { VisitDetailBody } from "../components/VisitDetail.js";
 import { ApiError } from "../api.js";
-import { fmtTime, ModeToggle, OverviewPanels, OrdersTable, VisitsTable, ActionBadge, fmtMoney, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
+import { fmtTime, ModeToggle, OverviewPanels, OrdersTable, VisitsTable, ActionBadge, DecisionBadge, fmtMoney, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
 
 const errText = (e: unknown) => (e instanceof ApiError ? e.message : "Request failed");
 
@@ -282,7 +282,10 @@ export function OrderDetailView({ d, base, mode }: { d: OrderDetail; base: strin
     <>
       <div className="panel verdict-hero">
         <div className="kv">
+          <div><span className="muted">Decision</span> <DecisionBadge decision={r.decision} /></div>
           <div><span className="muted">Suggested</span> <ActionBadge action={r.suggested_action} /></div>
+          <div><span className="muted">Legitimacy</span> {r.legitimacy?.evaluated ? `${Math.round(r.legitimacy.score * 100)}%` : <span className="muted">not evaluated yet</span>}</div>
+          <div><span className="muted">Intent</span> {r.intent?.status ? r.intent.status.replace(/_/g, " ") : <span className="muted">—</span>}</div>
           <div><span className="muted">Driven by</span> {r.driver}</div>
           <div><span className="muted">Agent</span> {r.agent ? `${r.agent.id}${r.agent.operator ? ` (${r.agent.operator})` : ""}${r.agent.verified ? ` — verified by ${r.agent.verification}` : " — not verified"}` : "—"}</div>
           <div><span className="muted">Score</span> {Math.round(r.score * 100)}% · {r.confidence} confidence</div>

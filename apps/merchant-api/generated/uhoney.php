@@ -11,9 +11,12 @@ const UHONEY_FORWARD_HEADERS = [
 
 /**
  * Verdict before charging. Fails open: returns null on any error or after 300 ms.
- * $order = ['id' => 'ord_1', 'amount' => 12900, 'currency' => 'EUR'] (amount in cents).
+ * $order = ['id' => 'ord_1', 'amount' => 12900, 'currency' => 'EUR'] (amount in cents). Optional:
+ * 'items' => [['sku' => 'a1', 'title' => '...', 'category' => 'chocolate', 'quantity' => 2, 'unit_amount' => 450]],
+ * 'shipping' => ['country' => 'NL', 'address_hash' => hash('sha256', $normalizedAddress), 'new_address' => false],
+ * 'payment' => ['method' => 'card']. Never the address itself.
  */
-function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300): ?array
+function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300, ?string $intentRef = null): ?array
 {
     $secret = getenv('UHONEY_SECRET_KEY');
     if (!$secret) return null;
@@ -25,7 +28,12 @@ function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300
     }
     $body = [
         'stage' => 'pay',
-        'order' => ['id' => (string) $order['id'], 'amount' => (int) $order['amount'], 'currency' => strtoupper($order['currency'])],
+        'order' => array_filter([
+            'id' => (string) $order['id'], 'amount' => (int) $order['amount'], 'currency' => strtoupper($order['currency']),
+            'items' => isset($order['items']) ? array_slice($order['items'], 0, 100) : null,
+            'shipping' => $order['shipping'] ?? null,
+            'payment' => $order['payment'] ?? null,
+        ], function ($v) { return $v !== null; }),
         'request' => [
             'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
@@ -36,6 +44,7 @@ function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300
         ],
     ];
     if (is_string($sessionToken) && strpos($sessionToken, 'st_') === 0) $body['session_token'] = $sessionToken;
+    if ($intentRef) $body['intent_ref'] = $intentRef;
 
     $ch = curl_init($api . '/v1/assess');
     curl_setopt_array($ch, [
@@ -69,5 +78,5 @@ function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $t
 
 // In your checkout handler, before charging:
 //   $assessment = uhoney_assess(['id' => $orderId, 'amount' => $totalCents, 'currency' => 'EUR'], $_POST['uhoney_token'] ?? null);
-//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'] on the order (if not null)
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'], $assessment['decision'] on the order (if not null)
 //   ...continue the payment exactly as before.

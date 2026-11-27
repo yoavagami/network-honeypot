@@ -10,7 +10,9 @@ What the helper guarantees, and any hand-written version must too:
 - the visitor's IP, user agent and the listed headers are forwarded — **never** `cookie` or `authorization`;
 - `Idempotency-Key` is the order id, so a retried checkout gets the same assessment.
 
-Save `assessment_id`, `driver` and `suggested_action` on the order. With Stripe, also put `stripeMetadata(assessment)` into the PaymentIntent's `metadata`, so Radar rules can use it (for example: review if `uhoney_action` is `review`).
+Save `assessment_id`, `driver`, `suggested_action` and `decision` on the order. `decision` is `allow`, `confirm` (ask the shopper to confirm before charging) or `block`; the default policy never returns `block`. With Stripe, also put `stripeMetadata(assessment)` into the PaymentIntent's `metadata`, so Radar rules can use it (for example: review if `uhoney_decision` is `confirm`).
+
+Optional, and worth sending: the cart lines (`items`: `sku`, `title`, `category`, `quantity`, `unit_amount` in cents), `shipping` (`country`, `new_address`, and `address_hash`: your own hash of the normalized address, never the address itself) and `payment.method`. uHoney uses them to check that the cart matches what the shopper asked for. Never send names, emails, phone numbers or the address in clear.
 
 The response looks like this (full contract: `{{API_URL}}/integrate/v1/openapi.json`):
 
@@ -23,6 +25,9 @@ The response looks like this (full contract: `{{API_URL}}/integrate/v1/openapi.j
   "score": 0.97,
   "confidence": "high",
   "suggested_action": "allow",
+  "decision": "allow",
+  "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
+  "intent": { "status": "not_provided", "score": null, "violations": [] },
   "final": false
 }
 ```

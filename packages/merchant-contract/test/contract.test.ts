@@ -72,6 +72,10 @@ describe("merchant API contract", () => {
     const s = spec.components.schemas;
     expect(s.Driver.enum).toEqual([...C.DRIVERS]);
     expect(s.Assessment.properties.suggested_action.enum).toEqual([...C.SUGGESTED_ACTIONS]);
+    expect(s.Assessment.properties.decision.enum).toEqual([...C.DECISIONS]);
+    expect(s.Assessment.properties.intent.properties.status.enum).toEqual([...C.INTENT_STATUSES]);
+    expect(s.AssessmentUpdatedEvent.allOf[1].properties.data.properties.previous.properties.decision.enum).toEqual([...C.DECISIONS]);
+    expect(s.Order.properties.payment.properties.method.enum).toEqual([...C.PAYMENT_METHODS]);
     expect(s.Assessment.properties.confidence.enum).toEqual([...C.CONFIDENCE]);
     expect(s.Assessment.properties.automation_type.enum).toEqual([...C.AUTOMATION_TYPES]);
     expect(s.Agent.properties.verification.enum.filter(Boolean)).toEqual([...C.VERIFICATION_METHODS]);
@@ -106,6 +110,12 @@ describe("merchant API contract", () => {
       ["AssessRequest", { order: { id: "o", amount: 1, currency: "eur" }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
       ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR" }, request: { ip: "not-an-ip", user_agent: null } }, C.assessRequest],
       ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR" }, request: { ip: "203.0.113.7", user_agent: null, headers: { "Accept": "x" } } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR", items: [{ sku: "a", quantity: 0, unit_amount: 1 }] }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR", items: [{ sku: "a", quantity: 1, unit_amount: 1, category: "Gift Cards" }] }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR", shipping: { country: "nl" } }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR", shipping: { address_hash: "1 Main St" } }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR", payment: { method: "cash" } }, request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
+      ["AssessRequest", { order: { id: "o", amount: 1, currency: "EUR" }, intent_ref: "has spaces", request: { ip: "203.0.113.7", user_agent: null } }, C.assessRequest],
       ["FeedbackRequest", { order_id: "o", assessment_id: "as_9fK2aB7cD1eF3gH5iJ6k", outcome: "fraud" }, C.feedbackRequest],
       ["FeedbackRequest", { outcome: "fraud" }, C.feedbackRequest],
       ["CollectRequest", { site_key: "sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", kind: "page" }, C.collectRequest],
@@ -119,5 +129,9 @@ describe("merchant API contract", () => {
 
   it("the default policy never suggests more than review", () => {
     expect(Object.values(C.DEFAULT_POLICY)).not.toContain("challenge");
+  });
+
+  it("the default policy never blocks", () => {
+    expect(C.DEFAULT_POLICY.block_when).toEqual([]);
   });
 });
