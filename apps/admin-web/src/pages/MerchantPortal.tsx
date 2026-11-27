@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api.js";
-import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Policy, type VisitRow, type OrderRow } from "../merchantApi.js";
+import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Policy, type PolicyCategory, type BlockCategory, type VisitRow, type OrderRow } from "../merchantApi.js";
 import type { AgentVisitDetail } from "../api.js";
 import { VisitDetailBody } from "../components/VisitDetail.js";
 import { ChecklistView, fmtTime, ModeToggle, OrdersTable, OverviewPanels, VisitsTable, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
@@ -463,11 +463,16 @@ function TeamTab() {
   );
 }
 
-const POLICY_LABELS: Record<keyof Policy, string> = {
+const POLICY_LABELS: Record<PolicyCategory, string> = {
   verified_agent: "A verified agent (signed, or from its operator's published IPs)",
   unverified_agent: "An unverified agent drove the checkout",
   agent_then_human: "An agent browsed, then a person paid",
   uncertain: "Not sure (score between 35% and 70%)",
+};
+
+const BLOCK_LABELS: Record<BlockCategory, string> = {
+  spoofed_agent: "A spoofed agent (claims to be a known agent and fails its check)",
+  unverified_agent: "Any unverified agent driving the checkout",
 };
 
 function PolicyTab() {
@@ -481,15 +486,24 @@ function PolicyTab() {
   const save = async () => { setMsg(null); try { await merchant.savePolicy(p); setMsg("Saved. New assessments use this policy."); } catch (e) { setMsg(errText(e)); } };
   return (
     <div className="panel">
-      <p>What <code>suggested_action</code> to return at Pay. You still decide what to do with it.</p>
+      <p>What <code>suggested_action</code> to return at Pay. The <code>decision</code> follows it: <code>allow</code> stays allow, <code>review</code> and <code>challenge</code> become <code>confirm</code> (ask the shopper first). You still decide what to do with it.</p>
       <table>
-        <tbody>{(Object.keys(POLICY_LABELS) as Array<keyof Policy>).map((k) => (
+        <tbody>{(Object.keys(POLICY_LABELS) as PolicyCategory[]).map((k) => (
           <tr key={k}><td>{POLICY_LABELS[k]}</td><td>
             <select value={p[k]} disabled={me?.user.role !== "owner"} onChange={(e) => setP({ ...p, [k]: e.target.value as Policy[typeof k] })}><option>allow</option><option>review</option><option>challenge</option></select>
             {data && data.default[k] !== p[k] && <span className="muted small"> (default: {data.default[k]})</span>}
           </td></tr>
         ))}</tbody>
       </table>
+      <h3 style={{ marginTop: "1.25rem" }}>Block instead of confirm</h3>
+      <p className="small muted">Off by default: uHoney never returns <code>block</code> unless you turn it on here.</p>
+      {(Object.keys(BLOCK_LABELS) as BlockCategory[]).map((k) => (
+        <label key={k} style={{ display: "block" }}>
+          <input type="checkbox" disabled={me?.user.role !== "owner"} checked={(p.block_when ?? []).includes(k)}
+            onChange={(e) => setP({ ...p, block_when: e.target.checked ? [...(p.block_when ?? []), k] : (p.block_when ?? []).filter((x) => x !== k) })} />{" "}
+          {BLOCK_LABELS[k]}
+        </label>
+      ))}
       {me?.user.role === "owner" && <button style={{ marginTop: "1rem" }} onClick={() => void save()}>Save policy</button>}
       {msg && <p className="small">{msg}</p>}
     </div>

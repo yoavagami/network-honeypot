@@ -7,6 +7,7 @@ import { loadSessionEvents, LOOKBACK_MS } from "./load.js";
 import { verdictFor, type MerchantVerdict } from "./verdict.js";
 import { assessmentBody } from "../assessmentBody.js";
 import { enqueueEvent } from "../webhooks/enqueue.js";
+import { recordDecision } from "../decisions.js";
 
 /**
  * Merchant scoring worker: every few seconds, rescores the sessions that received events (and
@@ -109,8 +110,8 @@ export async function rescoreSession(tx: MerchantTx, d: DirtySession, now: Date)
            AND first_at >= ${since} AND NOT (visit_id = ANY(${keep}::text[]))`;
 
   // Assessments of this session: refresh the verdict; send assessment.updated on a change or when final.
-  const open = await tx<{ assessment_id: string; visit_id: string | null; response: Assessment; created_at: Date }[]>`
-    SELECT assessment_id, visit_id, response, created_at FROM assessments
+  const open = await tx<{ assessment_id: string; visit_id: string | null; response: Assessment; intent_ref: string | null; created_at: Date }[]>`
+    SELECT assessment_id, visit_id, response, intent_ref, created_at FROM assessments
     WHERE merchant_id = ${d.merchant_id} AND livemode = ${d.livemode} AND session_id = ${d.session_id} AND NOT final`;
   for (const a of open) {
     const entry = (a.visit_id ? verdicts.get(a.visit_id) : undefined)
@@ -119,16 +120,18 @@ export async function rescoreSession(tx: MerchantTx, d: DirtySession, now: Date)
     const final = entry ? entry.row.settled : quiet;
     const prev = a.response;
     const next: Assessment = entry
-      ? assessmentBody({ assessmentId: a.assessment_id, merchantId: d.merchant_id, livemode: d.livemode, final, createdAt: new Date(prev.created_at), updatedAt: now, order: prev.order }, entry.verdict, m?.policy)
+      ? assessmentBody({ assessmentId: a.assessment_id, merchantId: d.merchant_id, livemode: d.livemode, final, createdAt: new Date(prev.created_at), updatedAt: now, order: prev.order, intentRef: a.intent_ref }, entry.verdict, m?.policy)
       : { ...prev, final, updated_at: now.toISOString() };
-    const changed = next.driver !== prev.driver || next.suggested_action !== prev.suggested_action || (next.agent?.id ?? null) !== (prev.agent?.id ?? null);
+    const changed = next.driver !== prev.driver || next.suggested_action !== prev.suggested_action || next.decision !== prev.decision
+      || (next.agent?.id ?? null) !== (prev.agent?.id ?? null);
     if (!changed && !final) {
       // Keep the stored copy fresh (score, reasons) without notifying.
       await tx`UPDATE assessments SET response = ${tx.json({ ...next, updated_at: prev.updated_at } as any)}, visit_id = coalesce(${entry?.row.visit_id ?? null}, visit_id) WHERE assessment_id = ${a.assessment_id}`;
       continue;
     }
-    await tx`UPDATE assessments SET response = ${tx.json(next as any)}, final = ${final}, updated_at = ${now}, visit_id = coalesce(${entry?.row.visit_id ?? null}, visit_id) WHERE assessment_id = ${a.assessment_id}`;
-    await enqueueEvent(tx, d.merchant_id, d.livemode, "assessment.updated", { assessment: next, previous: { driver: prev.driver, suggested_action: prev.suggested_action } });
+    await tx`UPDATE assessments SET response = ${tx.json(next as any)}, decision = ${next.decision}, final = ${final}, updated_at = ${now}, visit_id = coalesce(${entry?.row.visit_id ?? null}, visit_id) WHERE assessment_id = ${a.assessment_id}`;
+    await recordDecision(tx, next, m?.policy);
+    await enqueueEvent(tx, d.merchant_id, d.livemode, "assessment.updated", { assessment: next, previous: { driver: prev.driver, suggested_action: prev.suggested_action, decision: prev.decision } });
   }
 }
 
@@ -145,6 +148,12 @@ export async function runRetention(sql: MerchantSql) {
   await sql`DELETE FROM merchant_events e USING merchants m WHERE e.merchant_id = m.merchant_id AND e.created_at < now() - make_interval(days => m.retention_days)`;
   await sql`DELETE FROM merchant_visits v USING merchants m WHERE v.merchant_id = m.merchant_id AND v.last_at < now() - make_interval(days => m.retention_days)`;
   await sql`DELETE FROM assessments WHERE created_at < now() - interval '400 days'`;
+  await sql`DELETE FROM intents WHERE created_at < now() - interval '400 days'`;
+  // Evidence outlives the assessment: card disputes can arrive up to about 540 days after the order.
+  // Whole orders only, so a kept record's hash chain is never cut short.
+  await sql`DELETE FROM evidence_entries WHERE (merchant_id, livemode, order_id) IN (
+              SELECT merchant_id, livemode, order_id FROM evidence_entries
+              GROUP BY 1, 2, 3 HAVING max(created_at) < now() - interval '540 days')`;
   await sql`DELETE FROM webhook_deliveries WHERE created_at < now() - interval '30 days'`;
   await sql`DELETE FROM merchant_user_sessions WHERE expires_at < now()`;
   await sql`DELETE FROM merchant_invites WHERE expires_at < now() - interval '30 days'`;

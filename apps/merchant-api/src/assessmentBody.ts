@@ -1,10 +1,15 @@
 import type { Assessment, Policy } from "@honeypot/merchant-contract";
-import { suggestedAction, type MerchantVerdict } from "./scoring/verdict.js";
+import { decisionFor, suggestedAction, type MerchantVerdict } from "./scoring/verdict.js";
 
-/** Builds the contract's Assessment object from a verdict. */
+/**
+ * Builds the contract's Assessment object from a verdict. The legitimacy and intent checks aren't
+ * built yet: their fields say so (evaluated: false, status not_provided / not_evaluated), and the
+ * decision follows the suggested action and the policy's block_when.
+ */
 export function assessmentBody(a: {
   assessmentId: string; merchantId: string; livemode: boolean; final: boolean; createdAt: Date; updatedAt: Date;
   order: { id: string; amount: number; currency: string };
+  intentRef?: string | null;
 }, v: MerchantVerdict, policy: Partial<Policy> | undefined): Assessment {
   return {
     assessment_id: a.assessmentId,
@@ -13,7 +18,8 @@ export function assessmentBody(a: {
     final: a.final,
     created_at: a.createdAt.toISOString(),
     updated_at: a.updatedAt.toISOString(),
-    order: a.order,
+    // The cart detail a merchant sends (items, shipping, payment) stays out of the response.
+    order: { id: a.order.id, amount: a.order.amount, currency: a.order.currency },
     driver: v.driver,
     handover: v.handover,
     automation_type: v.automationType,
@@ -24,5 +30,9 @@ export function assessmentBody(a: {
     signals_used: v.signalsUsed,
     suggested_action: suggestedAction(v, policy),
     scorer_version: v.score.scorerVersion,
+    decision: decisionFor(v, policy),
+    legitimacy: { evaluated: false, score: null, reasons: [] },
+    intent: { status: a.intentRef ? "not_evaluated" : "not_provided", score: null, violations: [] },
+    evidence_id: null,
   };
 }

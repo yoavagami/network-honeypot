@@ -94,6 +94,23 @@ describe("Node helper snippet (docs/integrate/snippets/node/uhoney.mjs)", () => 
     expect(JSON.stringify(body)).not.toContain("secret");
   });
 
+  it("passes optional cart detail and the intent reference through, contract-valid", async () => {
+    let body: any;
+    await mod.assessOrder({
+      ...input(async (_u: string, init: any) => { body = JSON.parse(init.body); return new Response("{}", { status: 200 }); }),
+      order: {
+        id: "ord_9", amount: 900, currency: "EUR",
+        items: [{ sku: "bar", title: "Bar", category: "chocolate", quantity: 2, unit_amount: 450 }],
+        shipping: { country: "NL", address_hash: "a1b2c3d4e5f6a7b8", new_address: true }, payment: { method: "card" },
+      },
+      intentRef: "in_demo.9",
+    });
+    expect(assessRequest.safeParse(body).success).toBe(true);
+    expect(body.order.items).toEqual([{ sku: "bar", title: "Bar", category: "chocolate", quantity: 2, unit_amount: 450 }]);
+    expect(body.order.shipping).toEqual({ country: "NL", address_hash: "a1b2c3d4e5f6a7b8", new_address: true });
+    expect(body.intent_ref).toBe("in_demo.9");
+  });
+
   it("works with Fetch API Headers (Next.js)", async () => {
     let body: any;
     await mod.assessOrder({ ...input(async (_u: string, init: any) => { body = JSON.parse(init.body); return new Response("{}", { status: 200 }); }), headers: new Headers({ "user-agent": "UA", accept: "*/*", cookie: "x" }) });
@@ -132,11 +149,12 @@ describe("Node helper snippet (docs/integrate/snippets/node/uhoney.mjs)", () => 
   });
 
   it("maps a verdict to order fields and Stripe metadata (strings only)", () => {
-    const a = { assessment_id: "as_1", driver: "agent", suggested_action: "review", agent: { id: "browser-use", verified: false }, score: 0.93 };
-    expect(mod.verdictFields(a)).toEqual({ uhoney_assessment_id: "as_1", uhoney_driver: "agent", uhoney_action: "review" });
+    const a = { assessment_id: "as_1", driver: "agent", suggested_action: "review", decision: "confirm", agent: { id: "browser-use", verified: false }, score: 0.93 };
+    expect(mod.verdictFields(a)).toEqual({ uhoney_assessment_id: "as_1", uhoney_driver: "agent", uhoney_action: "review", uhoney_decision: "confirm" });
+    expect(mod.verdictFields(null)).toEqual({ uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null });
     const md = mod.stripeMetadata(a);
     expect(Object.values(md).every((v) => typeof v === "string")).toBe(true);
-    expect(md).toMatchObject({ uhoney_agent: "browser-use", uhoney_agent_verified: "false", uhoney_score: "0.93" });
+    expect(md).toMatchObject({ uhoney_agent: "browser-use", uhoney_agent_verified: "false", uhoney_score: "0.93", uhoney_decision: "confirm" });
     expect(mod.stripeMetadata(null)).toEqual({});
   });
 });

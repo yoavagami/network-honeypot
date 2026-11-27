@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { UaInfo } from "./userAgent.js";
+import type { UaInfo } from "@honeypot/identity";
 
 /** Headers nginx sets itself on the way to the app (proxy_params_*.conf) — not the client's. */
 const PROXY_ADDED = new Set([

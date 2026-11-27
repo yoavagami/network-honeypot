@@ -19,6 +19,7 @@ honeypot admins ──► admin-web /merchants ──► admin-api ──/intern
 | API + workers | `apps/merchant-api` | `/v1/*` public API, `/m/api/*` merchant dashboard, `/internal/*` admin, scoring + webhook + retention workers |
 | Admin views | `apps/admin-api/src/routes/merchants.ts`, `apps/admin-web/src/pages/MerchantsAdmin.tsx` | All merchants, filterable by one; access-logged |
 | Merchant portal | `apps/admin-web/src/pages/MerchantPortal.tsx` (`/m/*`) | Own sign-in; one merchant only |
+| Identity checks | `packages/identity` | User-agent claims, Web Bot Auth, published agent IP ranges (`data/ranges/`), Tor, reverse DNS and the verified / claimed / spoofed verdict. Shared with the honeypot. |
 | Guides | `docs/integrate` → `pnpm --filter @honeypot/app-merchant-api build:docs` | Served at `/docs/integrate`, `/integrate/v1/agent.md`, the helpers `/integrate/v1/uhoney.mjs` and `/integrate/v1/uhoney.php`, and `llms.txt` (`/integrate/llms.txt` on the shop host, whose root belongs to the honeypot; `/llms.txt` on a separate API host) |
 
 Scoring reuses `packages/detection` unchanged: merchant events are mapped to the same visit rows the honeypot
@@ -45,6 +46,12 @@ textual patches (`apps/merchant-api/src/tag.ts`); a test fails if a patch target
   (Slack incoming webhook, or an ntfy topic URL for phone notifications) and `MERCHANT_ALERT_IGNORE_IPS`
   to skip your own addresses. Access-request alerts carry the company name only, never the email.
   Same retention as page hits.
+- **Decisions, intents, evidence** (migration 0005). Every assess returns a `decision` (allow / confirm /
+  block; block only with the merchant's `policy.block_when`), and each decision, the first and every later
+  change, is a row in `decisions` (deleted with its assessment after 400 days). `intents` (400 days) and
+  `evidence_entries` (append-only, hash-chained, kept 540 days because card disputes can come that late) are
+  in place for the intent and evidence layers; nothing writes them yet. Cart detail sent at assess (items,
+  hashed address, payment method) stays with the assess event, under the merchant's event retention.
 
 ## Onboarding a merchant
 

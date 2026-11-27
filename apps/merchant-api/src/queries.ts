@@ -77,7 +77,7 @@ export async function listOrders(tx: MerchantTx, s: Scope, f: OrderFilters) {
   const limit = Math.min(Math.max(f.limit ?? 50, 1), 200);
   return tx`
     SELECT a.assessment_id, a.merchant_id, m.company, a.livemode, a.order_id, a.amount, a.currency, a.visit_id, a.final, a.token_status,
-           a.created_at, a.updated_at, a.response->>'driver' AS driver, a.response->>'suggested_action' AS suggested_action,
+           a.created_at, a.updated_at, a.response->>'driver' AS driver, a.response->>'suggested_action' AS suggested_action, a.decision,
            (a.response->>'score')::float AS score, a.response->'agent' AS agent,
            (SELECT f.outcome FROM feedback f WHERE f.assessment_id = a.assessment_id ORDER BY f.created_at DESC LIMIT 1) AS outcome
     FROM assessments a JOIN merchants m USING (merchant_id)

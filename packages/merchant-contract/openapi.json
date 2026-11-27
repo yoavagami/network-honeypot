@@ -173,7 +173,34 @@
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 128 },
           "amount": { "type": "integer", "minimum": 0, "maximum": 10000000000, "description": "Minor units (cents)." },
-          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "items": { "type": "array", "maxItems": 100, "description": "Optional. The cart lines, for the intent and legitimacy checks.", "items": { "$ref": "#/components/schemas/LineItem" } },
+          "shipping": {
+            "type": "object",
+            "description": "Optional. Never the address itself: send your own hash of the normalized address.",
+            "properties": {
+              "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+              "address_hash": { "type": "string", "pattern": "^[A-Za-z0-9_+/=:-]{8,128}$", "description": "Any stable hash of the normalized shipping address, e.g. SHA-256 hex." },
+              "new_address": { "type": "boolean", "description": "True when this customer has never shipped to this address before." }
+            }
+          },
+          "payment": {
+            "type": "object",
+            "description": "Optional.",
+            "required": ["method"],
+            "properties": { "method": { "type": "string", "enum": ["card", "wallet", "bank_transfer", "bnpl", "gift_card", "crypto", "other"] } }
+          }
+        }
+      },
+      "LineItem": {
+        "type": "object",
+        "required": ["sku", "quantity", "unit_amount"],
+        "properties": {
+          "sku": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200, "description": "As the shopper sees it." },
+          "category": { "type": "string", "pattern": "^[a-z0-9_-]{1,64}$", "description": "Your own category slug, e.g. `chocolate`, `gift_card`." },
+          "quantity": { "type": "integer", "minimum": 1, "maximum": 100000 },
+          "unit_amount": { "type": "integer", "minimum": 0, "maximum": 10000000000, "description": "Price of one unit, minor units." }
         }
       },
       "AssessRequest": {
@@ -183,6 +210,7 @@
           "session_token": { "$ref": "#/components/schemas/SessionToken" },
           "stage": { "type": "string", "enum": ["pay", "checkout"], "default": "pay" },
           "order": { "$ref": "#/components/schemas/Order" },
+          "intent_ref": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,128}$", "description": "Optional. The intent this order should fulfil: an intent id or your own reference." },
           "request": {
             "type": "object",
             "description": "The visitor's request to your server, as you received it.",
@@ -221,7 +249,7 @@
       },
       "Assessment": {
         "type": "object",
-        "required": ["assessment_id", "merchant_id", "livemode", "final", "created_at", "updated_at", "order", "driver", "handover", "automation_type", "agent", "score", "confidence", "reasons", "signals_used", "suggested_action", "scorer_version"],
+        "required": ["assessment_id", "merchant_id", "livemode", "final", "created_at", "updated_at", "order", "driver", "handover", "automation_type", "agent", "score", "confidence", "reasons", "signals_used", "suggested_action", "scorer_version", "decision", "legitimacy", "intent", "evidence_id"],
         "properties": {
           "assessment_id": { "$ref": "#/components/schemas/AssessmentId" },
           "merchant_id": { "$ref": "#/components/schemas/MerchantId" },
@@ -247,7 +275,29 @@
             "properties": { "client": { "type": "boolean", "description": "The page script reported for this visit." }, "server": { "type": "boolean" } }
           },
           "suggested_action": { "type": "string", "enum": ["allow", "review", "challenge"], "description": "From your policy. The default policy never suggests more than `review`." },
-          "scorer_version": { "type": "string" }
+          "scorer_version": { "type": "string" },
+          "decision": { "type": "string", "enum": ["allow", "confirm", "block"], "description": "What to do with the order: let it through, confirm with the shopper first, or stop it. The default policy never returns `block`; your policy can opt in for spoofed or unverified agents." },
+          "legitimacy": {
+            "type": "object",
+            "description": "Is the agent acting for a real, authorized shopper? Not evaluated yet: `evaluated` is false and `score` is null.",
+            "required": ["evaluated", "score", "reasons"],
+            "properties": {
+              "evaluated": { "type": "boolean" },
+              "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Higher is more legitimate." },
+              "reasons": { "type": "array", "maxItems": 8, "items": { "$ref": "#/components/schemas/Reason" } }
+            }
+          },
+          "intent": {
+            "type": "object",
+            "description": "Does the cart match what the shopper asked for?",
+            "required": ["status", "score", "violations"],
+            "properties": {
+              "status": { "type": "string", "enum": ["not_provided", "not_evaluated", "match", "mismatch"], "description": "`not_provided`: no `intent_ref` was sent. `not_evaluated`: sent, but not checked yet." },
+              "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+              "violations": { "type": "array", "maxItems": 20, "items": { "$ref": "#/components/schemas/Reason" } }
+            }
+          },
+          "evidence_id": { "type": ["string", "null"], "description": "The order's evidence record, once evidence is kept. Null for now." }
         }
       },
       "FeedbackRequest": {
@@ -324,7 +374,7 @@
                   "previous": {
                     "type": ["object", "null"],
                     "required": ["driver", "suggested_action"],
-                    "properties": { "driver": { "$ref": "#/components/schemas/Driver" }, "suggested_action": { "type": "string", "enum": ["allow", "review", "challenge"] } }
+                    "properties": { "driver": { "$ref": "#/components/schemas/Driver" }, "suggested_action": { "type": "string", "enum": ["allow", "review", "challenge"] }, "decision": { "type": "string", "enum": ["allow", "confirm", "block"] } }
                   }
                 }
               }
@@ -378,7 +428,12 @@
         "value": {
           "session_token": "st_eyJtIjoibWVyXzdRMks5WFJNIn0.Qm9ndXNTaWduYXR1cmVGb3JFeGFtcGxl",
           "stage": "pay",
-          "order": { "id": "ord_1042", "amount": 12900, "currency": "EUR" },
+          "order": {
+            "id": "ord_1042", "amount": 12900, "currency": "EUR",
+            "items": [{ "sku": "dark-70-bar", "title": "Dark chocolate 70%, 100 g", "category": "chocolate", "quantity": 3, "unit_amount": 4300 }],
+            "shipping": { "country": "NL", "address_hash": "9c1185a5c5e9fc54612808977ee8f548b2258d31", "new_address": false },
+            "payment": { "method": "card" }
+          },
           "request": {
             "ip": "203.0.113.7",
             "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -411,7 +466,11 @@
           ],
           "signals_used": { "client": true, "server": true },
           "suggested_action": "allow",
-          "scorer_version": "2026.11.13-5"
+          "scorer_version": "2026.11.13-5",
+          "decision": "allow",
+          "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
+          "intent": { "status": "not_provided", "score": null, "violations": [] },
+          "evidence_id": null
         }
       },
       "AssessmentVerifiedAgent": {
@@ -432,7 +491,11 @@
           "reasons": [{ "code": "verified_identity", "text": "Web Bot Auth signature from chatgpt.com verified" }],
           "signals_used": { "client": true, "server": true },
           "suggested_action": "allow",
-          "scorer_version": "2026.11.13-5"
+          "scorer_version": "2026.11.13-5",
+          "decision": "allow",
+          "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
+          "intent": { "status": "not_provided", "score": null, "violations": [] },
+          "evidence_id": null
         }
       },
       "FeedbackRequest": { "value": { "order_id": "ord_1042", "outcome": "chargeback" } },
@@ -476,9 +539,13 @@
               "reasons": [{ "code": "jump_clicks", "text": "Clicks landed with no pointer movement before them" }],
               "signals_used": { "client": true, "server": true },
               "suggested_action": "allow",
-              "scorer_version": "2026.11.13-5"
+              "scorer_version": "2026.11.13-5",
+              "decision": "allow",
+              "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
+              "intent": { "status": "not_provided", "score": null, "violations": [] },
+              "evidence_id": null
             },
-            "previous": { "driver": "agent_then_human", "suggested_action": "allow" }
+            "previous": { "driver": "agent_then_human", "suggested_action": "allow", "decision": "allow" }
           }
         }
       },

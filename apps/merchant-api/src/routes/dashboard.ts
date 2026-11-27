@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import argon2 from "argon2";
 import { z } from "zod";
-import { policySchema, DEFAULT_POLICY } from "@honeypot/merchant-contract";
+import { policySchema, DEFAULT_POLICY, type Assessment } from "@honeypot/merchant-contract";
 import { withMerchant, type MerchantTx } from "@honeypot/merchant-db";
 import type { Deps } from "../context.js";
 import {
@@ -404,7 +404,9 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
         automation_type: "in_browser_agent", agent: { id: "claude-in-chrome", operator: "Anthropic", verified: false, verification: null },
         score: 0.97, confidence: "high", reasons: [{ code: "jump_clicks", text: "This is a test webhook from the uHoney dashboard" }],
         signals_used: { client: true, server: true }, suggested_action: "allow", scorer_version: "test",
-      };
+        decision: "allow", legitimacy: { evaluated: false, score: null, reasons: [] },
+        intent: { status: "not_provided", score: null, violations: [] }, evidence_id: null,
+      } satisfies Assessment;
       return enqueueEvent(tx, s.merchantId, e.livemode, "assessment.updated", { assessment: sample, previous: null }, { endpointId: e.endpoint_id, isTest: true });
     }).catch(() => []);
     if (!ids.length) return reply.status(404).send({ error: { code: "not_found", message: "No such endpoint." } });

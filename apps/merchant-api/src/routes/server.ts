@@ -12,6 +12,7 @@ import { merchantVisits } from "../scoring/visits.js";
 import { loadSessionEvents, LOOKBACK_MS } from "../scoring/load.js";
 import { verdictFor } from "../scoring/verdict.js";
 import { assessmentBody } from "../assessmentBody.js";
+import { recordDecision } from "../decisions.js";
 import { integrationStatus } from "../status.js";
 import { RateLimiter } from "../ratelimit.js";
 
@@ -111,16 +112,19 @@ export function registerServerApi(app: FastifyInstance, deps: Deps) {
       if (!visit) throw new Error("assess: visit not built");
       const verdict = verdictFor(visit, now, tokenStatus === "invalid" ? ["session_token_invalid"] : []);
       const assessmentId = newAssessmentId();
+      const policy = await merchantPolicy(tx, key.merchantId);
       const response = assessmentBody({
         assessmentId, merchantId: key.merchantId, livemode: key.livemode, final: false, createdAt: now, updatedAt: now, order: body.order,
-      }, verdict, await merchantPolicy(tx, key.merchantId));
+        intentRef: body.intent_ref ?? null,
+      }, verdict, policy);
       const serverMs = Math.round(performance.now() - started);
       await tx`
         INSERT INTO assessments (assessment_id, merchant_id, livemode, idempotency_key, request_hash, session_id, visit_id, order_id, amount, currency,
-                                 token_status, header_count, server_ms, response, created_at, updated_at)
+                                 token_status, header_count, server_ms, response, decision, intent_ref, created_at, updated_at)
         VALUES (${assessmentId}, ${key.merchantId}, ${key.livemode}, ${idempotencyKey}, ${requestHash}, ${sessionId}, ${visitIdFor(key.merchantId, visit.id)},
                 ${body.order.id}, ${body.order.amount}, ${body.order.currency}, ${tokenStatus}, ${Object.keys(headers).length}, ${serverMs},
-                ${tx.json(response as any)}, ${now}, ${now})`;
+                ${tx.json(response as any)}, ${response.decision}, ${body.intent_ref ?? null}, ${now}, ${now})`;
+      await recordDecision(tx, response, policy);
       return response;
     }).catch(async (err) => {
       // Two concurrent calls with one idempotency key: the loser returns the winner's answer.

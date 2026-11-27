@@ -20,7 +20,7 @@ import { registerNotFoundHandler } from "./routes/notFound.js";
 import { registerRumRoutes } from "./routes/rum.js";
 import { registerShopRoutes } from "./routes/shop.js";
 import { applyLadder, registerLadderRoutes } from "./sensing/ladder.js";
-import { startIpIntelRefresh } from "./sensing/ipIntel.js";
+import { startIpIntelRefresh } from "@honeypot/identity";
 import { setPageLoadLookup } from "./sensing/pageLoads.js";
 import { startVisitScorer } from "./scoring/visitScorer.js";
 import { eq } from "drizzle-orm";

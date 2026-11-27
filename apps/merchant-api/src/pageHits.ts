@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Deps } from "./context.js";
-import { parseUserAgent } from "../../honeypot/src/sensing/userAgent.js";
+import { parseUserAgent } from "@honeypot/identity";
 import { ALERT_PATHS, raiseAlert, type AlertKind } from "./siteAlerts.js";
 
 /**

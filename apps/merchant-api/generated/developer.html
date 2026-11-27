@@ -106,12 +106,15 @@ function readHeader(headers, name) {
  *
  * @param {object} p
  * @param {string|undefined|null} p.sessionToken  the uhoney_token the checkout form sent
- * @param {{id: string, amount: number, currency: string}} p.order  amount in minor units (cents)
+ * @param {{id: string, amount: number, currency: string, items?: Array&lt;{sku: string, title?: string, category?: string, quantity: number, unit_amount: number}&gt;, shipping?: {country?: string, address_hash?: string, new_address?: boolean}, payment?: {method: string}}} p.order
+ *   amounts in minor units (cents). items, shipping and payment are optional; shipping carries a hash
+ *   of the address, never the address itself.
+ * @param {string} [p.intentRef]  the intent this order should fulfil, if you have one
  * @param {string} p.ip  the visitor's IP address
  * @param {object} p.headers  the visitor's request headers (Express req.headers or Fetch Headers)
  * @param {string} [p.method]  @param {string} [p.path]  @param {string} [p.host]
  */
-export async function assessOrder({ sessionToken, order, ip, headers, method, path, host, timeoutMs = 300, fetchImpl = fetch }) {
+export async function assessOrder({ sessionToken, order, intentRef, ip, headers, method, path, host, timeoutMs = 300, fetchImpl = fetch }) {
   const secret = process.env.UHONEY_SECRET_KEY;
   if (!secret || !order || !ip) return null;
   const forwarded = {};
@@ -122,7 +125,16 @@ export async function assessOrder({ sessionToken, order, ip, headers, method, pa
   const body = {
     session_token: typeof sessionToken === &quot;string&quot; &amp;&amp; sessionToken.startsWith(&quot;st_&quot;) ? sessionToken : undefined,
     stage: &quot;pay&quot;,
-    order: { id: String(order.id), amount: Math.round(order.amount), currency: String(order.currency).toUpperCase() },
+    order: {
+      id: String(order.id), amount: Math.round(order.amount), currency: String(order.currency).toUpperCase(),
+      items: Array.isArray(order.items) ? order.items.slice(0, 100).map((i) =&gt; ({
+        sku: String(i.sku), title: i.title ? String(i.title).slice(0, 200) : undefined, category: i.category || undefined,
+        quantity: Math.round(i.quantity), unit_amount: Math.round(i.unit_amount),
+      })) : undefined,
+      shipping: order.shipping || undefined,
+      payment: order.payment || undefined,
+    },
+    intent_ref: intentRef || undefined,
     request: { ip, user_agent: readHeader(headers, &quot;user-agent&quot;) ?? null, method, path, host, headers: forwarded },
   };
   try {
@@ -141,8 +153,11 @@ export async function assessOrder({ sessionToken, order, ip, headers, method, pa
 
 /** The fields worth keeping on your order record. */
 export function verdictFields(assessment) {
-  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null };
-  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_action: assessment.suggested_action };
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null };
+  return {
+    uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver,
+    uhoney_action: assessment.suggested_action, uhoney_decision: assessment.decision ?? null,
+  };
 }
 
 /** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
@@ -152,6 +167,7 @@ export function stripeMetadata(assessment) {
     uhoney_assessment_id: assessment.assessment_id,
     uhoney_driver: assessment.driver,
     uhoney_action: assessment.suggested_action,
+    uhoney_decision: assessment.decision ?? &quot;none&quot;,
     uhoney_agent: assessment.agent ? assessment.agent.id : &quot;none&quot;,
     uhoney_agent_verified: String(Boolean(assessment.agent &amp;&amp; assessment.agent.verified)),
     uhoney_score: String(assessment.score),
@@ -175,7 +191,8 @@ export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHO
 }</code></pre>
 <p>What the helper guarantees, and any hand-written version must too:</p>
 <ul><li>a <strong>300 ms timeout</strong>; on timeout or any error it returns <code>null</code> and <strong>the payment continues unchanged</strong>;</li><li>the visitor's IP, user agent and the listed headers are forwarded — <strong>never</strong> <code>cookie</code> or <code>authorization</code>;</li><li><code>Idempotency-Key</code> is the order id, so a retried checkout gets the same assessment.</li></ul>
-<p>Save <code>assessment_id</code>, <code>driver</code> and <code>suggested_action</code> on the order. With Stripe, also put <code>stripeMetadata(assessment)</code> into the PaymentIntent's <code>metadata</code>, so Radar rules can use it (for example: review if <code>uhoney_action</code> is <code>review</code>).</p>
+<p>Save <code>assessment_id</code>, <code>driver</code>, <code>suggested_action</code> and <code>decision</code> on the order. <code>decision</code> is <code>allow</code>, <code>confirm</code> (ask the shopper to confirm before charging) or <code>block</code>; the default policy never returns <code>block</code>. With Stripe, also put <code>stripeMetadata(assessment)</code> into the PaymentIntent's <code>metadata</code>, so Radar rules can use it (for example: review if <code>uhoney_decision</code> is <code>confirm</code>).</p>
+<p>Optional, and worth sending: the cart lines (<code>items</code>: <code>sku</code>, <code>title</code>, <code>category</code>, <code>quantity</code>, <code>unit_amount</code> in cents), <code>shipping</code> (<code>country</code>, <code>new_address</code>, and <code>address_hash</code>: your own hash of the normalized address, never the address itself) and <code>payment.method</code>. uHoney uses them to check that the cart matches what the shopper asked for. Never send names, emails, phone numbers or the address in clear.</p>
 <p>The response looks like this (full contract: <code>{{API_URL}}/integrate/v1/openapi.json</code>):</p>
 <pre><code class="language-json">{
   &quot;assessment_id&quot;: &quot;as_9fK2aB7cD1eF3gH5iJ6k&quot;,
@@ -185,6 +202,9 @@ export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHO
   &quot;score&quot;: 0.97,
   &quot;confidence&quot;: &quot;high&quot;,
   &quot;suggested_action&quot;: &quot;allow&quot;,
+  &quot;decision&quot;: &quot;allow&quot;,
+  &quot;legitimacy&quot;: { &quot;evaluated&quot;: false, &quot;score&quot;: null, &quot;reasons&quot;: [] },
+  &quot;intent&quot;: { &quot;status&quot;: &quot;not_provided&quot;, &quot;score&quot;: null, &quot;violations&quot;: [] },
   &quot;final&quot;: false
 }</code></pre>
 <p><strong>Check:</strong> place a test order: <code>assess_called</code>, <code>assess_headers</code> and <code>assess_latency</code> pass.</p>
@@ -316,9 +336,12 @@ const UHONEY_FORWARD_HEADERS = [
 
 /**
  * Verdict before charging. Fails open: returns null on any error or after 300 ms.
- * $order = ['id' =&gt; 'ord_1', 'amount' =&gt; 12900, 'currency' =&gt; 'EUR'] (amount in cents).
+ * $order = ['id' =&gt; 'ord_1', 'amount' =&gt; 12900, 'currency' =&gt; 'EUR'] (amount in cents). Optional:
+ * 'items' =&gt; [['sku' =&gt; 'a1', 'title' =&gt; '...', 'category' =&gt; 'chocolate', 'quantity' =&gt; 2, 'unit_amount' =&gt; 450]],
+ * 'shipping' =&gt; ['country' =&gt; 'NL', 'address_hash' =&gt; hash('sha256', $normalizedAddress), 'new_address' =&gt; false],
+ * 'payment' =&gt; ['method' =&gt; 'card']. Never the address itself.
  */
-function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300): ?array
+function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300, ?string $intentRef = null): ?array
 {
     $secret = getenv('UHONEY_SECRET_KEY');
     if (!$secret) return null;
@@ -330,7 +353,12 @@ function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300
     }
     $body = [
         'stage' =&gt; 'pay',
-        'order' =&gt; ['id' =&gt; (string) $order['id'], 'amount' =&gt; (int) $order['amount'], 'currency' =&gt; strtoupper($order['currency'])],
+        'order' =&gt; array_filter([
+            'id' =&gt; (string) $order['id'], 'amount' =&gt; (int) $order['amount'], 'currency' =&gt; strtoupper($order['currency']),
+            'items' =&gt; isset($order['items']) ? array_slice($order['items'], 0, 100) : null,
+            'shipping' =&gt; $order['shipping'] ?? null,
+            'payment' =&gt; $order['payment'] ?? null,
+        ], function ($v) { return $v !== null; }),
         'request' =&gt; [
             'ip' =&gt; $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
             'user_agent' =&gt; $_SERVER['HTTP_USER_AGENT'] ?? null,
@@ -341,6 +369,7 @@ function uhoney_assess(array $order, ?string $sessionToken, int $timeoutMs = 300
         ],
     ];
     if (is_string($sessionToken) &amp;&amp; strpos($sessionToken, 'st_') === 0) $body['session_token'] = $sessionToken;
+    if ($intentRef) $body['intent_ref'] = $intentRef;
 
     $ch = curl_init($api . '/v1/assess');
     curl_setopt_array($ch, [
@@ -374,7 +403,7 @@ function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $t
 
 // In your checkout handler, before charging:
 //   $assessment = uhoney_assess(['id' =&gt; $orderId, 'amount' =&gt; $totalCents, 'currency' =&gt; 'EUR'], $_POST['uhoney_token'] ?? null);
-//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'] on the order (if not null)
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'], $assessment['decision'] on the order (if not null)
 //   ...continue the payment exactly as before.</code></pre>
 <p>Behind a load balancer, make sure <code>REMOTE_ADDR</code> is the visitor's IP (trusted proxy settings).</p>
 <h3 id="anything-else">Anything else</h3>

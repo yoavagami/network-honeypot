@@ -1,7 +1,7 @@
 import { scoreVisit, visitEvidence, SIGNALS, type AgentScore, type Visit } from "@honeypot/detection";
 import {
   DEFAULT_POLICY, SERVER_REASON_CODES, AUTOMATION_TYPES,
-  type AgentInfo, type Confidence, type Driver, type Policy, type Reason, type SuggestedAction, type VerificationMethod,
+  type AgentInfo, type Confidence, type Decision, type Driver, type Policy, type Reason, type SuggestedAction, type VerificationMethod,
 } from "@honeypot/merchant-contract";
 import { operatorFor } from "../sensing.js";
 
@@ -20,6 +20,8 @@ export interface MerchantVerdict {
   confidence: Confidence;
   reasons: Reason[];
   signalsUsed: { client: boolean; server: boolean };
+  /** A request claimed to be a known agent and failed that agent's verification. */
+  spoofed: boolean;
 }
 
 const AGENTISH_MODES = new Set(["agent", "agent_then_human", "human_then_agent", "mixed"]);
@@ -87,6 +89,7 @@ export function verdictFor(visit: Visit, now: Date, extra: Array<keyof typeof SE
     confidence: confidenceFor(score.probability),
     reasons: reasonsFor(score, reasonsExtra),
     signalsUsed: { client: hasClient, server: visit.requests.length > 0 },
+    spoofed: visit.requests.some((r) => r.identity_verdict === "spoofed"),
   };
 }
 
@@ -98,4 +101,18 @@ export function suggestedAction(v: Pick<MerchantVerdict, "driver" | "agent" | "p
   if (v.driver === "agent" || v.driver === "human_then_agent" || v.driver === "mixed") return p.unverified_agent;
   if (v.probability >= 0.35 && v.probability < 0.7) return p.uncertain;
   return "allow";
+}
+
+/**
+ * The decision: allow, confirm with the human, or block. It follows the suggested action (review
+ * and challenge both mean confirm), and becomes block only where the policy opts in with
+ * block_when. The default policy never blocks.
+ */
+export function decisionFor(v: Pick<MerchantVerdict, "driver" | "agent" | "probability" | "spoofed">, policy: Partial<Policy> = {}): Decision {
+  const suggested = suggestedAction(v, policy);
+  const blockWhen = new Set(policy.block_when ?? []);
+  if (blockWhen.has("spoofed_agent") && v.spoofed) return "block";
+  const unverifiedAgent = !v.agent?.verified && (v.driver === "agent" || v.driver === "human_then_agent" || v.driver === "mixed");
+  if (blockWhen.has("unverified_agent") && unverifiedAgent) return "block";
+  return suggested === "allow" ? "allow" : "confirm";
 }

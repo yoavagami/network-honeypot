@@ -33,7 +33,7 @@ export interface VisitRow {
 }
 export interface OrderRow {
   assessment_id: string; merchant_id: string; company: string; order_id: string; amount: number; currency: string; visit_id: string | null; final: boolean;
-  token_status: string; created_at: string; driver: string; suggested_action: string; score: number; agent: { id: string; operator: string | null; verified: boolean } | null; outcome: string | null;
+  token_status: string; created_at: string; driver: string; suggested_action: string; decision: string | null; score: number; agent: { id: string; operator: string | null; verified: boolean } | null; outcome: string | null;
 }
 export interface Overview {
   days: number;
@@ -118,7 +118,9 @@ async function mreq<T>(path: string, init: RequestInit = {}): Promise<T> {
 export interface MerchantMe { user: { email: string; name: string; role: "owner" | "developer" | "analyst" }; merchant: { id: string; company: string }; csrf: string; live_available: boolean }
 export interface KeyRow { key_id: string; kind: "public" | "secret"; livemode: boolean; public_value: string | null; display: string; created_at: string; created_by: string; last_used_at: string | null; revoked_at: string | null }
 export interface DomainRow { domain_id: string; host: string; verification_token: string; verified_at: string | null; verified_method: string | null; last_checked_at: string | null; txt_record: string; meta_tag: string }
-export type Policy = Record<"verified_agent" | "unverified_agent" | "agent_then_human" | "uncertain", "allow" | "review" | "challenge">;
+export type PolicyCategory = "verified_agent" | "unverified_agent" | "agent_then_human" | "uncertain";
+export type BlockCategory = "spoofed_agent" | "unverified_agent";
+export type Policy = Record<PolicyCategory, "allow" | "review" | "challenge"> & { block_when: BlockCategory[] };
 
 export const merchant = {
   login: (email: string, password: string) => mreq<{ ok: true }>("/m/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),

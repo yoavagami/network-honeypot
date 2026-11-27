@@ -16,7 +16,7 @@ import type { Logger } from "@honeypot/logging";
  * turn real traffic into "spoofed".
  */
 
-const RANGES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "data", "ranges");
+const RANGES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "data", "ranges");
 
 const RANGE_SOURCES: Record<string, string> = {
   "openai-gptbot": "https://openai.com/gptbot.json",

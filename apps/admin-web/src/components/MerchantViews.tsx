@@ -30,6 +30,13 @@ export function ActionBadge({ action }: { action: string }) {
   return <span className={`badge ${cls}`}>{action}</span>;
 }
 
+/** allow / confirm (ask the shopper first) / block. */
+export function DecisionBadge({ decision }: { decision: string | null | undefined }) {
+  if (!decision) return <span className="muted">—</span>;
+  const cls = decision === "block" ? "critical" : decision === "confirm" ? "medium" : "low";
+  return <span className={`badge ${cls}`}>{decision}</span>;
+}
+
 /** P(AI agent) bar: the same coloured bar as the Agents list (green → yellow → orange → red). */
 export function Score({ p }: { p: number }) {
   return <ProbabilityBar p={p} />;
@@ -165,7 +172,7 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
   return (
     <table>
       <thead>
-        <tr>{showMerchant && <th>Merchant</th>}<th>When</th><th>Order</th><th>Amount</th><th>Driven by</th><th>Agent</th><th>Score</th><th>Suggested</th><th>Final</th><th>Outcome</th></tr>
+        <tr>{showMerchant && <th>Merchant</th>}<th>When</th><th>Order</th><th>Amount</th><th>Driven by</th><th>Agent</th><th>Score</th><th>Decision</th><th>Suggested</th><th>Final</th><th>Outcome</th></tr>
       </thead>
       <tbody>
         {orders.map((o) => (
@@ -177,6 +184,7 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
             <td><ControlChip mode={o.driver} /></td>
             <td><AgentName agent={o.agent?.id ?? null} verified={o.agent?.verified} /></td>
             <td><Score p={o.score} /></td>
+            <td><DecisionBadge decision={o.decision} /></td>
             <td><ActionBadge action={o.suggested_action} /></td>
             <td>{o.final ? "yes" : <span className="muted">not yet</span>}</td>
             <td>{o.outcome ?? <span className="muted">—</span>}</td>
