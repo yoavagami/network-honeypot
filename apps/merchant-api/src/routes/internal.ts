@@ -217,7 +217,7 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     const s = scopeOf(request);
     if (!s) return notFound(reply);
     const q = request.query as Record<string, string>;
-    return reply.send({ orders: await tx((t) => listOrders(t, s, { action: q.action || undefined, driver: q.driver || undefined, before: q.before, limit: Number(q.limit) || 50 })) });
+    return reply.send({ orders: await tx((t) => listOrders(t, s, { decision: q.decision || undefined, driver: q.driver || undefined, before: q.before, limit: Number(q.limit) || 50 })) });
   });
   app.get<{ Params: { id: string } }>("/internal/orders/:id", async (request, reply) => {
     const s = scopeOf(request);

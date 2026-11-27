@@ -249,7 +249,7 @@
       },
       "Assessment": {
         "type": "object",
-        "required": ["assessment_id", "merchant_id", "livemode", "final", "created_at", "updated_at", "order", "driver", "handover", "automation_type", "agent", "score", "confidence", "reasons", "signals_used", "suggested_action", "scorer_version", "decision", "legitimacy", "intent", "evidence_id"],
+        "required": ["assessment_id", "merchant_id", "livemode", "final", "created_at", "updated_at", "order", "driver", "handover", "automation_type", "agent", "score", "confidence", "reasons", "signals_used", "scorer_version", "decision", "legitimacy", "intent", "evidence_id"],
         "properties": {
           "assessment_id": { "$ref": "#/components/schemas/AssessmentId" },
           "merchant_id": { "$ref": "#/components/schemas/MerchantId" },
@@ -274,9 +274,8 @@
             "required": ["client", "server"],
             "properties": { "client": { "type": "boolean", "description": "The page script reported for this visit." }, "server": { "type": "boolean" } }
           },
-          "suggested_action": { "type": "string", "enum": ["allow", "review", "challenge"], "description": "From your policy. The default policy never suggests more than `review`." },
           "scorer_version": { "type": "string" },
-          "decision": { "type": "string", "enum": ["allow", "confirm", "block"], "description": "What to do with the order: let it through, confirm with the shopper first, or stop it. The default policy never returns `block`; your policy can opt in for spoofed or unverified agents." },
+          "decision": { "type": "string", "enum": ["allow", "confirm", "block"], "description": "What to do with the order, from your policy: `allow` lets it through, `confirm` means your checkout gets the shopper's own approval of the cart before charging, `block` means don't take the payment. The default policy never returns `block`." },
           "legitimacy": {
             "type": "object",
             "description": "Is the agent acting for a real, authorized shopper? Not evaluated yet: `evaluated` is false and `score` is null.",
@@ -373,8 +372,8 @@
                   "assessment": { "$ref": "#/components/schemas/Assessment" },
                   "previous": {
                     "type": ["object", "null"],
-                    "required": ["driver", "suggested_action"],
-                    "properties": { "driver": { "$ref": "#/components/schemas/Driver" }, "suggested_action": { "type": "string", "enum": ["allow", "review", "challenge"] }, "decision": { "type": "string", "enum": ["allow", "confirm", "block"] } }
+                    "required": ["driver", "decision"],
+                    "properties": { "driver": { "$ref": "#/components/schemas/Driver" }, "decision": { "type": "string", "enum": ["allow", "confirm", "block"] } }
                   }
                 }
               }
@@ -465,7 +464,6 @@
             { "code": "handover_agent_to_human", "text": "A person took over on /checkout/payment" }
           ],
           "signals_used": { "client": true, "server": true },
-          "suggested_action": "allow",
           "scorer_version": "2026.11.13-5",
           "decision": "allow",
           "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
@@ -490,7 +488,6 @@
           "confidence": "high",
           "reasons": [{ "code": "verified_identity", "text": "Web Bot Auth signature from chatgpt.com verified" }],
           "signals_used": { "client": true, "server": true },
-          "suggested_action": "allow",
           "scorer_version": "2026.11.13-5",
           "decision": "allow",
           "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
@@ -538,14 +535,13 @@
               "confidence": "high",
               "reasons": [{ "code": "jump_clicks", "text": "Clicks landed with no pointer movement before them" }],
               "signals_used": { "client": true, "server": true },
-              "suggested_action": "allow",
               "scorer_version": "2026.11.13-5",
               "decision": "allow",
               "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
               "intent": { "status": "not_provided", "score": null, "violations": [] },
               "evidence_id": null
             },
-            "previous": { "driver": "agent_then_human", "suggested_action": "allow", "decision": "allow" }
+            "previous": { "driver": "agent_then_human", "decision": "allow" }
           }
         }
       },

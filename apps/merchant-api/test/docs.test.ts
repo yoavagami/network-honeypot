@@ -82,7 +82,7 @@ describe("Node helper snippet (docs/integrate/snippets/node/uhoney.mjs)", () => 
 
   it("sends a contract-valid request with the secret key, idempotency key and only safe headers", async () => {
     let seen: any;
-    const res = await mod.assessOrder(input(async (url: string, init: any) => { seen = { url, init }; return new Response(JSON.stringify({ assessment_id: "as_x", driver: "human", suggested_action: "allow" }), { status: 200 }); }));
+    const res = await mod.assessOrder(input(async (url: string, init: any) => { seen = { url, init }; return new Response(JSON.stringify({ assessment_id: "as_x", driver: "human", decision: "allow" }), { status: 200 }); }));
     expect(res.assessment_id).toBe("as_x");
     expect(seen.url).toBe("https://api.example.test/v1/assess");
     expect(seen.init.headers.authorization).toBe(`Bearer ${process.env.UHONEY_SECRET_KEY}`);
@@ -149,9 +149,9 @@ describe("Node helper snippet (docs/integrate/snippets/node/uhoney.mjs)", () => 
   });
 
   it("maps a verdict to order fields and Stripe metadata (strings only)", () => {
-    const a = { assessment_id: "as_1", driver: "agent", suggested_action: "review", decision: "confirm", agent: { id: "browser-use", verified: false }, score: 0.93 };
-    expect(mod.verdictFields(a)).toEqual({ uhoney_assessment_id: "as_1", uhoney_driver: "agent", uhoney_action: "review", uhoney_decision: "confirm" });
-    expect(mod.verdictFields(null)).toEqual({ uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null });
+    const a = { assessment_id: "as_1", driver: "agent", decision: "confirm", agent: { id: "browser-use", verified: false }, score: 0.93 };
+    expect(mod.verdictFields(a)).toEqual({ uhoney_assessment_id: "as_1", uhoney_driver: "agent", uhoney_decision: "confirm" });
+    expect(mod.verdictFields(null)).toEqual({ uhoney_assessment_id: null, uhoney_driver: null, uhoney_decision: null });
     const md = mod.stripeMetadata(a);
     expect(Object.values(md).every((v) => typeof v === "string")).toBe(true);
     expect(md).toMatchObject({ uhoney_agent: "browser-use", uhoney_agent_verified: "false", uhoney_score: "0.93", uhoney_decision: "confirm" });

@@ -10,7 +10,7 @@ import { signatureHeader, verifySignature } from "../src/webhooks/sign.js";
 import { isPrivateAddress } from "../src/webhooks/http.js";
 import { normaliseHost, verifyDomain } from "../src/domains.js";
 import { buildTag, patchAppJs, PATCHES } from "../src/tag.js";
-import { confidenceFor, decisionFor, suggestedAction } from "../src/scoring/verdict.js";
+import { confidenceFor, decisionFor, policyCategory } from "../src/scoring/verdict.js";
 import { normalisePath } from "../src/scoring/visits.js";
 
 describe("identifiers and keys", () => {
@@ -128,29 +128,28 @@ describe("verdict mapping", () => {
     expect(confidenceFor(0.8)).toBe("medium");
     expect(confidenceFor(0.5)).toBe("low");
   });
-  it("default policy never goes above review, merchant policy wins", () => {
-    const unverified = { driver: "agent" as const, agent: { id: "x", operator: null, verified: false, verification: null }, probability: 0.95 };
-    expect(suggestedAction(unverified)).toBe("review");
-    expect(suggestedAction({ ...unverified, agent: { ...unverified.agent, verified: true, verification: "web_bot_auth" as const } })).toBe("allow");
-    expect(suggestedAction({ ...unverified, driver: "agent_then_human" })).toBe("allow");
-    expect(suggestedAction({ driver: "human", agent: null, probability: 0.1 })).toBe("allow");
-    expect(suggestedAction(unverified, { unverified_agent: "challenge" })).toBe("challenge");
-  });
-  it("decision: review and challenge mean confirm; block only where the policy opts in", () => {
+  it("decision: the policy's choice for the situation; the default never blocks", () => {
     const unverified = { driver: "agent" as const, agent: { id: "x", operator: null, verified: false, verification: null }, probability: 0.95, spoofed: false };
     const verified = { ...unverified, agent: { ...unverified.agent, verified: true, verification: "web_bot_auth" as const } };
     const human = { driver: "human" as const, agent: null, probability: 0.1, spoofed: false };
+    expect(policyCategory(unverified)).toBe("unverified_agent");
+    expect(policyCategory({ ...unverified, spoofed: true })).toBe("spoofed_agent");
+    expect(policyCategory(verified)).toBe("verified_agent");
+    expect(policyCategory({ ...unverified, driver: "agent_then_human" })).toBe("agent_then_human");
+    expect(policyCategory({ driver: "unknown" as const, agent: null, probability: 0.5, spoofed: false })).toBe("uncertain");
+    expect(policyCategory(human)).toBeNull();
+    // Default policy.
     expect(decisionFor(unverified)).toBe("confirm");
-    expect(decisionFor(unverified, { unverified_agent: "challenge" })).toBe("confirm");
-    expect(decisionFor(verified)).toBe("allow");
-    expect(decisionFor(human)).toBe("allow");
     expect(decisionFor({ ...unverified, spoofed: true })).toBe("confirm");
-    expect(decisionFor({ ...unverified, spoofed: true }, { block_when: ["spoofed_agent"] })).toBe("block");
-    expect(decisionFor(unverified, { block_when: ["spoofed_agent"] })).toBe("confirm");
-    expect(decisionFor(unverified, { block_when: ["unverified_agent"] })).toBe("block");
-    expect(decisionFor(verified, { block_when: ["unverified_agent"] })).toBe("allow");
-    expect(decisionFor({ ...unverified, driver: "agent_then_human" }, { block_when: ["unverified_agent"] })).toBe("allow");
-    expect(decisionFor(human, { block_when: ["spoofed_agent", "unverified_agent"] })).toBe("allow");
+    expect(decisionFor(verified)).toBe("allow");
+    expect(decisionFor({ ...unverified, driver: "agent_then_human" })).toBe("allow");
+    expect(decisionFor(human)).toBe("allow");
+    // A merchant's choices win; situations it leaves unset use the default.
+    expect(decisionFor({ ...unverified, spoofed: true }, { spoofed_agent: "block" })).toBe("block");
+    expect(decisionFor(unverified, { spoofed_agent: "block" })).toBe("confirm");
+    expect(decisionFor(unverified, { unverified_agent: "block" })).toBe("block");
+    expect(decisionFor(verified, { unverified_agent: "block", verified_agent: "confirm" })).toBe("confirm");
+    expect(decisionFor(human, { spoofed_agent: "block", unverified_agent: "block", uncertain: "block" })).toBe("allow");
   });
   it("normalises merchant paths", () => {
     expect(normalisePath("/checkout?email=a@b.c#x")).toBe("/checkout");

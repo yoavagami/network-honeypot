@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api.js";
-import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Policy, type PolicyCategory, type BlockCategory, type VisitRow, type OrderRow } from "../merchantApi.js";
+import { merchant, type DomainRow, type IntegrationStatus, type KeyRow, type MerchantMe, type Mode, type OrderDetail, type Overview, type Decision, type Policy, type PolicyCategory, type VisitRow, type OrderRow } from "../merchantApi.js";
 import type { AgentVisitDetail } from "../api.js";
 import { VisitDetailBody } from "../components/VisitDetail.js";
 import { ChecklistView, fmtTime, ModeToggle, OrdersTable, OverviewPanels, VisitsTable, MerchantVisitHeader, BUCKET_OPTIONS } from "../components/MerchantViews.js";
@@ -246,13 +246,13 @@ export function MerchantVisitPage() {
 
 export function MerchantOrdersPage() {
   const { mode } = useMerchant();
-  const [action, setAction] = useState("");
-  const { data, error } = useLoad<{ orders: OrderRow[] }>(() => merchant.orders({ mode, action: action || undefined }), [mode, action]);
+  const [decision, setDecision] = useState("");
+  const { data, error } = useLoad<{ orders: OrderRow[] }>(() => merchant.orders({ mode, decision: decision || undefined }), [mode, decision]);
   return (
     <div>
       <div className="toolbar">
         <h1 style={{ marginRight: "auto" }}>Orders assessed at Pay</h1>
-        <select value={action} onChange={(e) => setAction(e.target.value)} aria-label="Suggested action"><option value="">Any suggestion</option><option value="allow">allow</option><option value="review">review</option><option value="challenge">challenge</option></select>
+        <select value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="Decision"><option value="">Any decision</option><option value="allow">allow</option><option value="confirm">confirm</option><option value="block">block</option></select>
       </div>
       {error && <div className="banner warn">{error}</div>}
       <div className="panel">{data ? <OrdersTable orders={data.orders} base="/m" mode={mode} /> : !error && <p className="muted">Loading…</p>}</div>
@@ -464,16 +464,13 @@ function TeamTab() {
 }
 
 const POLICY_LABELS: Record<PolicyCategory, string> = {
+  spoofed_agent: "A spoofed agent (claims to be a known agent and fails its check)",
   verified_agent: "A verified agent (signed, or from its operator's published IPs)",
   unverified_agent: "An unverified agent drove the checkout",
   agent_then_human: "An agent browsed, then a person paid",
   uncertain: "Not sure (score between 35% and 70%)",
 };
 
-const BLOCK_LABELS: Record<BlockCategory, string> = {
-  spoofed_agent: "A spoofed agent (claims to be a known agent and fails its check)",
-  unverified_agent: "Any unverified agent driving the checkout",
-};
 
 function PolicyTab() {
   const { me } = useMerchant();
@@ -486,24 +483,15 @@ function PolicyTab() {
   const save = async () => { setMsg(null); try { await merchant.savePolicy(p); setMsg("Saved. New assessments use this policy."); } catch (e) { setMsg(errText(e)); } };
   return (
     <div className="panel">
-      <p>What <code>suggested_action</code> to return at Pay. The <code>decision</code> follows it: <code>allow</code> stays allow, <code>review</code> and <code>challenge</code> become <code>confirm</code> (ask the shopper first). You still decide what to do with it.</p>
+      <p>The <code>decision</code> uHoney returns at Pay for each situation: <code>allow</code>, <code>confirm</code> (your checkout should get the shopper's own approval of the cart before charging) or <code>block</code>. The default never blocks. Your checkout decides what each one triggers.</p>
       <table>
         <tbody>{(Object.keys(POLICY_LABELS) as PolicyCategory[]).map((k) => (
           <tr key={k}><td>{POLICY_LABELS[k]}</td><td>
-            <select value={p[k]} disabled={me?.user.role !== "owner"} onChange={(e) => setP({ ...p, [k]: e.target.value as Policy[typeof k] })}><option>allow</option><option>review</option><option>challenge</option></select>
+            <select value={p[k]} disabled={me?.user.role !== "owner"} onChange={(e) => setP({ ...p, [k]: e.target.value as Decision })}><option>allow</option><option>confirm</option><option>block</option></select>
             {data && data.default[k] !== p[k] && <span className="muted small"> (default: {data.default[k]})</span>}
           </td></tr>
         ))}</tbody>
       </table>
-      <h3 style={{ marginTop: "1.25rem" }}>Block instead of confirm</h3>
-      <p className="small muted">Off by default: uHoney never returns <code>block</code> unless you turn it on here.</p>
-      {(Object.keys(BLOCK_LABELS) as BlockCategory[]).map((k) => (
-        <label key={k} style={{ display: "block" }}>
-          <input type="checkbox" disabled={me?.user.role !== "owner"} checked={(p.block_when ?? []).includes(k)}
-            onChange={(e) => setP({ ...p, block_when: e.target.checked ? [...(p.block_when ?? []), k] : (p.block_when ?? []).filter((x) => x !== k) })} />{" "}
-          {BLOCK_LABELS[k]}
-        </label>
-      ))}
       {me?.user.role === "owner" && <button style={{ marginTop: "1rem" }} onClick={() => void save()}>Save policy</button>}
       {msg && <p className="small">{msg}</p>}
     </div>

@@ -122,8 +122,7 @@ export async function rescoreSession(tx: MerchantTx, d: DirtySession, now: Date)
     const next: Assessment = entry
       ? assessmentBody({ assessmentId: a.assessment_id, merchantId: d.merchant_id, livemode: d.livemode, final, createdAt: new Date(prev.created_at), updatedAt: now, order: prev.order, intentRef: a.intent_ref }, entry.verdict, m?.policy)
       : { ...prev, final, updated_at: now.toISOString() };
-    const changed = next.driver !== prev.driver || next.suggested_action !== prev.suggested_action || next.decision !== prev.decision
-      || (next.agent?.id ?? null) !== (prev.agent?.id ?? null);
+    const changed = next.driver !== prev.driver || next.decision !== prev.decision || (next.agent?.id ?? null) !== (prev.agent?.id ?? null);
     if (!changed && !final) {
       // Keep the stored copy fresh (score, reasons) without notifying.
       await tx`UPDATE assessments SET response = ${tx.json({ ...next, updated_at: prev.updated_at } as any)}, visit_id = coalesce(${entry?.row.visit_id ?? null}, visit_id) WHERE assessment_id = ${a.assessment_id}`;
@@ -131,7 +130,7 @@ export async function rescoreSession(tx: MerchantTx, d: DirtySession, now: Date)
     }
     await tx`UPDATE assessments SET response = ${tx.json(next as any)}, decision = ${next.decision}, final = ${final}, updated_at = ${now}, visit_id = coalesce(${entry?.row.visit_id ?? null}, visit_id) WHERE assessment_id = ${a.assessment_id}`;
     await recordDecision(tx, next, m?.policy);
-    await enqueueEvent(tx, d.merchant_id, d.livemode, "assessment.updated", { assessment: next, previous: { driver: prev.driver, suggested_action: prev.suggested_action, decision: prev.decision } });
+    await enqueueEvent(tx, d.merchant_id, d.livemode, "assessment.updated", { assessment: next, previous: { driver: prev.driver, decision: prev.decision } });
   }
 }
 

@@ -78,5 +78,5 @@ function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $t
 
 // In your checkout handler, before charging:
 //   $assessment = uhoney_assess(['id' => $orderId, 'amount' => $totalCents, 'currency' => 'EUR'], $_POST['uhoney_token'] ?? null);
-//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'], $assessment['decision'] on the order (if not null)
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['decision'] on the order (if not null)
 //   ...continue the payment exactly as before.

@@ -71,7 +71,6 @@ describe("merchant API contract", () => {
   it("enums in the spec equal the runtime constants", () => {
     const s = spec.components.schemas;
     expect(s.Driver.enum).toEqual([...C.DRIVERS]);
-    expect(s.Assessment.properties.suggested_action.enum).toEqual([...C.SUGGESTED_ACTIONS]);
     expect(s.Assessment.properties.decision.enum).toEqual([...C.DECISIONS]);
     expect(s.Assessment.properties.intent.properties.status.enum).toEqual([...C.INTENT_STATUSES]);
     expect(s.AssessmentUpdatedEvent.allOf[1].properties.data.properties.previous.properties.decision.enum).toEqual([...C.DECISIONS]);
@@ -127,11 +126,10 @@ describe("merchant API contract", () => {
     }
   });
 
-  it("the default policy never suggests more than review", () => {
-    expect(Object.values(C.DEFAULT_POLICY)).not.toContain("challenge");
-  });
-
-  it("the default policy never blocks", () => {
-    expect(C.DEFAULT_POLICY.block_when).toEqual([]);
+  it("the default policy never blocks, and covers every situation", () => {
+    expect(Object.values(C.DEFAULT_POLICY)).not.toContain("block");
+    expect(Object.keys(C.DEFAULT_POLICY).sort()).toEqual([...C.POLICY_CATEGORIES].sort());
+    expect(C.DEFAULT_POLICY).toMatchObject({ spoofed_agent: "confirm", unverified_agent: "confirm", verified_agent: "allow" });
+    expect(C.policySchema.safeParse({ unverified_agent: "review" }).success).toBe(false);
   });
 });

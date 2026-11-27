@@ -76,7 +76,7 @@ Supported in v1: any site with its own backend. Recipes below for **Next.js**, *
 Two rules hold for every integration:
 
 - **Fail open.** The checkout never waits more than 300 ms for uHoney and never fails because of it.
-- **Advisory only.** Save the verdict on the order. Acting on it (review, challenge) is your decision.
+- **Advisory only.** Save the decision on the order. Acting on it (asking the shopper to confirm, holding the order) is your choice.
 
 ## 2. Store the keys
 
@@ -221,11 +221,8 @@ export async function assessOrder({ sessionToken, order, intentRef, ip, headers,
 
 /** The fields worth keeping on your order record. */
 export function verdictFields(assessment) {
-  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null };
-  return {
-    uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action, uhoney_decision: assessment.decision ?? null,
-  };
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_decision: null };
+  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_decision: assessment.decision ?? null };
 }
 
 /** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
@@ -234,7 +231,6 @@ export function stripeMetadata(assessment) {
   return {
     uhoney_assessment_id: assessment.assessment_id,
     uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action,
     uhoney_decision: assessment.decision ?? "none",
     uhoney_agent: assessment.agent ? assessment.agent.id : "none",
     uhoney_agent_verified: String(Boolean(assessment.agent && assessment.agent.verified)),
@@ -265,7 +261,7 @@ What the helper guarantees, and any hand-written version must too:
 - the visitor's IP, user agent and the listed headers are forwarded — **never** `cookie` or `authorization`;
 - `Idempotency-Key` is the order id, so a retried checkout gets the same assessment.
 
-Save `assessment_id`, `driver`, `suggested_action` and `decision` on the order. `decision` is `allow`, `confirm` (ask the shopper to confirm before charging) or `block`; the default policy never returns `block`. With Stripe, also put `stripeMetadata(assessment)` into the PaymentIntent's `metadata`, so Radar rules can use it (for example: review if `uhoney_decision` is `confirm`).
+Save `assessment_id`, `driver` and `decision` on the order. `decision` is the verdict, from the merchant's policy: `allow`, `confirm` (the checkout should get the shopper's own approval of the cart before charging) or `block` (don't take the payment); the default policy never returns `block`. Until the checkout has a confirmation step, the decision is advisory: save it and let the payment continue. With Stripe, also put `stripeMetadata(assessment)` into the PaymentIntent's `metadata`, so Radar rules can use it (for example: review if `uhoney_decision` is `confirm`).
 
 Optional, and worth sending: the cart lines (`items`: `sku`, `title`, `category`, `quantity`, `unit_amount` in cents), `shipping` (`country`, `new_address`, and `address_hash`: your own hash of the normalized address, never the address itself) and `payment.method`. uHoney uses them to check that the cart matches what the shopper asked for. Never send names, emails, phone numbers or the address in clear.
 
@@ -279,7 +275,6 @@ The response looks like this (full contract: `{{API_URL}}/integrate/v1/openapi.j
   "agent": { "id": "claude-in-chrome", "operator": "Anthropic", "verified": false, "verification": null },
   "score": 0.97,
   "confidence": "high",
-  "suggested_action": "allow",
   "decision": "allow",
   "legitimacy": { "evaluated": false, "score": null, "reasons": [] },
   "intent": { "status": "not_provided", "score": null, "violations": [] },
@@ -530,7 +525,7 @@ function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $t
 
 // In your checkout handler, before charging:
 //   $assessment = uhoney_assess(['id' => $orderId, 'amount' => $totalCents, 'currency' => 'EUR'], $_POST['uhoney_token'] ?? null);
-//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'], $assessment['decision'] on the order (if not null)
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['decision'] on the order (if not null)
 //   ...continue the payment exactly as before.
 ```
 

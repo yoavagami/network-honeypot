@@ -279,12 +279,12 @@ export function VisitDetailBody({ v, variant, orderLink }: { v: AgentVisitDetail
         <div className="panel">
           <h2>Orders from this visit</h2>
           <table>
-            <thead><tr><th>Order</th><th>Amount</th><th>Driven by</th><th>Suggested</th><th>Final</th></tr></thead>
+            <thead><tr><th>Order</th><th>Amount</th><th>Driven by</th><th>Decision</th><th>Final</th></tr></thead>
             <tbody>{v.merchant.assessments.map((a) => (
               <tr key={a.assessment_id}>
                 <td>{orderLink ? <Link to={orderLink(a.assessment_id)}>{a.order_id}</Link> : a.order_id}</td>
                 <td>{money(a.amount, a.currency)}</td><td><ControlChip mode={a.driver} /></td>
-                <td><span className={`badge ${a.suggested_action === "challenge" ? "critical" : a.suggested_action === "review" ? "medium" : "low"}`}>{a.suggested_action}</span></td>
+                <td>{a.decision ? <span className={`badge ${a.decision === "block" ? "critical" : a.decision === "confirm" ? "medium" : "low"}`}>{a.decision}</span> : "—"}</td>
                 <td>{a.final ? "yes" : "not yet"}</td>
               </tr>
             ))}</tbody>

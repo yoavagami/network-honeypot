@@ -77,7 +77,7 @@ export async function buildVisitDetail(tx: MerchantTx, s: Scope, visitId: string
     .slice(0, 300)
     .map((e) => ({ kind: e.kind, name: e.name, path: e.path, at: e.created_at }));
   const assessments = await tx`
-    SELECT assessment_id, order_id, amount, currency, response->>'suggested_action' AS suggested_action, response->>'driver' AS driver, final, created_at
+    SELECT assessment_id, order_id, amount, currency, decision, response->>'driver' AS driver, final, created_at
     FROM assessments WHERE visit_id = ${visitId} ORDER BY created_at`;
   const admin = audience === "admin";
 

@@ -33,19 +33,17 @@ export const sessionToken = z.string().regex(ID_PATTERNS.sessionToken);
 export const DRIVERS = ["human", "agent", "agent_then_human", "human_then_agent", "mixed", "unknown"] as const;
 export type Driver = (typeof DRIVERS)[number];
 
-export const SUGGESTED_ACTIONS = ["allow", "review", "challenge"] as const;
-export type SuggestedAction = (typeof SUGGESTED_ACTIONS)[number];
-
 /**
- * What to do with the order: let it through, confirm with the human first, or stop it. `confirm`
- * is the most the default policy returns; `block` only where the merchant's policy opts in.
+ * The verdict: what to do with the order at Pay. allow: let it through. confirm: get the shopper's
+ * own approval of the cart before charging. block: don't take the payment. The default policy
+ * never returns block; a merchant's policy can.
  */
 export const DECISIONS = ["allow", "confirm", "block"] as const;
 export type Decision = (typeof DECISIONS)[number];
 
-/** Where a policy may escalate the decision to `block` (opt-in, see policySchema.block_when). */
-export const BLOCK_CATEGORIES = ["spoofed_agent", "unverified_agent"] as const;
-export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
+/** The situations a merchant policy sets a decision for (policySchema). */
+export const POLICY_CATEGORIES = ["spoofed_agent", "verified_agent", "unverified_agent", "agent_then_human", "uncertain"] as const;
+export type PolicyCategory = (typeof POLICY_CATEGORIES)[number];
 
 /** not_provided: no intent named at assess. not_evaluated: named, but not checked yet. */
 export const INTENT_STATUSES = ["not_provided", "not_evaluated", "match", "mismatch"] as const;
@@ -222,7 +220,6 @@ export interface Assessment {
   confidence: Confidence;
   reasons: Reason[];
   signals_used: { client: boolean; server: boolean };
-  suggested_action: SuggestedAction;
   scorer_version: string;
   decision: Decision;
   /** Is the agent acting for a real, authorized shopper? Higher score = more legitimate. */
@@ -246,14 +243,22 @@ export interface IntegrationStatus {
 
 export interface ApiError { error: { code: ErrorCode; message: string; request_id: string } }
 
-/** Merchant policy: what to suggest per category. The default never suggests more than review. */
+/**
+ * Merchant policy: the decision for each situation. The default never blocks: an agent that fails
+ * its identity check or isn't verified gets confirm, everything else allow.
+ *   spoofed_agent     claims to be a known agent and fails that agent's check
+ *   verified_agent    proven identity (signature, published IP range, reverse DNS)
+ *   unverified_agent  an unverified agent drove the checkout
+ *   agent_then_human  an agent browsed, then a person paid
+ *   uncertain         not sure (score between 35% and 70%)
+ */
+const decision = z.enum(DECISIONS);
 export const policySchema = z.object({
-  verified_agent: z.enum(SUGGESTED_ACTIONS).default("allow"),
-  unverified_agent: z.enum(SUGGESTED_ACTIONS).default("review"),
-  agent_then_human: z.enum(SUGGESTED_ACTIONS).default("allow"),
-  uncertain: z.enum(SUGGESTED_ACTIONS).default("allow"),
-  /** Where the decision becomes `block` instead of `confirm`. Empty by default: nothing is blocked. */
-  block_when: z.array(z.enum(BLOCK_CATEGORIES)).max(BLOCK_CATEGORIES.length).default([]),
+  spoofed_agent: decision.default("confirm"),
+  verified_agent: decision.default("allow"),
+  unverified_agent: decision.default("confirm"),
+  agent_then_human: decision.default("allow"),
+  uncertain: decision.default("allow"),
 });
 export type Policy = z.infer<typeof policySchema>;
 export const DEFAULT_POLICY: Policy = policySchema.parse({});

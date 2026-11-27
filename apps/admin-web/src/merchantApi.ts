@@ -33,7 +33,7 @@ export interface VisitRow {
 }
 export interface OrderRow {
   assessment_id: string; merchant_id: string; company: string; order_id: string; amount: number; currency: string; visit_id: string | null; final: boolean;
-  token_status: string; created_at: string; driver: string; suggested_action: string; decision: string | null; score: number; agent: { id: string; operator: string | null; verified: boolean } | null; outcome: string | null;
+  token_status: string; created_at: string; driver: string; decision: string | null; score: number; agent: { id: string; operator: string | null; verified: boolean } | null; outcome: string | null;
 }
 export interface Overview {
   days: number;
@@ -42,7 +42,7 @@ export interface Overview {
   agents: Array<{ agent: string; verified: boolean; visits: number }>;
   funnel: Array<{ driver: string; visits: number; reached_checkout: number; reached_pay: number; assessed: number }>;
   daily: Array<{ day: string; visits: number; agent_visits: number }>;
-  orders: { assessed: number; review: number; challenge: number };
+  orders: { assessed: number; confirm: number; block: number };
 }
 export interface OrderDetail {
   assessment_id: string; merchant_id: string; company: string; visit_id: string | null; token_status: string; header_count: number; server_ms: number; final: boolean; created_at: string;
@@ -77,7 +77,7 @@ export const adminMerchants = {
   overview: (p: { merchant_id?: string; mode: Mode; days?: number }) => request<Overview>(`/api/merchant-data/overview${qs(p)}`),
   visits: (p: { merchant_id?: string; mode: Mode; driver?: string; agents?: string; bucket?: string; lab?: string }) => request<{ visits: VisitRow[] }>(`/api/merchant-data/visits${qs(p)}`),
   visit: (id: string, mode: Mode) => request<AgentVisitDetail>(`/api/merchant-data/visits/${id}${qs({ mode })}`),
-  orders: (p: { merchant_id?: string; mode: Mode; action?: string }) => request<{ orders: OrderRow[] }>(`/api/merchant-data/orders${qs(p)}`),
+  orders: (p: { merchant_id?: string; mode: Mode; decision?: string }) => request<{ orders: OrderRow[] }>(`/api/merchant-data/orders${qs(p)}`),
   order: (id: string, mode: Mode) => request<OrderDetail>(`/api/merchant-data/orders/${id}${qs({ mode })}`),
 };
 
@@ -118,9 +118,9 @@ async function mreq<T>(path: string, init: RequestInit = {}): Promise<T> {
 export interface MerchantMe { user: { email: string; name: string; role: "owner" | "developer" | "analyst" }; merchant: { id: string; company: string }; csrf: string; live_available: boolean }
 export interface KeyRow { key_id: string; kind: "public" | "secret"; livemode: boolean; public_value: string | null; display: string; created_at: string; created_by: string; last_used_at: string | null; revoked_at: string | null }
 export interface DomainRow { domain_id: string; host: string; verification_token: string; verified_at: string | null; verified_method: string | null; last_checked_at: string | null; txt_record: string; meta_tag: string }
-export type PolicyCategory = "verified_agent" | "unverified_agent" | "agent_then_human" | "uncertain";
-export type BlockCategory = "spoofed_agent" | "unverified_agent";
-export type Policy = Record<PolicyCategory, "allow" | "review" | "challenge"> & { block_when: BlockCategory[] };
+export type Decision = "allow" | "confirm" | "block";
+export type PolicyCategory = "spoofed_agent" | "verified_agent" | "unverified_agent" | "agent_then_human" | "uncertain";
+export type Policy = Record<PolicyCategory, Decision>;
 
 export const merchant = {
   login: (email: string, password: string) => mreq<{ ok: true }>("/m/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
@@ -131,7 +131,7 @@ export const merchant = {
   overview: (mode: Mode, days = 7) => mreq<Overview>(`/m/api/overview${qs({ mode, days })}`),
   visits: (p: { mode: Mode; driver?: string; agents?: string; bucket?: string }) => mreq<{ visits: VisitRow[] }>(`/m/api/visits${qs(p)}`),
   visit: (id: string, mode: Mode) => mreq<AgentVisitDetail>(`/m/api/visits/${id}${qs({ mode })}`),
-  orders: (p: { mode: Mode; action?: string }) => mreq<{ orders: OrderRow[] }>(`/m/api/orders${qs(p)}`),
+  orders: (p: { mode: Mode; decision?: string }) => mreq<{ orders: OrderRow[] }>(`/m/api/orders${qs(p)}`),
   order: (id: string, mode: Mode) => mreq<OrderDetail>(`/m/api/orders/${id}${qs({ mode })}`),
   live: (mode: Mode) => mreq<{ visits: VisitRow[]; pay_events: Array<{ session_id: string; name: string | null; path: string | null; created_at: string; visit_id: string | null }>; at: string }>(`/m/api/live${qs({ mode })}`),
   integration: (mode: Mode) => mreq<IntegrationStatus>(`/m/api/integration${qs({ mode })}`),

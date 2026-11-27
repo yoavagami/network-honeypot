@@ -69,8 +69,7 @@ Response fields:
 | `confidence` | `low`, `medium`, `high` |
 | `reasons` | Up to 8 `{ code, text }`. Codes are the scorer's signal ids plus `no_client_signals`, `session_token_invalid`, `web_bot_auth_unverified` |
 | `signals_used` | Whether page-script (`client`) and server-side signals contributed |
-| `suggested_action` | `allow`, `review`, `challenge` — from the merchant's policy |
-| `decision` | `allow`, `confirm` (ask the shopper before charging), `block`. Follows `suggested_action` (`review` and `challenge` → `confirm`); `block` only where the policy's `block_when` opts in |
+| `decision` | The verdict, from the merchant's policy: `allow`, `confirm` (the checkout gets the shopper's own approval of the cart before charging), `block` (don't take the payment) |
 | `legitimacy` | `{ evaluated, score, reasons }`: is the agent acting for a real, authorized shopper. Not evaluated yet (`evaluated: false`, `score: null`) |
 | `intent` | `{ status, score, violations }`: does the cart match what the shopper asked for. `status`: `not_provided` (no `intent_ref`), `not_evaluated`, `match`, `mismatch` |
 | `evidence_id` | The order's evidence record, once evidence is kept (`null` for now) |
@@ -80,17 +79,19 @@ A bad, expired or missing token never causes an error — the verdict rests on s
 
 ### Default policy
 
-| Situation | Suggests |
+The merchant's policy sets the decision for each situation. The default never blocks:
+
+| Situation | Default decision |
 |---|---|
+| Spoofed agent (claims to be a known agent and fails that agent's check) | `confirm` |
 | Verified agent | `allow` |
-| Unverified agent drove the checkout | `review` |
+| Unverified agent drove the checkout | `confirm` |
 | Agent browsed, a person paid (`agent_then_human`) | `allow` |
 | Uncertain | `allow` |
+| Anything else (a person) | `allow` |
 
-The decision never goes above `confirm` by default. A merchant can opt in to `block` with `block_when`:
-`spoofed_agent` (claims to be a known agent and fails that agent's check) and `unverified_agent` (any
-unverified agent driving the checkout). Every decision, the first and each later change, is kept in the
-order's decision history.
+A merchant can set any situation to `allow`, `confirm` or `block`. Every decision, the first and each later
+change, is kept in the order's decision history.
 
 ## Webhooks
 

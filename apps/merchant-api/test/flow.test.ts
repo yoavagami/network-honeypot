@@ -150,14 +150,16 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(matches("Assessment", a)).toBe(true);
     // The cart detail stays out of the response.
     expect(a.order).toEqual({ id: "ord_cart", amount: 13900, currency: "EUR" });
-    expect(a.decision).toBe(a.suggested_action === "allow" ? "allow" : "confirm");
+    // Default policy: allow or confirm, never block.
+    expect(["allow", "confirm"]).toContain(a.decision);
+    expect(a).not.toHaveProperty("suggested_action");
     expect(a.legitimacy).toEqual({ evaluated: false, score: null, reasons: [] });
     expect(a.intent).toEqual({ status: "not_evaluated", score: null, violations: [] });
     expect(a.evidence_id).toBeNull();
     const [row] = await db.admin`SELECT decision, intent_ref FROM assessments WHERE assessment_id = ${a.assessment_id}`;
     expect(row).toEqual({ decision: a.decision, intent_ref: "in_demo.1" });
-    const history = await db.admin`SELECT decision, suggested_action, intent_status, final FROM decisions WHERE assessment_id = ${a.assessment_id}`;
-    expect(history).toEqual([{ decision: a.decision, suggested_action: a.suggested_action, intent_status: "not_evaluated", final: false }]);
+    const history = await db.admin`SELECT decision, intent_status, final FROM decisions WHERE assessment_id = ${a.assessment_id}`;
+    expect(history).toEqual([{ decision: a.decision, intent_status: "not_evaluated", final: false }]);
     // The assess event keeps the cart for the later checks.
     const [ev] = await db.admin`SELECT data FROM merchant_events WHERE merchant_id = ${A.id} AND kind = 'assess' AND data->'order'->>'id' = 'ord_cart'`;
     expect(ev!.data.order.items[0].sku).toBe("dark-70");
@@ -166,20 +168,21 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(plain.json().intent.status).toBe("not_provided");
   });
 
-  it("block only where the merchant's policy opts in", async () => {
+  it("the policy sets the decision per situation; block only where the merchant chooses it", async () => {
     // A user-agent that claims ChatGPT-User from an IP outside OpenAI's published ranges: spoofed.
     const spoofUa = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot";
     const assess = (id: string) => server(A, "POST", "/v1/assess", { order: { id, amount: 2500, currency: "EUR" }, request: { ip: "198.51.100.23", user_agent: spoofUa, headers: {} } });
     const before = (await assess("ord_spoof_1")).json();
     expect(matches("Assessment", before)).toBe(true);
-    expect(before.decision).not.toBe("block");
-    expect((await dash(A, "PUT", "/m/api/policy", { block_when: ["spoofed_agent"] })).statusCode).toBe(200);
+    expect(before.decision).toBe("confirm");
+    expect((await dash(A, "GET", "/m/api/policy")).json().policy.spoofed_agent).toBe("confirm");
+    expect((await dash(A, "PUT", "/m/api/policy", { spoofed_agent: "block" })).statusCode).toBe(200);
     const after = (await assess("ord_spoof_2")).json();
     expect(matches("Assessment", after)).toBe(true);
     expect(after.decision).toBe("block");
-    expect((await dash(A, "PUT", "/m/api/policy", { block_when: ["shoplifters"] })).statusCode).toBe(400);
+    expect((await dash(A, "PUT", "/m/api/policy", { spoofed_agent: "review" })).statusCode).toBe(400);
     expect((await dash(A, "PUT", "/m/api/policy", {})).statusCode).toBe(200);
-    expect((await assess("ord_spoof_3")).json().decision).not.toBe("block");
+    expect((await assess("ord_spoof_3")).json().decision).toBe("confirm");
   });
 
   it("evidence entries are append-only and expire by whole order", async () => {

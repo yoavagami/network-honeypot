@@ -73,11 +73,8 @@ export async function assessOrder({ sessionToken, order, intentRef, ip, headers,
 
 /** The fields worth keeping on your order record. */
 export function verdictFields(assessment) {
-  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null };
-  return {
-    uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action, uhoney_decision: assessment.decision ?? null,
-  };
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_decision: null };
+  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_decision: assessment.decision ?? null };
 }
 
 /** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
@@ -86,7 +83,6 @@ export function stripeMetadata(assessment) {
   return {
     uhoney_assessment_id: assessment.assessment_id,
     uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action,
     uhoney_decision: assessment.decision ?? "none",
     uhoney_agent: assessment.agent ? assessment.agent.id : "none",
     uhoney_agent_verified: String(Boolean(assessment.agent && assessment.agent.verified)),
