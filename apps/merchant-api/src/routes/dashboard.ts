@@ -17,6 +17,7 @@ import { normaliseHost, verifyDomain, VERIFY_PREFIX } from "../domains.js";
 import { enqueueEvent } from "../webhooks/enqueue.js";
 import { buildVisitDetail } from "../visitDetail.js";
 import { RateLimiter } from "../ratelimit.js";
+import { merchantFeedbackView, outcomeInput, setOrderOutcome } from "../outcomes.js";
 
 declare module "fastify" {
   interface FastifyRequest { merchantSession?: MerchantSession | null }
@@ -182,7 +183,22 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
   app.get<{ Params: { id: string } }>("/m/api/orders/:id", async (request, reply) => {
     const out = await scoped(request, (tx, s) => getOrder(tx, s, request.params.id));
     if (!out) return reply.status(404).send({ error: { code: "not_found", message: "No such order." } });
-    return reply.send(out);
+    return reply.send({ ...out, feedback: out.feedback.map((f: any) => merchantFeedbackView(f)) });
+  });
+
+  // What really happened to the order, set by hand (owner or developer).
+  app.post<{ Params: { id: string } }>("/m/api/orders/:id/outcome", async (request, reply) => {
+    if (!requireRole(request, reply, "developer")) return;
+    const body = outcomeInput.safeParse(request.body);
+    if (!body.success) return bad(reply, "Choose an outcome; a note can be up to 500 characters.");
+    const s = session(request);
+    const out = await scoped(request, async (tx, scope) => {
+      const r = await setOrderOutcome(tx, scope, request.params.id, body.data, `user:${s.email}`);
+      if (r) await audit(tx, s, "order.outcome", { assessment_id: request.params.id, outcome: body.data.outcome });
+      return r;
+    });
+    if (!out) return reply.status(404).send({ error: { code: "not_found", message: "No such order." } });
+    return reply.status(201).send({ ok: true });
   });
 
   app.get("/m/api/live", async (request, reply) => {

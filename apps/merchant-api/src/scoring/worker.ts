@@ -8,6 +8,7 @@ import { verdictFor, type MerchantVerdict } from "./verdict.js";
 import { assessmentBody } from "../assessmentBody.js";
 import { enqueueEvent } from "../webhooks/enqueue.js";
 import { recordDecision } from "../decisions.js";
+import { applyLabOutcomes } from "../outcomes.js";
 
 /**
  * Merchant scoring worker: every few seconds, rescores the sessions that received events (and
@@ -138,6 +139,8 @@ export async function runScoringTick(sql: MerchantSql, watermark: Date): Promise
   const tickStart = new Date();
   const dirty = await dirtySessions(sql, watermark);
   for (const d of dirty) await sql.begin((tx) => rescoreSession(tx, d, tickStart));
+  // Orders from verified lab runs get their known outcome once they're final.
+  await applyLabOutcomes(sql);
   return { watermark: dirty.length >= MAX_SESSIONS_PER_TICK ? watermark : new Date(tickStart.getTime() - 2000), sessions: dirty.length };
 }
 

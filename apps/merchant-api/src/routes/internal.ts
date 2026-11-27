@@ -7,6 +7,7 @@ import { displayKey, generateKey, hashKey } from "../keys.js";
 import { randomString } from "../ids.js";
 import { overview, listVisits, listOrders, getOrder, type Scope } from "../queries.js";
 import { buildVisitDetail } from "../visitDetail.js";
+import { applyLabOutcomes, labRunsInput, outcomeInput, setOrderOutcome, syncLabRunKinds } from "../outcomes.js";
 
 /**
  * Internal admin API — only for admin-api, never routed by nginx. admin-api authenticates the
@@ -224,5 +225,28 @@ export function registerInternal(app: FastifyInstance, deps: Deps) {
     if (!s) return notFound(reply);
     const out = await tx((t) => getOrder(t, s, request.params.id));
     return out ? reply.send(out) : notFound(reply);
+  });
+
+  // A uHoney admin sets what really happened to an order.
+  app.post<{ Params: { id: string } }>("/internal/orders/:id/outcome", async (request, reply) => {
+    const s = scopeOf(request);
+    if (!s) return notFound(reply);
+    const body = outcomeInput.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: { code: "invalid_request", message: "Choose an outcome; a note can be up to 500 characters." } });
+    const admin = adminName(request);
+    const out = await tx(async (t) => {
+      const r = await setOrderOutcome(t, s, request.params.id, body.data, `admin:${admin}`);
+      if (r) await auditRow(t, r.merchantId, admin, "order.outcome", { assessment_id: request.params.id, outcome: body.data.outcome });
+      return r;
+    });
+    return out ? reply.status(201).send({ ok: true }) : notFound(reply);
+  });
+
+  // Lab run kinds (agent or human), from admin-api: orders from these runs get their known outcome.
+  app.post("/internal/lab-runs", async (request, reply) => {
+    const body = labRunsInput.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: { code: "invalid_request", message: "runs: [{ label, kind: agent | human }]" } });
+    const stored = await syncLabRunKinds(deps.admin, body.data.runs);
+    return reply.send({ stored, outcomes_recorded: await applyLabOutcomes(deps.admin) });
   });
 }

@@ -296,6 +296,7 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     const token = inv.json().invite_url.split("/m/invite/")[1];
     const acc = await app.inject({ method: "POST", url: `/m/api/invites/${token}/accept`, payload: { name: "Ana", password: "another long password", accept_terms: true } });
     const analyst = { cookie: cookieHeader(acc), csrf: acc.json().csrf };
+    A.analyst = analyst;
     expect((await dash(analyst, "GET", "/m/api/visits")).statusCode).toBe(200);
     expect((await dash(analyst, "POST", "/m/api/keys", { kind: "secret", mode: "test" })).statusCode).toBe(403);
     expect((await app.inject({ method: "POST", url: "/m/api/keys", payload: { kind: "secret", mode: "test" }, headers: { cookie: analyst.cookie } })).statusCode).toBe(403);
@@ -415,6 +416,50 @@ describe.skipIf(!testPgUrl)("merchant flow end to end", () => {
     expect(fr.statusCode, fr.body).toBe(200);
     const [forged] = await db.admin`SELECT lab_verified FROM merchant_events WHERE page_view_id = 'pv_labrun00002'`;
     expect(forged!.lab_verified).toBe(false);
+  });
+
+  it("orders from verified lab runs get their known outcome once final, once, without lab detail for merchants", async () => {
+    const [a] = await db.admin`SELECT assessment_id FROM assessments WHERE order_id = 'ord_lab_1'`;
+    const id = a!.assessment_id as string;
+    // Kinds arrive from admin-api; the order isn't final yet, so nothing is recorded.
+    const sync = await internal("POST", "/internal/lab-runs", { runs: [{ label: "claude-chrome-uchoco-1", kind: "agent" }, { label: "human-safari-1", kind: "human" }] });
+    expect(sync.json()).toEqual({ stored: 2, outcomes_recorded: 0 });
+    expect((await internal("POST", "/internal/lab-runs", { runs: [{ label: "x", kind: "robot" }] })).statusCode).toBe(400);
+    await db.admin`UPDATE assessments SET final = true WHERE assessment_id = ${id}`;
+    await runScoringTick(db.admin, new Date());
+    const fb = await db.admin`SELECT outcome, note, source, actor FROM feedback WHERE assessment_id = ${id}`;
+    expect(fb).toEqual([{ outcome: "confirmed_agent", note: "Lab run claude-chrome-uchoco-1", source: "lab", actor: "uhoney" }]);
+    // Idempotent.
+    expect((await internal("POST", "/internal/lab-runs", { runs: [{ label: "claude-chrome-uchoco-1", kind: "agent" }] })).json().outcomes_recorded).toBe(0);
+    const merchantView = (await dash(A, "GET", `/m/api/orders/${id}?mode=test`)).json();
+    expect(merchantView.feedback).toEqual([expect.objectContaining({ outcome: "confirmed_agent", source: "lab", note: null, actor: "uHoney" })]);
+    const orders = (await dash(A, "GET", "/m/api/orders?mode=test")).json().orders;
+    expect(orders.find((o: any) => o.assessment_id === id).outcome).toBe("confirmed_agent");
+  });
+
+  it("outcomes can be set on the order page: owners, developers and admins, never analysts or other merchants", async () => {
+    const [a] = await db.admin`SELECT assessment_id FROM assessments WHERE order_id = 'ord_1'`;
+    const id = a!.assessment_id as string;
+    const set = (who: any, body: object) => dash(who, "POST", `/m/api/orders/${id}/outcome?mode=test`, body);
+    expect((await set(A, { outcome: "legitimate", note: "Shipped, no complaint" })).statusCode).toBe(201);
+    expect((await set(A, { outcome: "stolen" })).statusCode).toBe(400);
+    expect((await set(A.analyst, { outcome: "fraud" })).statusCode).toBe(403);
+    // Another merchant's order: not found, as if it didn't exist.
+    await db.admin`INSERT INTO assessments (assessment_id, merchant_id, livemode, idempotency_key, request_hash, order_id, amount, currency, token_status, server_ms, response, decision)
+                   VALUES ('as_OtherMerchantOrder01', ${B.id}, false, 'b1', 'h', 'b1', 100, 'EUR', 'missing', 1, '{}'::jsonb, 'allow')`;
+    expect((await dash(A, "POST", "/m/api/orders/as_OtherMerchantOrder01/outcome?mode=test", { outcome: "fraud" })).statusCode).toBe(404);
+    expect(await db.admin`SELECT 1 FROM feedback WHERE assessment_id = 'as_OtherMerchantOrder01'`).toHaveLength(0);
+    expect((await dash(A, "POST", "/m/api/orders/as_nonenonenonenonenone/outcome?mode=test", { outcome: "fraud" })).statusCode).toBe(404);
+    const admin = await internal("POST", `/internal/orders/${id}/outcome?mode=test`, { outcome: "chargeback", note: "Disputed by the cardholder" });
+    expect(admin.statusCode).toBe(201);
+    const merchantView = (await dash(A, "GET", `/m/api/orders/${id}?mode=test`)).json().feedback;
+    expect(merchantView.map((f: any) => [f.outcome, f.source, f.actor])).toEqual(expect.arrayContaining([
+      ["legitimate", "dashboard", "user:owner@alpha.test"], ["chargeback", "dashboard", "uHoney"],
+    ]));
+    const adminView = (await internal("GET", `/internal/orders/${id}?mode=test`)).json().feedback;
+    expect(adminView.find((f: any) => f.outcome === "chargeback").actor).toBe("admin:tester");
+    const audits = await db.admin`SELECT actor, action FROM merchant_audit WHERE action = 'order.outcome' AND merchant_id = ${A.id} ORDER BY audit_id`;
+    expect(audits).toEqual([{ actor: "user:owner@alpha.test", action: "order.outcome" }, { actor: "admin:tester", action: "order.outcome" }]);
   });
 
   it("visit detail: full for admins, plain findings for merchants", async () => {
