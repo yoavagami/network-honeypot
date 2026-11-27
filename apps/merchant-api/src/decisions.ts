@@ -8,9 +8,9 @@ import type { MerchantTx } from "@honeypot/merchant-db";
  */
 export async function recordDecision(tx: MerchantTx, a: Assessment, policy: Partial<Policy> | undefined) {
   await tx`
-    INSERT INTO decisions (merchant_id, livemode, assessment_id, order_id, decision, suggested_action, legitimacy_score,
+    INSERT INTO decisions (merchant_id, livemode, assessment_id, order_id, decision, legitimacy_score,
                            intent_status, intent_score, reasons, policy, scorer_version, final, created_at)
-    VALUES (${a.merchant_id}, ${a.livemode}, ${a.assessment_id}, ${a.order.id}, ${a.decision}, ${a.suggested_action}, ${a.legitimacy.score},
+    VALUES (${a.merchant_id}, ${a.livemode}, ${a.assessment_id}, ${a.order.id}, ${a.decision}, ${a.legitimacy.score},
             ${a.intent.status}, ${a.intent.score}, ${tx.json(a.reasons as any)}, ${tx.json((policy ?? {}) as any)}, ${a.scorer_version},
             ${a.final}, ${a.updated_at})`;
 }

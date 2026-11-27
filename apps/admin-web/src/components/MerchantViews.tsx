@@ -25,12 +25,7 @@ export function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
   );
 }
 
-export function ActionBadge({ action }: { action: string }) {
-  const cls = action === "challenge" ? "critical" : action === "review" ? "medium" : "low";
-  return <span className={`badge ${cls}`}>{action}</span>;
-}
-
-/** allow / confirm (ask the shopper first) / block. */
+/** allow / confirm (the shopper approves the cart before the charge) / block. */
 export function DecisionBadge({ decision }: { decision: string | null | undefined }) {
   if (!decision) return <span className="muted">—</span>;
   const cls = decision === "block" ? "critical" : decision === "confirm" ? "medium" : "low";
@@ -66,7 +61,7 @@ export function OverviewPanels({ data }: { data: Overview }) {
         <StatCard label="Verified agents" value={t.verified_agent_visits} />
         <StatCard label="Agent checkouts" value={`${t.agent_checkouts} of ${t.checkouts}`} />
         <StatCard label="Orders assessed" value={data.orders.assessed} />
-        <StatCard label="Suggested review" value={data.orders.review + data.orders.challenge} />
+        <StatCard label="To confirm or block" value={data.orders.confirm + data.orders.block} />
       </div>
       <div className="grid-2">
         <div className="panel">
@@ -172,7 +167,7 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
   return (
     <table>
       <thead>
-        <tr>{showMerchant && <th>Merchant</th>}<th>When</th><th>Order</th><th>Amount</th><th>Driven by</th><th>Agent</th><th>Score</th><th>Decision</th><th>Suggested</th><th>Final</th><th>Outcome</th></tr>
+        <tr>{showMerchant && <th>Merchant</th>}<th>When</th><th>Order</th><th>Amount</th><th>Driven by</th><th>Agent</th><th>Score</th><th>Decision</th><th>Final</th><th>Outcome</th></tr>
       </thead>
       <tbody>
         {orders.map((o) => (
@@ -185,7 +180,6 @@ export function OrdersTable({ orders, base, showMerchant, mode }: { orders: Orde
             <td><AgentName agent={o.agent?.id ?? null} verified={o.agent?.verified} /></td>
             <td><Score p={o.score} /></td>
             <td><DecisionBadge decision={o.decision} /></td>
-            <td><ActionBadge action={o.suggested_action} /></td>
             <td>{o.final ? "yes" : <span className="muted">not yet</span>}</td>
             <td>{o.outcome ?? <span className="muted">—</span>}</td>
           </tr>

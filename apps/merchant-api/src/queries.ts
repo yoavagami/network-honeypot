@@ -41,10 +41,10 @@ export async function overview(tx: MerchantTx, s: Scope, days: number) {
            count(*) FILTER (WHERE driver = ANY(${AGENT_DRIVERS}) OR probability >= 0.7)::int AS agent_visits
     FROM merchant_visits WHERE livemode = ${s.livemode} AND last_at >= ${since} ${mf}
     GROUP BY 1 ORDER BY 1`;
-  const [orders] = await tx<{ assessed: number; review: number; challenge: number }[]>`
+  const [orders] = await tx<{ assessed: number; confirm: number; block: number }[]>`
     SELECT count(*)::int AS assessed,
-           count(*) FILTER (WHERE response->>'suggested_action' = 'review')::int AS review,
-           count(*) FILTER (WHERE response->>'suggested_action' = 'challenge')::int AS challenge
+           count(*) FILTER (WHERE decision = 'confirm')::int AS confirm,
+           count(*) FILTER (WHERE decision = 'block')::int AS block
     FROM assessments WHERE livemode = ${s.livemode} AND created_at >= ${since} ${mf}`;
   return { days, totals: { ...totals!, agent_share: totals!.visits ? totals!.agent_visits / totals!.visits : 0 }, drivers, agents, funnel, daily, orders };
 }
@@ -71,18 +71,18 @@ export async function listVisits(tx: MerchantTx, s: Scope, f: VisitFilters) {
     ORDER BY v.last_at DESC LIMIT ${limit}`;
 }
 
-export interface OrderFilters { action?: string; driver?: string; before?: string; limit?: number }
+export interface OrderFilters { decision?: string; driver?: string; before?: string; limit?: number }
 
 export async function listOrders(tx: MerchantTx, s: Scope, f: OrderFilters) {
   const limit = Math.min(Math.max(f.limit ?? 50, 1), 200);
   return tx`
     SELECT a.assessment_id, a.merchant_id, m.company, a.livemode, a.order_id, a.amount, a.currency, a.visit_id, a.final, a.token_status,
-           a.created_at, a.updated_at, a.response->>'driver' AS driver, a.response->>'suggested_action' AS suggested_action, a.decision,
+           a.created_at, a.updated_at, a.response->>'driver' AS driver, a.decision,
            (a.response->>'score')::float AS score, a.response->'agent' AS agent,
            (SELECT f.outcome FROM feedback f WHERE f.assessment_id = a.assessment_id ORDER BY f.created_at DESC LIMIT 1) AS outcome
     FROM assessments a JOIN merchants m USING (merchant_id)
     WHERE a.livemode = ${s.livemode} ${merchantFilter(tx, s, "a.merchant_id")}
-      ${f.action ? tx`AND a.response->>'suggested_action' = ${f.action}` : tx``}
+      ${f.decision ? tx`AND a.decision = ${f.decision}` : tx``}
       ${f.driver ? tx`AND a.response->>'driver' = ${f.driver}` : tx``}
       ${f.before ? tx`AND a.created_at < ${new Date(f.before)}` : tx``}
     ORDER BY a.created_at DESC LIMIT ${limit}`;

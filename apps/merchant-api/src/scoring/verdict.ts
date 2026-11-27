@@ -1,13 +1,13 @@
 import { scoreVisit, visitEvidence, SIGNALS, type AgentScore, type Visit } from "@honeypot/detection";
 import {
   DEFAULT_POLICY, SERVER_REASON_CODES, AUTOMATION_TYPES,
-  type AgentInfo, type Confidence, type Decision, type Driver, type Policy, type Reason, type SuggestedAction, type VerificationMethod,
+  type AgentInfo, type Confidence, type Decision, type Driver, type Policy, type PolicyCategory, type Reason, type VerificationMethod,
 } from "@honeypot/merchant-contract";
 import { operatorFor } from "../sensing.js";
 
 /**
  * Maps the scorer's verdict (packages/detection AgentScore) to the merchant contract's fields:
- * driver, agent, confidence, reasons and the policy's suggested action. Pure.
+ * driver, agent, confidence and reasons; decisionFor applies the merchant's policy. Pure.
  */
 
 export interface MerchantVerdict {
@@ -93,26 +93,22 @@ export function verdictFor(visit: Visit, now: Date, extra: Array<keyof typeof SE
   };
 }
 
-/** The merchant's policy decides the suggestion; anything unset falls back to the default policy. */
-export function suggestedAction(v: Pick<MerchantVerdict, "driver" | "agent" | "probability">, policy: Partial<Policy> = {}): SuggestedAction {
-  const p = { ...DEFAULT_POLICY, ...policy };
-  if (v.agent?.verified) return p.verified_agent;
-  if (v.driver === "agent_then_human") return p.agent_then_human;
-  if (v.driver === "agent" || v.driver === "human_then_agent" || v.driver === "mixed") return p.unverified_agent;
-  if (v.probability >= 0.35 && v.probability < 0.7) return p.uncertain;
-  return "allow";
+/** Which policy situation a verdict falls under; null when none applies (then: allow). */
+export function policyCategory(v: Pick<MerchantVerdict, "driver" | "agent" | "probability" | "spoofed">): PolicyCategory | null {
+  if (v.spoofed) return "spoofed_agent";
+  if (v.agent?.verified) return "verified_agent";
+  if (v.driver === "agent_then_human") return "agent_then_human";
+  if (v.driver === "agent" || v.driver === "human_then_agent" || v.driver === "mixed") return "unverified_agent";
+  if (v.probability >= 0.35 && v.probability < 0.7) return "uncertain";
+  return null;
 }
 
 /**
- * The decision: allow, confirm with the human, or block. It follows the suggested action (review
- * and challenge both mean confirm), and becomes block only where the policy opts in with
- * block_when. The default policy never blocks.
+ * The decision: allow, confirm (the shopper approves the cart before the charge) or block, from the
+ * merchant's policy for the verdict's situation. Unset situations use the default policy, which
+ * never blocks.
  */
 export function decisionFor(v: Pick<MerchantVerdict, "driver" | "agent" | "probability" | "spoofed">, policy: Partial<Policy> = {}): Decision {
-  const suggested = suggestedAction(v, policy);
-  const blockWhen = new Set(policy.block_when ?? []);
-  if (blockWhen.has("spoofed_agent") && v.spoofed) return "block";
-  const unverifiedAgent = !v.agent?.verified && (v.driver === "agent" || v.driver === "human_then_agent" || v.driver === "mixed");
-  if (blockWhen.has("unverified_agent") && unverifiedAgent) return "block";
-  return suggested === "allow" ? "allow" : "confirm";
+  const category = policyCategory(v);
+  return category ? { ...DEFAULT_POLICY, ...policy }[category] : "allow";
 }

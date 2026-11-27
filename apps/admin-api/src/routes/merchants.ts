@@ -9,7 +9,7 @@ import { audit } from "../audit.js";
  * can filter by one; merchants themselves only ever see their own data, in their own dashboard.
  */
 const MERCHANT_RE = /^mer_[0-9A-HJKMNP-TV-Z]{8}$/;
-const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "action", "path", "bucket", "lab", "labels", "since"]);
+const ALLOWED_QUERY = new Set(["status", "merchant_id", "mode", "driver", "agents", "before", "limit", "days", "decision", "path", "bucket", "lab", "labels", "since"]);
 
 async function forward(request: FastifyRequest, reply: FastifyReply, method: "GET" | "POST", path: string, body?: unknown) {
   if (!config.merchantInternalUrl || !config.merchantInternalToken) {

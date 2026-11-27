@@ -1,10 +1,10 @@
 import type { Assessment, Policy } from "@honeypot/merchant-contract";
-import { decisionFor, suggestedAction, type MerchantVerdict } from "./scoring/verdict.js";
+import { decisionFor, type MerchantVerdict } from "./scoring/verdict.js";
 
 /**
  * Builds the contract's Assessment object from a verdict. The legitimacy and intent checks aren't
- * built yet: their fields say so (evaluated: false, status not_provided / not_evaluated), and the
- * decision follows the suggested action and the policy's block_when.
+ * built yet: their fields say so (evaluated: false, status not_provided / not_evaluated). The
+ * decision comes from the merchant's policy.
  */
 export function assessmentBody(a: {
   assessmentId: string; merchantId: string; livemode: boolean; final: boolean; createdAt: Date; updatedAt: Date;
@@ -28,7 +28,6 @@ export function assessmentBody(a: {
     confidence: v.confidence,
     reasons: v.reasons,
     signals_used: v.signalsUsed,
-    suggested_action: suggestedAction(v, policy),
     scorer_version: v.score.scorerVersion,
     decision: decisionFor(v, policy),
     legitimacy: { evaluated: false, score: null, reasons: [] },

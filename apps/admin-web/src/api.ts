@@ -435,7 +435,7 @@ export interface AgentVisitDetail extends Omit<AgentVisitRow, "network" | "score
   merchant?: {
     visitId: string; merchantId: string; company: string; livemode: boolean; settled: boolean; driver: string;
     timeline: Array<{ kind: string; name: string | null; path: string | null; at: string }>;
-    assessments: Array<{ assessment_id: string; order_id: string; amount: number; currency: string; suggested_action: string; driver: string; final: boolean; created_at: string }>;
+    assessments: Array<{ assessment_id: string; order_id: string; amount: number; currency: string; decision: string | null; driver: string; final: boolean; created_at: string }>;
   };
 }
 export interface AgentNetwork { ip: string | null; asn: string | null; organization: string | null; country: string | null; city: string | null; ja4: string[]; h2: string[]; webBotAuth: string[]; userAgents: string[] }

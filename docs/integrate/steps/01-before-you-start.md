@@ -11,4 +11,4 @@ Supported in v1: any site with its own backend. Recipes below for **Next.js**, *
 Two rules hold for every integration:
 
 - **Fail open.** The checkout never waits more than 300 ms for uHoney and never fails because of it.
-- **Advisory only.** Save the verdict on the order. Acting on it (review, challenge) is your decision.
+- **Advisory only.** Save the decision on the order. Acting on it (asking the shopper to confirm, holding the order) is your choice.

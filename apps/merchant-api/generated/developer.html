@@ -42,7 +42,7 @@ th, td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line
 <ul><li>An approved uHoney account. No account yet? Request access at <code>{{TAG_BASE}}/merchants</code>.</li><li>Your <strong>test keys</strong> from the dashboard (<code>{{DASHBOARD_URL}}/m/settings</code> → Keys): the public site key <code>pk_test_XXXX</code> and a secret key <code>sk_test_XXXX</code> (shown once when you create it).</li><li>Access to your site's shared page layout and to the server code that creates the charge.</li></ul>
 <p>Supported in v1: any site with its own backend. Recipes below for <strong>Next.js</strong>, <strong>Node.js with Express</strong> and <strong>PHP</strong>, plus a generic recipe for anything else. Stripe is covered; other payment providers work the same way without the Stripe metadata.</p>
 <p>Two rules hold for every integration:</p>
-<ul><li><strong>Fail open.</strong> The checkout never waits more than 300 ms for uHoney and never fails because of it.</li><li><strong>Advisory only.</strong> Save the verdict on the order. Acting on it (review, challenge) is your decision.</li></ul>
+<ul><li><strong>Fail open.</strong> The checkout never waits more than 300 ms for uHoney and never fails because of it.</li><li><strong>Advisory only.</strong> Save the decision on the order. Acting on it (asking the shopper to confirm, holding the order) is your choice.</li></ul>
 <h2 id="2-store-the-keys">2. Store the keys</h2>
 <p>Add the keys to your server environment (for local development, the project's <code>.env</code>, which must stay out of git):</p>
 <pre><code class="language-bash">UHONEY_SITE_KEY=pk_test_XXXX       # public: used in the page tag
@@ -153,11 +153,8 @@ export async function assessOrder({ sessionToken, order, intentRef, ip, headers,
 
 /** The fields worth keeping on your order record. */
 export function verdictFields(assessment) {
-  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_action: null, uhoney_decision: null };
-  return {
-    uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action, uhoney_decision: assessment.decision ?? null,
-  };
+  if (!assessment) return { uhoney_assessment_id: null, uhoney_driver: null, uhoney_decision: null };
+  return { uhoney_assessment_id: assessment.assessment_id, uhoney_driver: assessment.driver, uhoney_decision: assessment.decision ?? null };
 }
 
 /** Stripe PaymentIntent metadata (strings only, so Radar rules can use them). */
@@ -166,7 +163,6 @@ export function stripeMetadata(assessment) {
   return {
     uhoney_assessment_id: assessment.assessment_id,
     uhoney_driver: assessment.driver,
-    uhoney_action: assessment.suggested_action,
     uhoney_decision: assessment.decision ?? &quot;none&quot;,
     uhoney_agent: assessment.agent ? assessment.agent.id : &quot;none&quot;,
     uhoney_agent_verified: String(Boolean(assessment.agent &amp;&amp; assessment.agent.verified)),
@@ -191,7 +187,7 @@ export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHO
 }</code></pre>
 <p>What the helper guarantees, and any hand-written version must too:</p>
 <ul><li>a <strong>300 ms timeout</strong>; on timeout or any error it returns <code>null</code> and <strong>the payment continues unchanged</strong>;</li><li>the visitor's IP, user agent and the listed headers are forwarded — <strong>never</strong> <code>cookie</code> or <code>authorization</code>;</li><li><code>Idempotency-Key</code> is the order id, so a retried checkout gets the same assessment.</li></ul>
-<p>Save <code>assessment_id</code>, <code>driver</code>, <code>suggested_action</code> and <code>decision</code> on the order. <code>decision</code> is <code>allow</code>, <code>confirm</code> (ask the shopper to confirm before charging) or <code>block</code>; the default policy never returns <code>block</code>. With Stripe, also put <code>stripeMetadata(assessment)</code> into the PaymentIntent's <code>metadata</code>, so Radar rules can use it (for example: review if <code>uhoney_decision</code> is <code>confirm</code>).</p>
+<p>Save <code>assessment_id</code>, <code>driver</code> and <code>decision</code> on the order. <code>decision</code> is the verdict, from the merchant's policy: <code>allow</code>, <code>confirm</code> (the checkout should get the shopper's own approval of the cart before charging) or <code>block</code> (don't take the payment); the default policy never returns <code>block</code>. Until the checkout has a confirmation step, the decision is advisory: save it and let the payment continue. With Stripe, also put <code>stripeMetadata(assessment)</code> into the PaymentIntent's <code>metadata</code>, so Radar rules can use it (for example: review if <code>uhoney_decision</code> is <code>confirm</code>).</p>
 <p>Optional, and worth sending: the cart lines (<code>items</code>: <code>sku</code>, <code>title</code>, <code>category</code>, <code>quantity</code>, <code>unit_amount</code> in cents), <code>shipping</code> (<code>country</code>, <code>new_address</code>, and <code>address_hash</code>: your own hash of the normalized address, never the address itself) and <code>payment.method</code>. uHoney uses them to check that the cart matches what the shopper asked for. Never send names, emails, phone numbers or the address in clear.</p>
 <p>The response looks like this (full contract: <code>{{API_URL}}/integrate/v1/openapi.json</code>):</p>
 <pre><code class="language-json">{
@@ -201,7 +197,6 @@ export function verifyWebhook(rawBody, signatureHeader, secret = process.env.UHO
   &quot;agent&quot;: { &quot;id&quot;: &quot;claude-in-chrome&quot;, &quot;operator&quot;: &quot;Anthropic&quot;, &quot;verified&quot;: false, &quot;verification&quot;: null },
   &quot;score&quot;: 0.97,
   &quot;confidence&quot;: &quot;high&quot;,
-  &quot;suggested_action&quot;: &quot;allow&quot;,
   &quot;decision&quot;: &quot;allow&quot;,
   &quot;legitimacy&quot;: { &quot;evaluated&quot;: false, &quot;score&quot;: null, &quot;reasons&quot;: [] },
   &quot;intent&quot;: { &quot;status&quot;: &quot;not_provided&quot;, &quot;score&quot;: null, &quot;violations&quot;: [] },
@@ -403,7 +398,7 @@ function uhoney_verify_webhook(string $rawBody, ?string $signatureHeader, int $t
 
 // In your checkout handler, before charging:
 //   $assessment = uhoney_assess(['id' =&gt; $orderId, 'amount' =&gt; $totalCents, 'currency' =&gt; 'EUR'], $_POST['uhoney_token'] ?? null);
-//   save $assessment['assessment_id'], $assessment['driver'], $assessment['suggested_action'], $assessment['decision'] on the order (if not null)
+//   save $assessment['assessment_id'], $assessment['driver'], $assessment['decision'] on the order (if not null)
 //   ...continue the payment exactly as before.</code></pre>
 <p>Behind a load balancer, make sure <code>REMOTE_ADDR</code> is the visitor's IP (trusted proxy settings).</p>
 <h3 id="anything-else">Anything else</h3>

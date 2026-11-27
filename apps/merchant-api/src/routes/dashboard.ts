@@ -176,7 +176,7 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
 
   app.get("/m/api/orders", async (request, reply) => {
     const q = request.query as Record<string, string>;
-    return reply.send({ orders: await scoped(request, (tx, s) => listOrders(tx, s, { action: q.action || undefined, driver: q.driver || undefined, before: q.before, limit: Number(q.limit) || 50 })) });
+    return reply.send({ orders: await scoped(request, (tx, s) => listOrders(tx, s, { decision: q.decision || undefined, driver: q.driver || undefined, before: q.before, limit: Number(q.limit) || 50 })) });
   });
 
   app.get<{ Params: { id: string } }>("/m/api/orders/:id", async (request, reply) => {
@@ -403,7 +403,7 @@ export function registerDashboard(app: FastifyInstance, deps: Deps) {
         order: { id: "test_order", amount: 1000, currency: "EUR" }, driver: "agent_then_human", handover: { page: "/checkout/payment", at: now },
         automation_type: "in_browser_agent", agent: { id: "claude-in-chrome", operator: "Anthropic", verified: false, verification: null },
         score: 0.97, confidence: "high", reasons: [{ code: "jump_clicks", text: "This is a test webhook from the uHoney dashboard" }],
-        signals_used: { client: true, server: true }, suggested_action: "allow", scorer_version: "test",
+        signals_used: { client: true, server: true }, scorer_version: "test",
         decision: "allow", legitimacy: { evaluated: false, score: null, reasons: [] },
         intent: { status: "not_provided", score: null, violations: [] }, evidence_id: null,
       } satisfies Assessment;
