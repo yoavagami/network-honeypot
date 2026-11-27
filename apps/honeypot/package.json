@@ -13,6 +13,7 @@
   "dependencies": {
     "@honeypot/types": "workspace:*",
     "@honeypot/detection": "workspace:*",
+    "@honeypot/identity": "workspace:*",
     "@honeypot/db": "workspace:*",
     "@honeypot/logging": "workspace:*",
     "fastify": "^5.0.0",

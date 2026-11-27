@@ -19,6 +19,7 @@ honeypot admins ──► admin-web /merchants ──► admin-api ──/intern
 | API + workers | `apps/merchant-api` | `/v1/*` public API, `/m/api/*` merchant dashboard, `/internal/*` admin, scoring + webhook + retention workers |
 | Admin views | `apps/admin-api/src/routes/merchants.ts`, `apps/admin-web/src/pages/MerchantsAdmin.tsx` | All merchants, filterable by one; access-logged |
 | Merchant portal | `apps/admin-web/src/pages/MerchantPortal.tsx` (`/m/*`) | Own sign-in; one merchant only |
+| Identity checks | `packages/identity` | User-agent claims, Web Bot Auth, published agent IP ranges (`data/ranges/`), Tor, reverse DNS and the verified / claimed / spoofed verdict. Shared with the honeypot. |
 | Guides | `docs/integrate` → `pnpm --filter @honeypot/app-merchant-api build:docs` | Served at `/docs/integrate`, `/integrate/v1/agent.md`, the helpers `/integrate/v1/uhoney.mjs` and `/integrate/v1/uhoney.php`, and `llms.txt` (`/integrate/llms.txt` on the shop host, whose root belongs to the honeypot; `/llms.txt` on a separate API host) |
 
 Scoring reuses `packages/detection` unchanged: merchant events are mapped to the same visit rows the honeypot

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@honeypot/detection": "workspace:*",
+    "@honeypot/identity": "workspace:*",
     "@honeypot/logging": "workspace:*",
     "@honeypot/merchant-contract": "workspace:*",
     "@honeypot/merchant-db": "workspace:*",

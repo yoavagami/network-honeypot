@@ -2,11 +2,8 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { generateKeyPairSync, sign, type JsonWebKey } from "node:crypto";
 import { createServer, type AddressInfo } from "node:net";
 import { connect } from "node:tls";
-import { verifyWebBotAuth, jwkThumbprint, resetWebBotAuthCache, type SignedRequest } from "../src/sensing/webBotAuth.js";
-import { decideIdentity } from "../src/sensing/verdict.js";
-import { parseUserAgent } from "../src/sensing/userAgent.js";
+import { verifyWebBotAuth, jwkThumbprint, resetWebBotAuthCache, type SignedRequest, decideIdentity, parseUserAgent, agentRangesFor, loadBundledRanges } from "@honeypot/identity";
 import { captureHeaders, consistencyFlags } from "../src/sensing/headers.js";
-import { agentRangesFor, loadBundledRanges } from "../src/sensing/ipIntel.js";
 import { parseClientHello, fingerprint, isGrease } from "../src/edge/clientHello.js";
 
 // ---------------------------------------------------------------- Web Bot Auth

@@ -1,15 +1,11 @@
 /**
- * Server-side identity checks, reused unchanged from the honeypot (apps/honeypot/src/sensing):
+ * Server-side identity checks, shared with the honeypot (packages/identity):
  * user-agent claims, Web Bot Auth signatures, operators' published agent IP ranges, Tor exits.
  * The merchant service runs them on the requests it sees — the tag's beacons and the visitor
  * request a merchant forwards on /v1/assess.
  */
 import { createIpinfoProvider, type EnrichmentProvider } from "@honeypot/detection";
-import { parseUserAgent } from "../../honeypot/src/sensing/userAgent.js";
-import { verifyWebBotAuth, type WbaResult } from "../../honeypot/src/sensing/webBotAuth.js";
-import { agentRangesFor, isTorExit, loadBundledRanges, reverseDns, type ReverseDns } from "../../honeypot/src/sensing/ipIntel.js";
-import { decideIdentity } from "../../honeypot/src/sensing/verdict.js";
-import { AGENTS } from "../../honeypot/src/sensing/agents.js";
+import { parseUserAgent, verifyWebBotAuth, type WbaResult, agentRangesFor, isTorExit, loadBundledRanges, reverseDns, type ReverseDns, decideIdentity, AGENTS } from "@honeypot/identity";
 
 let rangesLoaded = false;
 export function ensureRangesLoaded() {

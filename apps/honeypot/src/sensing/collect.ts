@@ -2,10 +2,7 @@ import type { FastifyRequest } from "fastify";
 import type { InferInsertModel } from "drizzle-orm";
 import type { schema } from "@honeypot/db";
 import { captureHeaders, consistencyFlags } from "./headers.js";
-import { parseUserAgent } from "./userAgent.js";
-import { verifyWebBotAuth } from "./webBotAuth.js";
-import { agentRangesFor, isTorExit, reverseDns } from "./ipIntel.js";
-import { decideIdentity } from "./verdict.js";
+import { parseUserAgent, verifyWebBotAuth, agentRangesFor, isTorExit, reverseDns, decideIdentity } from "@honeypot/identity";
 import { decodeEdgeHeader } from "./edge.js";
 import { requestNetwork } from "../ingestion/enrichment.js";
 
