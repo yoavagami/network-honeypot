@@ -266,17 +266,62 @@ export function MerchantTrafficOrderPage() {
   const mode = (params.get("mode") as Mode) ?? "test";
   const [d, setD] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { adminMerchants.order(id!, mode).then(setD).catch((e) => setError(errText(e))); }, [id, mode]);
+  const load = () => adminMerchants.order(id!, mode).then(setD).catch((e) => setError(errText(e)));
+  useEffect(() => { void load(); }, [id, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const setOutcome = async (outcome: string, note: string) => { await adminMerchants.setOutcome(id!, mode, outcome, note); await load(); };
   return (
     <div>
       <div className="toolbar"><h1 style={{ marginRight: "auto" }}>Order {d ? `${d.response.order.id} · ${d.company}` : ""}</h1><Link to={`/merchant-traffic?mode=${mode}`}>← Merchant traffic</Link></div>
       {error && <div className="banner warn">{error}</div>}
-      {d ? <OrderDetailView d={d} base="/merchant-traffic" mode={mode} /> : !error && <p className="muted">Loading…</p>}
+      {d ? <OrderDetailView d={d} base="/merchant-traffic" mode={mode} onSetOutcome={setOutcome} /> : !error && <p className="muted">Loading…</p>}
     </div>
   );
 }
 
-export function OrderDetailView({ d, base, mode }: { d: OrderDetail; base: string; mode: Mode }) {
+const OUTCOMES: Array<[string, string]> = [
+  ["confirmed_agent", "Confirmed: an agent placed it"],
+  ["confirmed_human", "Confirmed: a person placed it"],
+  ["legitimate", "Legitimate order"],
+  ["fraud", "Fraud"],
+  ["chargeback", "Chargeback"],
+];
+const OUTCOME_LABEL = Object.fromEntries(OUTCOMES);
+const SOURCE_LABEL: Record<string, string> = { api: "merchant's server", dashboard: "dashboard", lab: "lab run" };
+
+/** What really happened to the order: the history, and (when allowed) a form to set it. */
+function OutcomePanel({ feedback, onSet }: { feedback: OrderDetail["feedback"]; onSet?: (outcome: string, note: string) => Promise<void> }) {
+  const [outcome, setOutcome] = useState("");
+  const [note, setNote] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const save = async () => {
+    if (!onSet || !outcome) return;
+    setMsg(null);
+    try { await onSet(outcome, note); setOutcome(""); setNote(""); setMsg("Saved."); } catch (e) { setMsg(errText(e)); }
+  };
+  return (
+    <div className="panel">
+      <h2>Outcome</h2>
+      {feedback.length === 0
+        ? <p className="muted small">Nothing reported yet. Outcomes come from the merchant's server (<code>POST /v1/feedback</code>), from this page, or automatically for uHoney's lab runs.</p>
+        : <ul>{feedback.map((f, i) => (
+            <li key={i}>{fmtTime(f.created_at)} — <strong>{OUTCOME_LABEL[f.outcome] ?? f.outcome}</strong>{f.note ? `: ${f.note}` : ""} <span className="muted small">({SOURCE_LABEL[f.source] ?? f.source}{f.actor ? `, ${f.actor.replace(/^(user|admin):/, "")}` : ""})</span></li>
+          ))}</ul>}
+      {onSet && (
+        <div className="toolbar" style={{ marginTop: ".75rem", gap: ".5rem", flexWrap: "wrap" }}>
+          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} aria-label="Outcome">
+            <option value="">Set the outcome…</option>
+            {OUTCOMES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Note (optional, no personal data)" style={{ flex: "1 1 14rem" }} />
+          <button disabled={!outcome} onClick={() => void save()}>Save outcome</button>
+          {msg && <span className="small">{msg}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OrderDetailView({ d, base, mode, onSetOutcome }: { d: OrderDetail; base: string; mode: Mode; onSetOutcome?: (outcome: string, note: string) => Promise<void> }) {
   const r = d.response;
   return (
     <>
@@ -298,9 +343,7 @@ export function OrderDetailView({ d, base, mode }: { d: OrderDetail; base: strin
         <h2>Why</h2>
         <ul className="reason-list coded">{(r.reasons as Array<{ code: string; text: string }>).map((x) => <li key={x.code}><span className="code">{x.code}</span><span>{x.text}</span></li>)}</ul>
       </div>
-      {d.feedback.length > 0 && (
-        <div className="panel"><h2>Outcome reported</h2><ul>{d.feedback.map((f, i) => <li key={i}>{fmtTime(f.created_at)} — {f.outcome}{f.note ? `: ${f.note}` : ""}</li>)}</ul></div>
-      )}
+      <OutcomePanel feedback={d.feedback} onSet={onSetOutcome} />
       <details className="panel"><summary>API response</summary><pre className="small" style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(r, null, 2)}</pre></details>
     </>
   );

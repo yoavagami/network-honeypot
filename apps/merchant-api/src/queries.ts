@@ -94,7 +94,7 @@ export async function getOrder(tx: MerchantTx, s: Scope, assessmentId: string) {
     FROM assessments a JOIN merchants m USING (merchant_id)
     WHERE a.assessment_id = ${assessmentId} AND a.livemode = ${s.livemode} ${merchantFilter(tx, s, "a.merchant_id")}`;
   if (!a) return null;
-  const feedback = await tx`SELECT outcome, note, created_at FROM feedback WHERE assessment_id = ${assessmentId} ORDER BY created_at DESC`;
+  const feedback = await tx`SELECT outcome, note, source, actor, created_at FROM feedback WHERE assessment_id = ${assessmentId} ORDER BY created_at DESC`;
   return { ...a, feedback };
 }
 

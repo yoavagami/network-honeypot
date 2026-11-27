@@ -46,7 +46,7 @@ export interface Overview {
 }
 export interface OrderDetail {
   assessment_id: string; merchant_id: string; company: string; visit_id: string | null; token_status: string; header_count: number; server_ms: number; final: boolean; created_at: string;
-  response: Record<string, any>; feedback: Array<{ outcome: string; note: string | null; created_at: string }>;
+  response: Record<string, any>; feedback: Array<{ outcome: string; note: string | null; source: "api" | "dashboard" | "lab"; actor: string | null; created_at: string }>;
 }
 export interface StatusCheck { id: string; status: "pass" | "fail" | "pending" | "not_applicable"; detail: string; checked_at: string }
 export interface IntegrationStatus { merchant_id: string; livemode: boolean; all_passed: boolean; checks: StatusCheck[]; recent_events: Array<{ type: string; at: string; origin: string | null }> }
@@ -79,6 +79,7 @@ export const adminMerchants = {
   visit: (id: string, mode: Mode) => request<AgentVisitDetail>(`/api/merchant-data/visits/${id}${qs({ mode })}`),
   orders: (p: { merchant_id?: string; mode: Mode; decision?: string }) => request<{ orders: OrderRow[] }>(`/api/merchant-data/orders${qs(p)}`),
   order: (id: string, mode: Mode) => request<OrderDetail>(`/api/merchant-data/orders/${id}${qs({ mode })}`),
+  setOutcome: (id: string, mode: Mode, outcome: string, note?: string) => request<{ ok: true }>(`/api/merchant-data/orders/${id}/outcome${qs({ mode })}`, { method: "POST", body: JSON.stringify({ outcome, note: note || undefined }) }),
 };
 
 // ------------------------------------------------------------------ merchant portal client
@@ -133,6 +134,7 @@ export const merchant = {
   visit: (id: string, mode: Mode) => mreq<AgentVisitDetail>(`/m/api/visits/${id}${qs({ mode })}`),
   orders: (p: { mode: Mode; decision?: string }) => mreq<{ orders: OrderRow[] }>(`/m/api/orders${qs(p)}`),
   order: (id: string, mode: Mode) => mreq<OrderDetail>(`/m/api/orders/${id}${qs({ mode })}`),
+  setOutcome: (id: string, mode: Mode, outcome: string, note?: string) => mreq<{ ok: true }>(`/m/api/orders/${id}/outcome${qs({ mode })}`, { method: "POST", body: JSON.stringify({ outcome, note: note || undefined }) }),
   live: (mode: Mode) => mreq<{ visits: VisitRow[]; pay_events: Array<{ session_id: string; name: string | null; path: string | null; created_at: string; visit_id: string | null }>; at: string }>(`/m/api/live${qs({ mode })}`),
   integration: (mode: Mode) => mreq<IntegrationStatus>(`/m/api/integration${qs({ mode })}`),
   keys: () => mreq<{ keys: KeyRow[]; tag_base_url: string; api_url: string; merchant_id: string }>("/m/api/keys"),

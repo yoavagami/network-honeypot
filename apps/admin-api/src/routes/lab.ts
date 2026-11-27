@@ -26,6 +26,7 @@ export function registerLabRoutes(app: FastifyInstance) {
     const token = signLabToken(run.label, Math.floor(expiresAt.getTime() / 1000), config.labLinkSecret);
     const query = `?lab=${encodeURIComponent(token)}`;
     await audit(request.adminSession!.adminUserId, "create_lab_run", run.label, null, { kind: run.kind, agent: run.agent, expiresAt });
+    void syncLabRunKinds([{ label: run.label, kind: run.kind }]);
     return reply.status(201).send({ label: run.label, kind: run.kind, expiresAt, query, url: config.publicSiteUrl ? `${config.publicSiteUrl}/${query}` : null });
   });
 
@@ -66,6 +67,27 @@ export function registerLabRoutes(app: FastifyInstance) {
       }),
     };
   });
+}
+
+/**
+ * Tells merchant-api each lab run's kind (agent or human), so orders from lab runs on merchant
+ * sites get their known outcome there. Fails soft: the next sync catches up.
+ */
+export async function syncLabRunKinds(runs?: Array<{ label: string; kind: string }>): Promise<boolean> {
+  if (!config.merchantInternalUrl || !config.merchantInternalToken) return false;
+  try {
+    const list = runs ?? (await client<Array<{ label: string; kind: string }>>`SELECT label, kind FROM lab_runs ORDER BY created_at DESC LIMIT 2000`);
+    if (!list.length) return true;
+    const res = await fetch(`${config.merchantInternalUrl}/internal/lab-runs`, {
+      method: "POST",
+      headers: { "x-internal-token": config.merchantInternalToken, "content-type": "application/json" },
+      body: JSON.stringify({ runs: list.map((r) => ({ label: r.label, kind: r.kind })) }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**

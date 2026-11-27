@@ -16,7 +16,7 @@ import { registerSystemRoutes } from "./routes/system.js";
 import { registerStreamRoute } from "./routes/stream.js";
 import { registerAccessLogRoutes } from "./routes/accessLog.js";
 import { registerAgentRoutes } from "./routes/agents.js";
-import { registerLabRoutes } from "./routes/lab.js";
+import { registerLabRoutes, syncLabRunKinds } from "./routes/lab.js";
 import { registerMerchantRoutes } from "./routes/merchants.js";
 
 async function main() {
@@ -55,6 +55,10 @@ async function main() {
 
   await app.listen({ port: config.port, host: config.host });
   app.log.info({ msg: "admin-api listening", port: config.port });
+  // Lab run kinds to merchant-api: now (it may still be starting, so again shortly) and every 10 minutes.
+  void syncLabRunKinds();
+  setTimeout(() => void syncLabRunKinds(), 60_000).unref();
+  setInterval(() => void syncLabRunKinds(), 10 * 60_000).unref();
 }
 
 main().catch((err) => {

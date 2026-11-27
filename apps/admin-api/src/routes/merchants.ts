@@ -79,4 +79,12 @@ export function registerMerchantRoutes(app: FastifyInstance) {
       });
     }
   }
+
+  // An admin sets what really happened to a merchant's order.
+  app.post("/api/merchant-data/orders/:id/outcome", async (request, reply) => {
+    if (!/^as_[A-Za-z0-9]{20}$/.test(id(request))) return reply.status(404).send({ error: { code: "not_found", message: "Not found" } });
+    const outcome = (request.body as { outcome?: unknown } | undefined)?.outcome;
+    await audit(request.adminSession!.adminUserId, "set_merchant_order_outcome", id(request), null, { outcome: typeof outcome === "string" ? outcome.slice(0, 32) : null });
+    return forward(request, reply, "POST", `orders/${id(request)}/outcome`, request.body ?? {});
+  });
 }

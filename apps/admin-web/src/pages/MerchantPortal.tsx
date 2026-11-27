@@ -265,12 +265,15 @@ export function MerchantOrderPage() {
   const [params] = useSearchParams();
   const ctx = useMerchant();
   const mode = (params.get("mode") as Mode) ?? ctx.mode;
-  const { data, error } = useLoad<OrderDetail>(() => merchant.order(id!, mode), [id, mode]);
+  const { data, error, reload } = useLoad<OrderDetail>(() => merchant.order(id!, mode), [id, mode]);
+  // Owners and developers can set the outcome; analysts only read it.
+  const canSet = ctx.me?.user.role === "owner" || ctx.me?.user.role === "developer";
+  const setOutcome = async (outcome: string, note: string) => { await merchant.setOutcome(id!, mode, outcome, note); await reload(); };
   return (
     <div>
       <div className="toolbar"><h1 style={{ marginRight: "auto" }}>Order {data?.response.order.id ?? ""}</h1><Link to="/m/orders">← Orders</Link></div>
       {error && <div className="banner warn">{error}</div>}
-      {data ? <OrderDetailView d={data} base="/m" mode={mode} /> : !error && <p className="muted">Loading…</p>}
+      {data ? <OrderDetailView d={data} base="/m" mode={mode} onSetOutcome={canSet ? setOutcome : undefined} /> : !error && <p className="muted">Loading…</p>}
     </div>
   );
 }

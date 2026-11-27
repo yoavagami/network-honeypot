@@ -52,6 +52,13 @@ textual patches (`apps/merchant-api/src/tag.ts`); a test fails if a patch target
   `evidence_entries` (append-only, hash-chained, kept 540 days because card disputes can come that late) are
   in place for the intent and evidence layers; nothing writes them yet. Cart detail sent at assess (items,
   hashed address, payment method) stays with the assess event, under the merchant's event retention.
+- **Order outcomes** (`feedback`, migration 0007) come from three sources: the merchant's server
+  (`POST /v1/feedback`), the order page (owners, developers and uHoney admins; analysts read only;
+  audit-logged as `order.outcome`, and admin-api logs `set_merchant_order_outcome`), and **lab runs**:
+  admin-api sends each lab run's kind to merchant-api (`POST /internal/lab-runs`, at startup, every 10
+  minutes and when a run is created), and the scoring worker records `confirmed_agent` or
+  `confirmed_human` once for every final order from a verified lab run. Merchants see uHoney's own
+  entries as "uHoney", without the lab label.
 
 ## Onboarding a merchant
 
